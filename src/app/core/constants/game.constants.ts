@@ -5,15 +5,17 @@ import { GamePhase } from '../../models/game-state.model';
  * must never live here — they belong in JSON under src/app/data
  * (CODING_STANDARDS.md section 12 / PROJECT_RULES.md section 30).
  */
+/** Default value for DATA_BASE_PATH_TOKEN (core/di/data-base-path.token.ts). */
 export const DATA_BASE_PATH = 'data' as const;
 
-export const COUNTRIES_DATA_FILE = `${DATA_BASE_PATH}/countries.json` as const;
-export const FACTIONS_DATA_FILE = `${DATA_BASE_PATH}/factions.json` as const;
-export const ECONOMY_DATA_FILE = `${DATA_BASE_PATH}/economy.json` as const;
-export const UNITS_DATA_FILE = `${DATA_BASE_PATH}/units.json` as const;
-export const STRAITS_DATA_FILE = `${DATA_BASE_PATH}/straits.json` as const;
-export const SEA_ZONES_DATA_FILE = `${DATA_BASE_PATH}/sea-zones.json` as const;
-export const STARTING_DEPLOYMENT_DATA_FILE = `${DATA_BASE_PATH}/starting-deployment.json` as const;
+/** Filenames only — resolved against DATA_BASE_PATH_TOKEN by DataLoaderService. */
+export const COUNTRIES_DATA_FILE = 'countries.json' as const;
+export const FACTIONS_DATA_FILE = 'factions.json' as const;
+export const ECONOMY_DATA_FILE = 'economy.json' as const;
+export const UNITS_DATA_FILE = 'units.json' as const;
+export const STRAITS_DATA_FILE = 'straits.json' as const;
+export const SEA_ZONES_DATA_FILE = 'sea-zones.json' as const;
+export const STARTING_DEPLOYMENT_DATA_FILE = 'starting-deployment.json' as const;
 
 /** Turn order exactly as defined in PROJECT_RULES.md section 3. Structural, not tunable data. */
 export const TURN_PHASE_ORDER: readonly GamePhase[] = [

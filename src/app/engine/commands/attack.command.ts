@@ -5,6 +5,7 @@ import { UnitDefinition } from '../../models/unit.model';
 import { UnitInstance } from '../../models/unit-instance.model';
 import { EconomyConfig } from '../../models/economy-config.model';
 import { RulesEngine } from '../rules-engine';
+import { applyForceCaptureSatisfactionPenalty } from './shared/capture-penalties';
 
 /**
  * Moves a unit into a neighboring enemy/neutral region during the Attack
@@ -151,31 +152,12 @@ export class AttackCommand implements Command {
     };
     const nextUnits = state.units.map(movedAttacker);
 
-    const min = this.economyConfig.citizenSatisfactionMin;
-    const max = this.economyConfig.citizenSatisfactionMax;
-    const nextPlayers = state.players.map((candidate) => {
-      if (candidate.id === this.playerId) {
-        return {
-          ...candidate,
-          citizenSatisfaction: clamp(
-            candidate.citizenSatisfaction - this.economyConfig.captureSatisfactionPenaltyAttacker,
-            min,
-            max,
-          ),
-        };
-      }
-      if (previousOwnerId !== null && candidate.id === previousOwnerId) {
-        return {
-          ...candidate,
-          citizenSatisfaction: clamp(
-            candidate.citizenSatisfaction - this.economyConfig.captureSatisfactionPenaltyDefender,
-            min,
-            max,
-          ),
-        };
-      }
-      return candidate;
-    });
+    const nextPlayers = applyForceCaptureSatisfactionPenalty(
+      state.players,
+      this.playerId,
+      previousOwnerId,
+      this.economyConfig,
+    );
 
     const events: readonly GameEngineEvent[] = [
       { type: 'RegionCaptured', playerId: this.playerId, regionId: this.targetRegionId, previousOwnerId },
@@ -188,8 +170,4 @@ export class AttackCommand implements Command {
     ];
     return { state: { ...state, regions: nextRegions, units: nextUnits, players: nextPlayers }, events };
   }
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
 }

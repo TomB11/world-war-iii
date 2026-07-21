@@ -156,7 +156,8 @@
         "c-east-europe",
         "cwest-russia",
         "balkan-europe",
-        "swest-russia"
+        "swest-russia",
+        "nwest-russia"
       ],
       "position": {
         "x": 0.3645,
@@ -592,7 +593,8 @@
       "factory": 3,
       "neighbors": [
         "north-china",
-        "south-korea"
+        "south-korea",
+        "east-china"
       ],
       "position": {
         "x": 0.9295,
@@ -731,7 +733,8 @@
       "value": 3,
       "factory": 2,
       "neighbors": [
-        "neast-africa"
+        "neast-africa",
+        "west-europe"
       ],
       "position": {
         "x": 0.229,
@@ -762,7 +765,9 @@
       "value": 2,
       "factory": 2,
       "neighbors": [
-        "south-usa"
+        "south-usa",
+        "west-usa",
+        "north-samerica"
       ],
       "position": {
         "x": 0.008,

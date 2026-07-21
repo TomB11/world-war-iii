@@ -70,7 +70,10 @@ function tintImage(image: HTMLImageElement, color: string): HTMLCanvasElement {
   const canvas = document.createElement('canvas');
   canvas.width = image.naturalWidth;
   canvas.height = image.naturalHeight;
-  const context = canvas.getContext('2d')!;
+  const context = canvas.getContext('2d');
+  if (context === null) {
+    throw new Error('2D canvas context is not available in this environment');
+  }
   context.drawImage(image, 0, 0);
   context.globalCompositeOperation = 'source-in';
   context.fillStyle = color;

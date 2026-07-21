@@ -83,7 +83,7 @@ export class DeployUnitCommand implements Command {
         : candidate,
     );
 
-    const unitInstanceId = `unit-${state.units.length + 1}`;
+    const unitInstanceId = `unit-${state.nextUnitInstanceId}`;
     const nextUnits = [
       ...state.units,
       {
@@ -106,6 +106,14 @@ export class DeployUnitCommand implements Command {
         regionId: this.regionId,
       },
     ];
-    return { state: { ...state, players: nextPlayers, units: nextUnits }, events };
+    return {
+      state: {
+        ...state,
+        players: nextPlayers,
+        units: nextUnits,
+        nextUnitInstanceId: state.nextUnitInstanceId + 1,
+      },
+      events,
+    };
   }
 }

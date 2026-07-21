@@ -54,7 +54,10 @@ export function layoutUnitIcons(
   const perRow = UNIT_ICONS_PER_ROW;
 
   return orderedIds.map((unitId, index) => {
-    const group = groups.get(unitId)!;
+    const group = groups.get(unitId);
+    if (group === undefined) {
+      throw new Error(`Unit icon group for "${unitId}" was not found`);
+    }
     const row = Math.floor(index / perRow);
     const col = index % perRow;
     const colsInRow = Math.min(perRow, orderedIds.length - row * perRow);

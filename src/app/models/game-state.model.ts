@@ -30,6 +30,12 @@ export interface GameState {
   readonly phase: GamePhase;
   readonly turnNumber: number;
   readonly randomSeed: number;
+  /**
+   * Monotonically increasing counter used to mint new `UnitInstance` ids.
+   * Never derived from `units.length` — casualties shrink that array, so a
+   * length-based id can collide with a still-alive unit's id.
+   */
+  readonly nextUnitInstanceId: number;
   /** In-progress Attack Phase battles, keyed by regionId (PROJECT_RULES.md sections 9-14). */
   readonly combats: Readonly<Record<string, RegionCombat>>;
 }

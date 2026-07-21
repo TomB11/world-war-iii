@@ -141,13 +141,6 @@ export interface HackLevelUpgradedEvent {
   readonly hackLevel: number;
 }
 
-export interface UnitUpgradedEvent {
-  readonly type: 'UnitUpgraded';
-  readonly playerId: string;
-  readonly unitInstanceId: string;
-  readonly toUnitId: string;
-}
-
 export interface CombatRejectedEvent {
   readonly type: 'CombatRejected';
   readonly playerId: string;
@@ -201,7 +194,6 @@ export type GameEngineEvent =
   | HackResolvedEvent
   | PoliticalInfluenceResolvedEvent
   | HackLevelUpgradedEvent
-  | UnitUpgradedEvent
   | CombatRejectedEvent
   | CombatRoundRolledEvent
   | CasualtyRemovedEvent

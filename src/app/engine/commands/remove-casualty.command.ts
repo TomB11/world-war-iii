@@ -4,6 +4,7 @@ import { GameEngineEvent } from '../../interfaces/game-events';
 import { EconomyConfig } from '../../models/economy-config.model';
 import { CombatCasualty, CombatStep, RegionCombat } from '../../models/region-combat.model';
 import { RulesEngine } from '../rules-engine';
+import { applyForceCaptureSatisfactionPenalty } from './shared/capture-penalties';
 
 /**
  * Removes one unit as a casualty during a region's Attack Phase battle
@@ -198,31 +199,12 @@ export class RemoveCasualtyCommand implements Command {
       ? { ...state.regions, [this.regionId]: { ...targetRegion, ownerId: this.playerId } }
       : state.regions;
 
-    const min = this.economyConfig.citizenSatisfactionMin;
-    const max = this.economyConfig.citizenSatisfactionMax;
-    const nextPlayers = state.players.map((candidate) => {
-      if (candidate.id === this.playerId) {
-        return {
-          ...candidate,
-          citizenSatisfaction: clamp(
-            candidate.citizenSatisfaction - this.economyConfig.captureSatisfactionPenaltyAttacker,
-            min,
-            max,
-          ),
-        };
-      }
-      if (previousOwnerId !== null && candidate.id === previousOwnerId) {
-        return {
-          ...candidate,
-          citizenSatisfaction: clamp(
-            candidate.citizenSatisfaction - this.economyConfig.captureSatisfactionPenaltyDefender,
-            min,
-            max,
-          ),
-        };
-      }
-      return candidate;
-    });
+    const nextPlayers = applyForceCaptureSatisfactionPenalty(
+      state.players,
+      this.playerId,
+      previousOwnerId,
+      this.economyConfig,
+    );
 
     const { [this.regionId]: _removed, ...remainingCombats } = state.combats;
     const events: readonly GameEngineEvent[] = [
@@ -235,8 +217,4 @@ export class RemoveCasualtyCommand implements Command {
       events,
     };
   }
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
 }

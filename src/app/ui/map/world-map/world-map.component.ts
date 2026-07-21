@@ -16,6 +16,7 @@ import { MapGeometry } from '../interaction/map-geometry';
 import { MapRenderer } from '../rendering/map-renderer';
 import { UnitIconImageCache } from '../rendering/unit-icon-images';
 import { MapPoint, UnitDragState, ViewTransform } from '../../../interfaces/map-types';
+import { clamp } from '../../../core/utils/math.util';
 
 const CLICK_DRAG_THRESHOLD_PX = 4;
 
@@ -408,8 +409,4 @@ export class WorldMapComponent implements AfterViewInit, OnDestroy {
     this.flagImages.set(path, image);
     return image;
   }
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
 }

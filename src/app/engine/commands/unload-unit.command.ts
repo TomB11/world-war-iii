@@ -5,6 +5,7 @@ import { UnitDefinition } from '../../models/unit.model';
 import { UnitInstance } from '../../models/unit-instance.model';
 import { EconomyConfig } from '../../models/economy-config.model';
 import { RulesEngine } from '../rules-engine';
+import { applyForceCaptureSatisfactionPenalty } from './shared/capture-penalties';
 
 /**
  * Disembarks a unit from its transport onto a coastal region bordering the
@@ -114,31 +115,12 @@ export class UnloadUnitCommand implements Command {
 
     // UNDEFENDED capture: flip ownership + by-force Citizen penalties (section 5).
     const previousOwnerId = targetRegion.ownerId;
-    const min = this.economyConfig.citizenSatisfactionMin;
-    const max = this.economyConfig.citizenSatisfactionMax;
-    const nextPlayers = state.players.map((candidate) => {
-      if (candidate.id === this.playerId) {
-        return {
-          ...candidate,
-          citizenSatisfaction: clamp(
-            candidate.citizenSatisfaction - this.economyConfig.captureSatisfactionPenaltyAttacker,
-            min,
-            max,
-          ),
-        };
-      }
-      if (previousOwnerId !== null && candidate.id === previousOwnerId) {
-        return {
-          ...candidate,
-          citizenSatisfaction: clamp(
-            candidate.citizenSatisfaction - this.economyConfig.captureSatisfactionPenaltyDefender,
-            min,
-            max,
-          ),
-        };
-      }
-      return candidate;
-    });
+    const nextPlayers = applyForceCaptureSatisfactionPenalty(
+      state.players,
+      this.playerId,
+      previousOwnerId,
+      this.economyConfig,
+    );
 
     const events: readonly GameEngineEvent[] = [
       { type: 'UnitUnloaded', unitInstanceId: this.unitInstanceId },
@@ -154,8 +136,4 @@ export class UnloadUnitCommand implements Command {
       events,
     };
   }
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
 }

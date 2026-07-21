@@ -10,6 +10,7 @@ import {
   STRAITS_DATA_FILE,
   UNITS_DATA_FILE,
 } from '../core/constants/game.constants';
+import { DATA_BASE_PATH_TOKEN } from '../core/di/data-base-path.token';
 import { Faction } from '../models/faction.model';
 import { GameState } from '../models/game-state.model';
 import { PlayerState } from '../models/player.model';
@@ -78,17 +79,19 @@ const NEUTRAL_ARMY_OWNER_ID = 'neutral';
 @Injectable({ providedIn: 'root' })
 export class DataLoaderService {
   private readonly http = inject(HttpClient);
+  private readonly dataBasePath = inject(DATA_BASE_PATH_TOKEN);
 
   async loadInitialGameData(): Promise<InitialGameData> {
+    const dataFile = (fileName: string): string => `${this.dataBasePath}/${fileName}`;
     const [countries, factionsFile, economy, unitsFile, straitsFile, seaZonesFile, startingDeploymentFile] =
       await Promise.all([
-        firstValueFrom(this.http.get<CountriesDataFile>(COUNTRIES_DATA_FILE)),
-        firstValueFrom(this.http.get<FactionsDataFile>(FACTIONS_DATA_FILE)),
-        firstValueFrom(this.http.get<EconomyDataFile>(ECONOMY_DATA_FILE)),
-        firstValueFrom(this.http.get<UnitsDataFile>(UNITS_DATA_FILE)),
-        firstValueFrom(this.http.get<StraitsDataFile>(STRAITS_DATA_FILE)),
-        firstValueFrom(this.http.get<SeaZonesDataFile>(SEA_ZONES_DATA_FILE)),
-        firstValueFrom(this.http.get<StartingDeploymentDataFile>(STARTING_DEPLOYMENT_DATA_FILE)),
+        firstValueFrom(this.http.get<CountriesDataFile>(dataFile(COUNTRIES_DATA_FILE))),
+        firstValueFrom(this.http.get<FactionsDataFile>(dataFile(FACTIONS_DATA_FILE))),
+        firstValueFrom(this.http.get<EconomyDataFile>(dataFile(ECONOMY_DATA_FILE))),
+        firstValueFrom(this.http.get<UnitsDataFile>(dataFile(UNITS_DATA_FILE))),
+        firstValueFrom(this.http.get<StraitsDataFile>(dataFile(STRAITS_DATA_FILE))),
+        firstValueFrom(this.http.get<SeaZonesDataFile>(dataFile(SEA_ZONES_DATA_FILE))),
+        firstValueFrom(this.http.get<StartingDeploymentDataFile>(dataFile(STARTING_DEPLOYMENT_DATA_FILE))),
       ]);
 
     const regions: Record<string, Region> = {};
@@ -126,12 +129,13 @@ export class DataLoaderService {
     }
 
     const startingUnits: UnitInstance[] = [];
+    let nextUnitInstanceId = 1;
     for (const faction of factionsFile.factions) {
       const entries = startingDeploymentFile.deployment[faction.id] ?? [];
       for (const entry of entries) {
         for (let i = 0; i < entry.quantity; i += 1) {
           startingUnits.push({
-            id: `unit-${startingUnits.length + 1}`,
+            id: `unit-${nextUnitInstanceId}`,
             unitId: entry.unitId,
             ownerId: faction.id,
             regionId: entry.regionId,
@@ -139,6 +143,7 @@ export class DataLoaderService {
             transportedBy: null,
             hasFoughtThisTurn: false,
           });
+          nextUnitInstanceId += 1;
         }
       }
     }
@@ -153,7 +158,7 @@ export class DataLoaderService {
       for (const entry of economy.neutralArmy) {
         for (let i = 0; i < entry.quantity; i += 1) {
           startingUnits.push({
-            id: `unit-${startingUnits.length + 1}`,
+            id: `unit-${nextUnitInstanceId}`,
             unitId: entry.unitId,
             ownerId: NEUTRAL_ARMY_OWNER_ID,
             regionId: region.id,
@@ -161,6 +166,7 @@ export class DataLoaderService {
             transportedBy: null,
             hasFoughtThisTurn: false,
           });
+          nextUnitInstanceId += 1;
         }
       }
     }
@@ -175,6 +181,7 @@ export class DataLoaderService {
       phase: 'buyUnits',
       turnNumber: 1,
       randomSeed: STARTING_RANDOM_SEED,
+      nextUnitInstanceId,
       combats: {},
     };
 

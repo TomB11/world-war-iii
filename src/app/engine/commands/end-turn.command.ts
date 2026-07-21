@@ -7,6 +7,7 @@ import { Faction } from '../../models/faction.model';
 import { EconomyConfig, CitizenSatisfactionZone } from '../../models/economy-config.model';
 import { GameEngineEvent } from '../../interfaces/game-events';
 import { RulesEngine } from '../rules-engine';
+import { clamp } from '../../core/utils/math.util';
 
 /** Owner id used for rebel units spawned by a rebellion (PROJECT_RULES.md section 5) — deliberately not a real faction/player. */
 const REBEL_OWNER_ID = 'rebels';
@@ -97,6 +98,7 @@ export class EndTurnCommand implements Command {
       turnNumber: nextTurnNumber,
       players: nextPlayers,
       units: spawn ? [...state.units, ...spawn.units] : state.units,
+      nextUnitInstanceId: spawn ? spawn.nextUnitInstanceId : state.nextUnitInstanceId,
     };
 
     const events: GameEngineEvent[] = [
@@ -130,7 +132,11 @@ export class EndTurnCommand implements Command {
   private spawnRebelArmy(
     state: GameState,
     player: PlayerState,
-  ): { readonly units: readonly UnitInstance[]; readonly regionId: string } | null {
+  ): {
+    readonly units: readonly UnitInstance[];
+    readonly regionId: string;
+    readonly nextUnitInstanceId: number;
+  } | null {
     const faction = this.factions[player.factionId];
     const capitalRegion = faction ? state.regions[faction.capitalRegionId] : undefined;
     if (!capitalRegion || capitalRegion.ownerId !== player.id) {
@@ -138,10 +144,9 @@ export class EndTurnCommand implements Command {
     }
 
     const units: UnitInstance[] = [];
-    let counter = state.units.length;
+    let counter = state.nextUnitInstanceId;
     for (const entry of this.economyConfig.rebelArmy) {
       for (let i = 0; i < entry.quantity; i += 1) {
-        counter += 1;
         units.push({
           id: `unit-rebel-${counter}`,
           unitId: entry.unitId,
@@ -151,9 +156,10 @@ export class EndTurnCommand implements Command {
           transportedBy: null,
           hasFoughtThisTurn: false,
         });
+        counter += 1;
       }
     }
-    return { units, regionId: capitalRegion.id };
+    return { units, regionId: capitalRegion.id, nextUnitInstanceId: counter };
   }
 }
 
@@ -167,10 +173,6 @@ function findZone(
     }
   }
   return null;
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
 }
 
 function findNextActivePlayerIndex(

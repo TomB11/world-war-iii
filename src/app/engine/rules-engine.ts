@@ -410,9 +410,12 @@ export class RulesEngine {
     const queue: string[] = [unit.regionId];
 
     while (queue.length > 0) {
-      const current = queue.shift()!;
-      const currentDistance = distance.get(current)!;
-      if (currentDistance >= maxMoves) {
+      const current = queue.shift();
+      if (current === undefined) {
+        break;
+      }
+      const currentDistance = distance.get(current);
+      if (currentDistance === undefined || currentDistance >= maxMoves) {
         continue;
       }
       const nextDistance = currentDistance + 1;

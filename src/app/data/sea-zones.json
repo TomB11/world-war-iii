@@ -94,7 +94,7 @@
       ],
       "adjacentRegionIds": [
         "south-usa",
-        "middle-usa",
+        "middle-america",
         "cuba-jamaica",
         "north-samerica"
       ]
@@ -577,7 +577,7 @@
       ],
       "adjacentRegionIds": [
         "west-usa",
-        "middle-usa",
+        "middle-america",
         "north-samerica"
       ]
     },
@@ -596,7 +596,7 @@
         "sea-36"
       ],
       "adjacentRegionIds": [
-        "philippines-usa"
+        "philippines"
       ]
     },
     {
