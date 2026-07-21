@@ -1,0 +1,42 @@
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.map-shell {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: grab;
+  background: var(--wwiii-bg);
+  touch-action: none;
+
+  &.is-panning,
+  &.unit-dragging {
+    cursor: grabbing;
+  }
+}
+
+.reset-view {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 6px 12px;
+  font-size: 12px;
+  color: var(--wwiii-text);
+  background: var(--wwiii-bg-panel);
+  border: 1px solid var(--wwiii-border);
+  border-radius: 4px;
+
+  &:hover {
+    border-color: var(--wwiii-accent);
+    color: var(--wwiii-accent);
+  }
+}

@@ -1,0 +1,320 @@
+# WORLD WAR III
+# CODING STANDARDS
+Version 1.0
+
+---
+
+# 1. GENERAL PRINCIPLE
+
+This project is a **game engine**, not a web app.
+
+Angular is only a rendering layer.
+
+All logic must behave like a deterministic simulation engine.
+
+---
+
+# 2. TYPESCRIPT RULES
+
+## STRICT MODE
+
+Must always be enabled:
+
+```ts
+strict: true
+```
+
+---
+
+## NEVER USE
+
+- any
+- unknown (unless absolutely necessary)
+- non-null assertions (!)
+- implicit any
+
+---
+
+## ALWAYS USE
+
+- strong typing
+- interfaces over classes (where possible)
+- readonly models
+- explicit return types
+
+---
+
+# 3. ARCHITECTURE RULE
+
+NO business logic in Angular components.
+
+Components are ONLY for:
+
+- rendering
+- user input
+- dispatching actions
+
+---
+
+# 4. STATE MANAGEMENT RULE
+
+All state must be managed via Angular Signals.
+
+No RxJS for state.
+
+RxJS allowed ONLY for:
+
+- HTTP streams
+- asset loading
+- external async events
+
+---
+
+## STATE RULE
+
+State is immutable externally.
+
+Only Game Engine can modify state.
+
+---
+
+# 5. GAME ENGINE RULE
+
+Game Engine must be:
+
+- pure TypeScript
+- deterministic
+- testable
+- independent of Angular
+
+---
+
+## ENGINE MUST NOT:
+
+- import Angular
+- access DOM
+- use UI logic
+- use services directly
+
+---
+
+# 6. COMMAND PATTERN
+
+All gameplay actions must be commands.
+
+Example:
+
+```
+MoveUnitCommand
+AttackCommand
+PurchaseUnitCommand
+EndTurnCommand
+LaunchMissileCommand
+```
+
+---
+
+## COMMAND RULES
+
+Each command must:
+
+- validate input
+- execute logic in engine
+- return result event
+
+---
+
+# 7. EVENT SYSTEM
+
+Engine emits events only.
+
+Example:
+
+```
+UnitMovedEvent
+CombatStartedEvent
+CombatResolvedEvent
+RegionCapturedEvent
+MissileLaunchedEvent
+TurnEndedEvent
+```
+
+UI listens to events but does not influence logic.
+
+---
+
+# 8. NAMING CONVENTIONS
+
+## FILES
+
+- kebab-case
+  - game-engine.ts
+  - combat-engine.ts
+
+## CLASSES
+
+- PascalCase
+  - GameEngine
+  - CombatEngine
+
+## INTERFACES
+
+- PascalCase with I prefix optional (preferred no prefix)
+  - Unit
+  - Region
+  - PlayerState
+
+## METHODS
+
+- camelCase
+  - resolveCombat()
+  - moveUnit()
+
+## CONSTANTS
+
+- UPPER_SNAKE_CASE
+  - MAX_UNITS
+  - DEFAULT_INCOME
+
+---
+
+# 9. FOLDER RULES
+
+- one responsibility per file
+- no mixed logic files
+- no circular dependencies
+- engine must not depend on UI
+
+---
+
+# 10. SIGNAL RULES
+
+Use Signals for UI state only.
+
+Example:
+
+```ts
+selectedRegion = signal<Region | null>(null);
+gamePhase = signal<GamePhase>("movement");
+```
+
+---
+
+## DO NOT
+
+- store game logic in signals
+- mutate signals outside state layer
+
+---
+
+# 11. IMMUTABILITY RULE
+
+Game state must be immutable from UI perspective.
+
+All updates go through:
+
+UI → Command → Engine → State Update → UI refresh
+
+---
+
+# 12. JSON RULE
+
+All game data must come from JSON.
+
+Never hardcode:
+
+- unit stats
+- region values
+- income
+- missile range
+- combat rules
+
+---
+
+# 13. ERROR HANDLING
+
+Engine must never crash silently.
+
+All errors must:
+
+- return structured error object
+- log to console (dev mode only)
+- preserve game state integrity
+
+---
+
+# 14. PERFORMANCE RULES
+
+- Use OnPush change detection
+- Avoid deep object mutation
+- Minimize Angular watchers
+- Use memoization for derived state
+- Keep engine pure for optimization
+
+---
+
+# 15. TESTING RULES
+
+Every engine module must be testable.
+
+Tests must cover:
+
+- combat resolution
+- movement rules
+- economy calculation
+- missile system
+- turn system
+
+---
+
+# 16. SAVE COMPATIBILITY RULE
+
+Never change:
+
+- IDs
+- state structure without migration
+- core schema without version bump
+
+Save files must always be backward compatible.
+
+---
+
+# 17. SECURITY RULE
+
+UI must never directly modify:
+
+- money
+- units
+- regions
+- combat state
+
+Only engine can do that.
+
+---
+
+# 18. SCALABILITY RULE
+
+Code must support future:
+
+- multiplayer
+- AI
+- modding
+- DLC scenarios
+
+Without refactoring core engine.
+
+---
+
+# 19. GOLDEN RULE
+
+If unsure:
+
+STOP
+
+Do not guess gameplay.
+
+Ask for clarification.
+
+---
+
+END OF DOCUMENT

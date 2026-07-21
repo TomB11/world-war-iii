@@ -1,0 +1,43 @@
+:host {
+  display: contents;
+}
+
+.victory-banner {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(5, 6, 10, 0.82);
+}
+
+.victory-banner__card {
+  text-align: center;
+  padding: 40px 64px;
+  background: var(--wwiii-bg-panel);
+  border: 1px solid var(--wwiii-accent);
+  border-radius: 10px;
+  box-shadow: 0 0 60px rgba(224, 172, 77, 0.25);
+}
+
+.victory-banner__kicker {
+  margin: 0 0 8px;
+  color: var(--wwiii-text-dim);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.victory-banner__winner {
+  margin: 0 0 12px;
+  color: var(--wwiii-accent);
+  font-size: 36px;
+  letter-spacing: 0.04em;
+}
+
+.victory-banner__detail {
+  margin: 0;
+  color: var(--wwiii-text);
+  font-size: 14px;
+}

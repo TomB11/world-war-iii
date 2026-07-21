@@ -1,0 +1,63 @@
+@if (hasContent() && store.activePlayer(); as player) {
+  <div class="panel">
+    @if (isDeployPhase()) {
+      <h2>Deploy Units</h2>
+      @if (reserveEntries().length > 0 && (deployableRegions().length > 0 || deployableSeaZones().length > 0)) {
+        <div class="deploy-form">
+          <select [ngModel]="selectedUnitId()" (ngModelChange)="onSelectUnit($event)">
+            <option value="" disabled>Select unit…</option>
+            @for (entry of reserveEntries(); track entry.unitId) {
+              <option [value]="entry.unitId">{{ unitName(entry.unitId) }} (× {{ entry.quantity }})</option>
+            }
+          </select>
+          <select [ngModel]="selectedRegionId()" (ngModelChange)="selectedRegionId.set($event)">
+            @if (isSelectedUnitNaval()) {
+              <option value="" disabled>Select sea zone…</option>
+              @for (zone of deployableSeaZones(); track zone.id) {
+                <option [value]="zone.id">Sea Zone {{ zone.label }}</option>
+              }
+            } @else {
+              <option value="" disabled>Select factory region…</option>
+              @for (region of deployableRegions(); track region.id) {
+                <option [value]="region.id">{{ region.name }}</option>
+              }
+            }
+          </select>
+          <button type="button" [disabled]="!selectedUnitId() || !selectedRegionId()" (click)="deploy(player.id)">
+            Deploy
+          </button>
+        </div>
+      } @else {
+        <p class="hint">Need Reserve units and a controlled factory region to deploy.</p>
+      }
+    } @else {
+      <h2>Transports</h2>
+      <ul class="unit-list">
+        @for (transport of loadedTransports(); track transport.id) {
+          <li class="unit-row">
+            <div class="unit-summary">{{ unitName(transport.unitId) }} @ {{ regionName(transport.regionId) }}</div>
+            @for (embarked of embarkedUnits(transport.id); track embarked.id) {
+              <div class="embarked-row">
+                {{ unitName(embarked.unitId) }}
+                @if (unloadDestinations(embarked.id).length > 0) {
+                  <select #dest>
+                    @for (regionId of unloadDestinations(embarked.id); track regionId) {
+                      <option [value]="regionId">{{ regionName(regionId) }}</option>
+                    }
+                  </select>
+                  <button type="button" (click)="unload(player.id, embarked.id, dest.value)">Unload</button>
+                } @else {
+                  <span class="hint">no adjacent coast</span>
+                }
+              </div>
+            }
+          </li>
+        }
+      </ul>
+    }
+
+    @if (store.movementRejectionReason(); as reason) {
+      <p class="rejection">{{ reason }}</p>
+    }
+  </div>
+}

@@ -1,0 +1,467 @@
+# WORLD WAR III
+# IMPLEMENTATION PLAN
+Version 2.0 — phase order and per-unit rules updated to match PROJECT_RULES.md v2.0
+
+---
+
+# 0. OBJECTIVE
+
+Build a fully playable PC strategy game in Angular 20.
+
+Start with a minimal playable prototype.
+
+Gradually expand into full-scale strategy game.
+
+Each phase must produce a working build.
+
+---
+
+# 1. DEVELOPMENT STRATEGY
+
+The project follows incremental vertical slices:
+
+Each phase adds:
+
+- New systems
+- Fully working gameplay
+- No broken intermediate states
+
+Never build incomplete systems.
+
+---
+
+# 2. PHASE OVERVIEW
+
+## PHASE 1 — CORE ENGINE FOUNDATION
+
+### GOAL:
+Create a working Angular 20 project with a functional game loop.
+
+---
+
+### DELIVERABLES:
+
+- Angular 20 project setup
+- Folder structure (PROJECT_STRUCTURE.md)
+- Basic Game Engine skeleton
+- Signal-based state system
+- JSON loader system
+- Basic map renderer (static data)
+
+---
+
+### GAMEPLAY:
+
+- Game loads
+- Map is displayed
+- Regions are clickable
+- No combat yet
+- No economy yet
+
+---
+
+### DONE WHEN:
+
+- You can start game
+- You can click regions
+- State updates correctly
+
+---
+
+# PHASE 2 — WORLD MAP SYSTEM
+
+### GOAL:
+Playable map interaction system
+
+---
+
+### DELIVERABLES:
+
+- Region rendering from JSON
+- Country ownership system
+- Region selection system
+- Neighbor detection
+- Basic UI panel
+- [DONE] White-star victory regions (PROJECT_RULES.md section 2):
+  Region.isVictoryStar, GameStore.victoryStatus (live-derived solo/team win
+  check), a full-screen victory banner. Team alliances live on
+  Faction.teamId. 19 of ~24 stars visible on the map art are marked — see
+  section 2's implementation-status note for the handful still unresolved.
+- [DONE] Neutral regions start with a standing garrison (3 Infantry,
+  2 Tanks, 1 Helicopter — data/economy.json "neutralArmy") rather than
+  being empty; attacking or politically influencing one means fighting or
+  inheriting a real army (PROJECT_RULES.md section 2).
+
+---
+
+### GAMEPLAY:
+
+- Select region
+- View region info
+- Highlight neighbors
+- Neutral countries fight back when attacked, and a captured white-star
+  region visibly moves a faction (or team) closer to winning
+
+---
+
+### DONE WHEN:
+
+- Full map is interactive
+- Victory triggers reliably once the star-region thresholds are met
+
+---
+
+# PHASE 3 — ECONOMY SYSTEM
+
+### GOAL:
+Introduce resources and money system
+
+---
+
+### DELIVERABLES:
+
+- Income calculation engine
+- Economy JSON
+- Purchase system
+- Player treasury system
+- Citizen Satisfaction track (PROJECT_RULES.md section 5): decay, income
+  bonus/victory-point zones, 3-level rebellion (income halving + rebel army
+  spawn), Public Spending (RaiseCitizenSatisfactionCommand, 1 money = 1
+  point, resets rebellionLevel above the red zone), and capture-triggered
+  drops for both attacker and previous owner (AttackCommand).
+
+---
+
+### GAMEPLAY:
+
+- Players gain income each turn
+- Players can buy units
+- Units stored in reserve
+- A player's income visibly rises or falls with their Citizen Satisfaction,
+  and sustained neglect spawns a hostile rebel army in their own capital
+- Players can spend treasury during Buy Units to keep Citizen Satisfaction
+  from decaying into rebellion, or to build a buffer against the morale hit
+  of losing a region by force
+
+---
+
+### DONE WHEN:
+
+- Full economy loop works
+- Public spending is purchasable and resets rebellionLevel when it crosses
+  back above the red zone
+
+---
+
+# PHASE 4 — TURN SYSTEM
+
+### GOAL:
+Full turn-based gameplay loop
+
+---
+
+### DELIVERABLES:
+
+- Turn engine
+- Phase system (PROJECT_RULES.md section 3):
+  - Buy Units
+  - Cyber Attack
+  - Attack Moves
+  - Attack
+  - Tactical Moves
+  - Place New Units
+  - Collect Income (last, not first)
+
+---
+
+### GAMEPLAY:
+
+- Multiple players take turns
+- Game progresses correctly
+- Income funds NEXT turn's purchases, not this one
+
+---
+
+### DONE WHEN:
+
+- Full turn cycle works
+
+---
+
+# PHASE 5 — UNIT MOVEMENT
+
+### GOAL:
+Enable unit movement across map
+
+---
+
+### DELIVERABLES:
+
+- Movement engine, usable during both Attack Moves and Tactical Moves phases
+- Land movement rules
+- Sea movement rules
+- Air movement rules
+- Transport system (basic)
+- Starting deployment (PROJECT_RULES.md section 33): each faction's fixed
+  starting roster pre-placed across its regions/sea zones at game init,
+  driven entirely by data/starting-deployment.json
+- Tactical Moves restricted to units that did NOT fight this turn, and only
+  into territory the player already owns (PROJECT_RULES.md section 17)
+- Turn-start automatic income crediting: the engine credits the incoming
+  player's treasury as soon as their turn begins, so money is ready for
+  that same turn's Buy Units Phase (PROJECT_RULES.md section 19)
+- Basic Attack command (PROJECT_RULES.md section 8): capture an undefended
+  neighboring enemy region — a vertical slice ahead of full Phase 6 combat,
+  not a replacement for it (see Phase 6 below)
+
+---
+
+### GAMEPLAY:
+
+- Units move between regions
+- Movement limits enforced
+- Game starts with each faction's units already on the map, not empty
+- A player's income is already in their treasury when their Buy Units Phase
+  starts, with no manual "collect" step
+- Units may attack an adjacent enemy region during the Attack Phase; if it
+  is undefended it is captured immediately, if defended the attack is
+  rejected (real combat resolution is Phase 6 work)
+
+---
+
+### DONE WHEN:
+
+- Units move correctly
+- Starting deployment matches the recommended setup table
+- Tactical Moves and Attack Phase enforce the rules above
+
+---
+
+# PHASE 6 — COMBAT SYSTEM (CORE)
+
+### GOAL:
+Implement full Axis & Allies style combat
+
+STATUS: a minimal vertical slice already exists (Phase 5's AttackCommand) —
+attacking an undefended region auto-captures it. Attacking a DEFENDED
+region is currently rejected outright with no resolution. This phase
+replaces that rejection with real dice-based combat.
+
+---
+
+### DELIVERABLES:
+
+- Combat engine
+- Dice system
+- Attack/defense resolution
+- Casualty system (including multi-hit-point units, PROJECT_RULES.md section 12)
+- Retreat system
+- Per-unit special rules (PROJECT_RULES.md sections 20-30):
+  - Infantry airborne upgrade
+  - Tank capture-through (unoccupied first region)
+  - Helicopter (no capture, +1 vs Submarine)
+  - Submarine submerge (vs no Helicopter/Stealth Boat present)
+  - Stealth Boat (transfer land unit OR carry Helicopter)
+  - Destroyer (either missile type, carries 2 Rocket Systems)
+  - Fighter (must land friendly, can't land where it just fought)
+  - Rocket System (+1 vs Fighter, defends against enemy missiles)
+  - Land Transport Carrier / Super Aircraft Carrier capacity + HP rules
+
+---
+
+### GAMEPLAY:
+
+- Battles resolve turn-based
+- Units die correctly
+- Combat is deterministic
+
+---
+
+### DONE WHEN:
+
+- Fully working battles exist
+
+---
+
+# PHASE 7 — MISSILES SYSTEM
+
+### GOAL:
+Introduce missile warfare
+
+---
+
+### DELIVERABLES:
+
+- Missile A system (adjacent region only)
+- Missile B system (range 2, may fly over one intermediate region)
+- Rocket System unit logic (must carry a missile 1 full turn before firing)
+- Missile targeting system
+- Missiles resolve FIRST in the Attack Phase (PROJECT_RULES.md section 15)
+
+---
+
+### GAMEPLAY:
+
+- Players can launch missiles
+- Missiles resolve before other combat
+
+---
+
+### DONE WHEN:
+
+- Missile attacks work correctly
+
+---
+
+# PHASE 8 — AIR & SEA EXPANSION
+
+### GOAL:
+Full multi-domain warfare
+
+---
+
+### DELIVERABLES:
+
+- Aircraft carrier transport system
+- Air combat rules
+- Naval combat rules
+- Transport rules refinement
+
+---
+
+### GAMEPLAY:
+
+- Air + sea + land fully integrated
+
+---
+
+# PHASE 9 — CYBER WARFARE SYSTEM
+
+### GOAL:
+Introduce non-physical warfare
+
+STATUS: Cyber Attack Phase (Hacking + Political Influence) and Hack Level
+tracking are DONE — implemented ahead of schedule alongside the Phase 3
+economy work (HackCommand, PoliticalInfluenceCommand). Citizen/Public
+Spending, originally also planned here, is tracked under Phase 3 instead
+(it's an economy mechanic, not a Cyber Attack Phase action) — see that
+phase's deliverables. Factory sabotage and a general probability engine
+remain outstanding.
+
+---
+
+### DELIVERABLES:
+
+- [DONE] Cyber Attack Phase (PROJECT_RULES.md section 6)
+- [DONE] Hacking: spend a flat cost, roll vs target's Hack Level, on
+  success the target rolls and pays that amount (clamped to their
+  treasury)
+- [DONE] Political Influence: roll <= threshold to place an influence
+  token on a neutral region; ownership flips once a faction holds 2+ more
+  tokens there than anyone else, with any garrisoned units defecting
+- [DONE] Per-player Hack Level tracking (raising it is still a future
+  upgrade path, not implemented)
+- Factory sabotage
+- Probability engine
+
+---
+
+### GAMEPLAY:
+
+- Players can disrupt enemies indirectly
+- Neutral countries can be flipped politically instead of only by force
+
+---
+
+# PHASE 10 — SAVE / LOAD SYSTEM
+
+### GOAL:
+Persistent gameplay
+
+---
+
+### DELIVERABLES:
+
+- Save JSON structure
+- Load system
+- Game state serialization
+- Versioning system
+
+---
+
+### GAMEPLAY:
+
+- Game can be saved and resumed
+
+---
+
+# PHASE 11 — UI POLISH
+
+### GOAL:
+Make game playable and readable
+
+---
+
+### DELIVERABLES:
+
+- HUD panels
+- Combat overlay
+- Selection system
+- Animations (basic)
+
+---
+
+# PHASE 12 — POLISH & BALANCE
+
+### GOAL:
+Make game feel complete
+
+---
+
+### DELIVERABLES:
+
+- Balance tuning via JSON
+- Bug fixes
+- Performance optimization
+- UI improvements
+
+---
+
+# PHASE 13 — FUTURE READY LAYER
+
+### GOAL:
+Prepare for expansion
+
+---
+
+### DELIVERABLES:
+
+- AI-ready architecture
+- Multiplayer-ready state system
+- Modding support
+- Scenario system
+
+---
+
+# 3. DEVELOPMENT RULES
+
+- Every phase must compile
+- No skipping phases
+- No partial features
+- No placeholder systems
+- No hardcoded logic
+- Everything must be data-driven
+
+---
+
+# 4. GOLDEN RULE
+
+If a phase is not fully working:
+
+DO NOT MOVE FORWARD
+
+Fix it first.
+
+---
+
+END OF DOCUMENT

@@ -1,0 +1,60 @@
+:host {
+  display: block;
+}
+
+.panel {
+  background: var(--wwiii-bg-panel);
+  border: 1px solid var(--wwiii-border);
+  border-radius: 6px;
+  padding: 16px;
+}
+
+.player-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.flag {
+  width: 36px;
+  height: 24px;
+  object-fit: cover;
+  border: 1px solid var(--wwiii-border);
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+h2 {
+  margin: 0 0 4px;
+  color: var(--wwiii-accent);
+  font-size: 18px;
+}
+
+.phase-label {
+  margin: 0;
+  color: var(--wwiii-text-dim);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 12px;
+  margin: 0;
+}
+
+dt {
+  color: var(--wwiii-text-dim);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+dd {
+  margin: 0;
+  font-size: 14px;
+  text-align: right;
+}

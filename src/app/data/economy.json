@@ -1,0 +1,35 @@
+{
+  "startingTreasury": 0,
+  "startingHackLevel": 1,
+  "startingCitizenSatisfaction": 30,
+  "citizenSatisfactionMin": 1,
+  "citizenSatisfactionMax": 80,
+  "citizenSatisfactionDecayPerTurn": 5,
+  "citizenSatisfactionZones": {
+    "rebellion": { "min": 1, "max": 20 },
+    "neutral": { "min": 21, "max": 40 },
+    "incomeBonusLow": { "min": 41, "max": 50, "incomeBonus": 2 },
+    "incomeBonusHigh": { "min": 51, "max": 60, "incomeBonus": 3 },
+    "victoryPointsLow": { "min": 61, "max": 70, "victoryPoints": 2 },
+    "victoryPointsHigh": { "min": 71, "max": 80, "victoryPoints": 2 }
+  },
+  "rebelArmy": [
+    { "unitId": "infantry", "quantity": 3 },
+    { "unitId": "tank", "quantity": 2 }
+  ],
+  "neutralArmy": [
+    { "unitId": "infantry", "quantity": 3 },
+    { "unitId": "tank", "quantity": 2 },
+    { "unitId": "helicopter", "quantity": 1 }
+  ],
+  "captureSatisfactionPenaltyAttacker": 5,
+  "captureSatisfactionPenaltyDefender": 2,
+  "cyberAttackCost": 3,
+  "politicalInfluenceThreshold": 3,
+  "politicalInfluenceMajority": 2,
+  "soloVictoryStarCount": 7,
+  "teamVictoryStarCount": 15,
+  "hackLevelUpgradeCost": 10,
+  "hackLevelMax": 4,
+  "infantryAirborneUpgradeCost": 5
+}

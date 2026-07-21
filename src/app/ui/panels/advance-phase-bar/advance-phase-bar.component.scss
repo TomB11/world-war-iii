@@ -1,0 +1,28 @@
+:host {
+  display: block;
+  margin-top: auto;
+}
+
+.advance-btn {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--wwiii-text);
+  background: var(--wwiii-bg);
+  border: 1px solid var(--wwiii-border);
+  border-radius: 4px;
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--wwiii-accent);
+    color: var(--wwiii-accent);
+  }
+}
+
+.rejection {
+  color: var(--wwiii-danger);
+  font-size: 12px;
+  margin: 6px 0 0;
+  text-align: center;
+}

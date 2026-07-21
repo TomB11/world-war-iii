@@ -1,0 +1,104 @@
+:host {
+  display: block;
+}
+
+.panel {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 28px;
+  padding: 12px 20px;
+  background: var(--wwiii-bg-panel);
+  border-top: 1px solid var(--wwiii-border);
+}
+
+h2 {
+  margin: 0;
+  color: var(--wwiii-accent);
+  font-size: 16px;
+  white-space: nowrap;
+}
+
+dl {
+  display: contents;
+}
+
+dt,
+dd {
+  display: inline;
+  margin: 0;
+  font-size: 13px;
+}
+
+dt {
+  color: var(--wwiii-text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-right: 6px;
+}
+
+.units-label {
+  color: var(--wwiii-accent);
+  font-weight: 600;
+
+  &.combat {
+    color: var(--wwiii-danger);
+  }
+}
+
+.units-value {
+  font-weight: 600;
+}
+
+.combat-line {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+}
+
+.combat-symbol {
+  font-size: 18px;
+  color: var(--wwiii-danger);
+  padding: 0 4px;
+}
+
+.unit-list {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  li {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+  }
+}
+
+.token-list {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  li {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+  }
+}
+
+.token-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid rgba(230, 233, 240, 0.5);
+  flex-shrink: 0;
+}

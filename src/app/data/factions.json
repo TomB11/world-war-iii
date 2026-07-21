@@ -1,0 +1,10 @@
+{
+  "factions": [
+    { "id": "euto", "name": "EUTO", "color": "#3d6fb4", "capitalRegionId": "c-east-europe", "teamId": "team-west" },
+    { "id": "usa", "name": "United States", "color": "#4a9c3f", "capitalRegionId": "south-usa", "teamId": "team-west" },
+    { "id": "russia", "name": "Russian Federation", "color": "#7a1f1f", "capitalRegionId": "russia", "teamId": "team-east" },
+    { "id": "china", "name": "China", "color": "#d6362a", "capitalRegionId": "north-china", "teamId": "team-east" },
+    { "id": "seato", "name": "SEATO", "color": "#d98a2b", "capitalRegionId": "great-india", "teamId": "team-west" },
+    { "id": "arabia-league", "name": "Arabia League", "color": "#c9a227", "capitalRegionId": "center-arabia", "teamId": "team-east" }
+  ]
+}

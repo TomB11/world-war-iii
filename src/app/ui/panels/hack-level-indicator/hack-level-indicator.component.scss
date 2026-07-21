@@ -1,0 +1,32 @@
+:host {
+  display: block;
+}
+
+.hack-level {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hack-level__label {
+  color: var(--wwiii-text-dim);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.hack-level__value {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  color: var(--wwiii-text);
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--wwiii-bg);
+  border: 1px solid var(--wwiii-border);
+  border-radius: 3px;
+}

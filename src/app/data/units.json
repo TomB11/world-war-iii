@@ -1,0 +1,145 @@
+{
+  "units": [
+    {
+      "id": "infantry",
+      "name": "Infantry",
+      "category": "land",
+      "cost": 5,
+      "attack": 1,
+      "defense": 2,
+      "movement": 1,
+      "transportCapacity": 0
+    },
+    {
+      "id": "infantry-airborne",
+      "name": "Airborne Infantry",
+      "category": "air",
+      "cost": 10,
+      "attack": 1,
+      "defense": 2,
+      "movement": 3,
+      "transportCapacity": 0
+    },
+    {
+      "id": "tank",
+      "name": "Tank",
+      "category": "land",
+      "cost": 8,
+      "attack": 3,
+      "defense": 3,
+      "movement": 2,
+      "transportCapacity": 0,
+      "captureThrough": true
+    },
+    {
+      "id": "helicopter",
+      "name": "Helicopter",
+      "category": "air",
+      "cost": 7,
+      "attack": 3,
+      "defense": 2,
+      "movement": 3,
+      "transportCapacity": 0,
+      "canCapture": false
+    },
+    {
+      "id": "submarine",
+      "name": "Submarine",
+      "category": "naval",
+      "cost": 8,
+      "attack": 2,
+      "defense": 2,
+      "movement": 2,
+      "transportCapacity": 0
+    },
+    {
+      "id": "stealth-boat",
+      "name": "Stealth Boat",
+      "category": "naval",
+      "cost": 10,
+      "attack": 3,
+      "defense": 3,
+      "movement": 2,
+      "transportCapacity": 2,
+      "transportLandCapacity": 1,
+      "transportAirCapacity": 1
+    },
+    {
+      "id": "destroyer",
+      "name": "Destroyer",
+      "category": "naval",
+      "cost": 15,
+      "attack": 5,
+      "defense": 4,
+      "movement": 2,
+      "transportCapacity": 0
+    },
+    {
+      "id": "fighter",
+      "name": "Fighter",
+      "category": "air",
+      "cost": 10,
+      "attack": 4,
+      "defense": 4,
+      "movement": 4,
+      "transportCapacity": 0,
+      "requiresCarrier": true
+    },
+    {
+      "id": "rocket-system",
+      "name": "Rocket System",
+      "category": "support",
+      "cost": 10,
+      "attack": 0,
+      "defense": 2,
+      "movement": 1,
+      "transportCapacity": 0,
+      "canDeclareMissile": true
+    },
+    {
+      "id": "land-transport",
+      "name": "Land Transport",
+      "category": "naval",
+      "cost": 15,
+      "attack": 0,
+      "defense": 1,
+      "movement": 2,
+      "transportCapacity": 3,
+      "transportLandCapacity": 2,
+      "transportAirCapacity": 1
+    },
+    {
+      "id": "aircraft-carrier",
+      "name": "Aircraft Carrier",
+      "category": "naval",
+      "cost": 18,
+      "attack": 0,
+      "defense": 1,
+      "movement": 2,
+      "transportCapacity": 3,
+      "transportLandCapacity": 0,
+      "transportAirCapacity": 3,
+      "transportAcceptsFighters": true
+    },
+    {
+      "id": "missile-a",
+      "name": "Missile Type A",
+      "category": "missile",
+      "cost": 15,
+      "attack": 2,
+      "defense": 0,
+      "movement": 0,
+      "transportCapacity": 0
+    },
+    {
+      "id": "missile-b",
+      "name": "Missile Type B",
+      "category": "missile",
+      "cost": 20,
+      "attack": 4,
+      "defense": 0,
+      "movement": 0,
+      "transportCapacity": 0
+    }
+  ]
+}

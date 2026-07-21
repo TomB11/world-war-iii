@@ -1,0 +1,26 @@
+@if (store.state(); as state) {
+  <div class="panel">
+    <div class="player-header">
+      <img class="flag" [src]="flagPath()" alt="" />
+      <div>
+        <h2>Turn {{ state.turnNumber }} — {{ store.activePlayer()?.displayName }}</h2>
+        <p class="phase-label">{{ phaseLabel() }}</p>
+      </div>
+    </div>
+
+    @if (store.activePlayer(); as player) {
+      <dl>
+        <dt>Treasury</dt>
+        <dd>{{ treasury() }}</dd>
+        <dt>Income</dt>
+        <dd>+{{ store.projectedIncome() }} / turn</dd>
+        <dt>Regions</dt>
+        <dd>{{ ownedRegionCount() }}</dd>
+        <dt>Victory Stars</dt>
+        <dd>{{ ownedVictoryStarCount() }}</dd>
+        <dt>Reserve</dt>
+        <dd>{{ reserveCount() }} unit(s)</dd>
+      </dl>
+    }
+  </div>
+}

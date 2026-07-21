@@ -1,0 +1,54 @@
+/* World War III - Global Styles */
+/* No Angular Material. No Bootstrap. No jQuery. Hand-rolled game UI only. */
+
+:root {
+  --wwiii-bg: #0b0e14;
+  --wwiii-bg-panel: #131826;
+  --wwiii-border: #2a3348;
+  --wwiii-text: #e6e9f0;
+  --wwiii-text-dim: #8a92a6;
+  --wwiii-accent: #c8963e;
+  --wwiii-accent-hover: #e0ac4d;
+  --wwiii-danger: #b8433f;
+  --wwiii-success: #4c9a5b;
+  --wwiii-font: 'Segoe UI', Roboto, system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: var(--wwiii-bg);
+  color: var(--wwiii-text);
+  font-family: var(--wwiii-font);
+  overflow: hidden;
+}
+
+wwiii-root {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--wwiii-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--wwiii-border);
+  border-radius: 4px;
+}

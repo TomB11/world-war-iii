@@ -1,0 +1,26 @@
+@if (store.activePlayer(); as player) {
+  <div class="satisfaction-track" [title]="'Citizen Satisfaction: ' + satisfaction() + ' / 80'">
+    <span class="satisfaction-track__label">Satisfaction</span>
+
+    <div class="satisfaction-track__bar">
+      @for (zone of zones(); track zone.key) {
+        <div class="satisfaction-track__zone" [style.background]="zone.color" [style.width.%]="zone.widthPercent"></div>
+      }
+      <div class="satisfaction-track__marker" [style.left.%]="markerPercent()"></div>
+    </div>
+
+    <span class="satisfaction-track__value">{{ satisfaction() }}</span>
+
+    @if (rebellionLevel() > 0) {
+      <span class="satisfaction-track__rebellion" [title]="'Rebellion level ' + rebellionLevel() + ' of 3'">
+        ⚑ {{ rebellionLevel() }}/3
+      </span>
+    }
+
+    @if (victoryPoints() > 0) {
+      <span class="satisfaction-track__vp" title="Victory points earned from Citizen Satisfaction">
+        VP {{ victoryPoints() }}
+      </span>
+    }
+  </div>
+}

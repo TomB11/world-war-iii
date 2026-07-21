@@ -1,0 +1,71 @@
+@if (store.activePlayer(); as player) {
+  <div class="panel">
+    <h2>Cyber Attack</h2>
+
+    @if (isCyberAttackPhase() && player.hasUsedCyberAttackThisTurn) {
+      <p class="hint">You've already used your Cyber Attack action this turn.</p>
+    } @else if (isCyberAttackPhase()) {
+      <p class="hint">Each attempt costs {{ cost() }} money, win or lose. You get one attempt per turn.</p>
+
+      <h3>Hacking</h3>
+      @if (hackTargets().length > 0) {
+        <div class="cyber-form">
+          <select [ngModel]="hackTargetId()" (ngModelChange)="hackTargetId.set($event)">
+            <option value="" disabled>Select target…</option>
+            @for (target of hackTargets(); track target.id) {
+              <option [value]="target.id">
+                {{ target.displayName }} (Hack Level {{ target.hackLevel }}, treasury {{ target.treasury }})
+              </option>
+            }
+          </select>
+          <button type="button" [disabled]="!hackTargetId()" (click)="attemptHack(player.id)">
+            Attempt Hack
+          </button>
+        </div>
+      } @else {
+        <p class="hint">No other factions to target.</p>
+      }
+
+      <h3>Political Influence</h3>
+      @if (neutralRegions().length > 0) {
+        <div class="cyber-form">
+          <select [ngModel]="influenceTargetId()" (ngModelChange)="influenceTargetId.set($event)">
+            <option value="" disabled>Select neutral region…</option>
+            @for (region of neutralRegions(); track region.id) {
+              <option [value]="region.id">{{ region.name }}</option>
+            }
+          </select>
+          <button type="button" [disabled]="!influenceTargetId()" (click)="attemptPoliticalInfluence(player.id)">
+            Attempt Influence
+          </button>
+        </div>
+        @if (influenceTargetId()) {
+          <p class="hint">Current tokens: {{ influenceTokensForId(influenceTargetId()) }}</p>
+        }
+      } @else {
+        <p class="hint">No neutral regions remain.</p>
+      }
+
+      <h3>Upgrade Hack Level</h3>
+      <div class="cyber-form">
+        <span class="hint">Current: {{ player.hackLevel }} / {{ hackLevelMax() }}</span>
+        <button
+          type="button"
+          [disabled]="player.hackLevel >= hackLevelMax()"
+          (click)="attemptUpgradeHackLevel(player.id)"
+        >
+          Upgrade for {{ hackUpgradeCost() }}
+        </button>
+      </div>
+    } @else {
+      <p class="hint">Available during the Cyber Attack Phase.</p>
+    }
+
+    @if (store.cyberAttackRejectionReason(); as reason) {
+      <p class="rejection">{{ reason }}</p>
+    }
+    @if (store.cyberAttackResultMessage(); as message) {
+      <p class="result">{{ message }}</p>
+    }
+  </div>
+}

@@ -1,0 +1,187 @@
+@if (store.combatRegionId()) {
+  <div class="combat-board">
+    <div class="combat-board__card">
+      <button type="button" class="combat-board__close" title="Close and return to the map" (click)="close()">
+        ✕
+      </button>
+
+      <p class="combat-board__region">{{ region()?.name }}</p>
+
+      <header class="combat-board__side combat-board__side--attacker">
+        <h1>Attacker</h1>
+        <p class="combat-board__side-name">{{ attackerName() }}</p>
+      </header>
+
+      <div class="combat-board__columns">
+        @for (value of columns; track value) {
+          <div class="combat-board__column">
+            <div class="combat-board__casualties">
+              @for (unit of attackerCasualtyColumn(value); track unit.instanceId) {
+                <span class="combat-board__casualty" [title]="unit.unitName + ' (casualty)'">
+                  <wwiii-unit-icon [unitId]="unit.unitId" [color]="unit.color" [size]="20" />
+                  @if (attackerRollFor(unit.instanceId); as rollInfo) {
+                    <span class="combat-board__roll" [class.combat-board__roll--hit]="rollInfo.hit">{{
+                      rollInfo.roll
+                    }}</span>
+                  }
+                </span>
+              }
+            </div>
+            <div class="combat-board__badge">{{ value }}</div>
+            <div class="combat-board__units">
+              @for (unit of attackerColumn(value); track unit.instanceId) {
+                <button
+                  type="button"
+                  class="combat-board__unit"
+                  [class.combat-board__unit--clickable]="attackerClickable()"
+                  [disabled]="!attackerClickable()"
+                  [title]="unit.unitName"
+                  (click)="removeCasualty(unit)"
+                >
+                  <wwiii-unit-icon [unitId]="unit.unitId" [color]="unit.color" [size]="28" />
+                  @if (attackerRollFor(unit.instanceId); as rollInfo) {
+                    <span class="combat-board__roll" [class.combat-board__roll--hit]="rollInfo.hit">{{
+                      rollInfo.roll
+                    }}</span>
+                  }
+                </button>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      @if (attackerNonCombatants().length > 0) {
+        <p class="combat-board__note">
+          Non-combat: {{ attackerNonCombatants().length }} unit(s) present but cannot attack.
+        </p>
+      }
+
+      <div class="combat-board__status">
+        @if (missileResult(); as missile) {
+          <p class="combat-board__missile-result">
+            @switch (missile.outcome) {
+              @case ('intercepted') {
+                🚀 {{ missileName(missile.missileId) }} was intercepted and destroyed before impact.
+              }
+              @case ('hit') {
+                🚀 {{ missileName(missile.missileId) }} struck home!
+              }
+              @case ('miss') {
+                🚀 {{ missileName(missile.missileId) }} missed its target.
+              }
+            }
+          </p>
+        }
+
+        @if (resolved()) {
+          <p class="combat-board__outcome">{{ store.combatOutcomeMessage() }}</p>
+          <button type="button" class="combat-board__btn" (click)="close()">Back to Map</button>
+        } @else if (pendingMissileChoice()) {
+          <p class="combat-board__prompt">
+            A Rocket System is declaring a missile strike here — choose which missile to fire, or resolve normal
+            combat instead.
+          </p>
+          <div class="combat-board__missile-choices">
+            @for (missile of reserveMissiles(); track missile.unitId) {
+              <button type="button" class="combat-board__btn" (click)="fireMissile(missile.unitId)">
+                Fire {{ missile.name }} (×{{ missile.quantity }})
+              </button>
+            }
+          </div>
+
+          @if (store.combatRejectionReason(); as reason) {
+            <p class="combat-board__rejection">{{ reason }}</p>
+          }
+        } @else {
+          <p class="combat-board__round">Round {{ round() }}</p>
+
+          @switch (step()) {
+            @case ('attackerRoll') {
+              <p class="combat-board__prompt">Attacker rolls — one d6 per attacking unit.</p>
+            }
+            @case ('defenderRoll') {
+              <p class="combat-board__prompt">Defender rolls — one d6 per defending unit.</p>
+            }
+            @case ('missileCasualty') {
+              <p class="combat-board__prompt combat-board__prompt--danger">
+                The missile hit — choose which defending unit is destroyed.
+              </p>
+            }
+            @case ('defenderCasualty') {
+              <p class="combat-board__prompt combat-board__prompt--danger">
+                Defender must remove {{ pendingDefenderCasualties() }}
+                casualt{{ pendingDefenderCasualties() === 1 ? 'y' : 'ies' }} — click a defending unit below.
+              </p>
+            }
+            @case ('attackerCasualty') {
+              <p class="combat-board__prompt combat-board__prompt--danger">
+                Attacker must remove {{ pendingAttackerCasualties() }}
+                casualt{{ pendingAttackerCasualties() === 1 ? 'y' : 'ies' }} — click an attacking unit above.
+              </p>
+            }
+          }
+
+          @if (store.combatRejectionReason(); as reason) {
+            <p class="combat-board__rejection">{{ reason }}</p>
+            <button type="button" class="combat-board__btn" (click)="close()">Back to Map</button>
+          }
+
+          @if (canRoll()) {
+            <button type="button" class="combat-board__btn" (click)="roll()">{{ rollLabel() }}</button>
+          }
+        }
+      </div>
+
+      @if (defenderNonCombatants().length > 0) {
+        <p class="combat-board__note">
+          Non-combat: {{ defenderNonCombatants().length }} unit(s) present but cannot defend.
+        </p>
+      }
+
+      <div class="combat-board__columns">
+        @for (value of columns; track value) {
+          <div class="combat-board__column">
+            <div class="combat-board__units">
+              @for (unit of defenderColumn(value); track unit.instanceId) {
+                <button
+                  type="button"
+                  class="combat-board__unit"
+                  [class.combat-board__unit--clickable]="defenderClickable()"
+                  [disabled]="!defenderClickable()"
+                  [title]="unit.unitName"
+                  (click)="removeCasualty(unit)"
+                >
+                  <wwiii-unit-icon [unitId]="unit.unitId" [color]="unit.color" [size]="28" />
+                  @if (defenderRollFor(unit.instanceId); as rollInfo) {
+                    <span class="combat-board__roll" [class.combat-board__roll--hit]="rollInfo.hit">{{
+                      rollInfo.roll
+                    }}</span>
+                  }
+                </button>
+              }
+            </div>
+            <div class="combat-board__badge">{{ value }}</div>
+            <div class="combat-board__casualties">
+              @for (unit of defenderCasualtyColumn(value); track unit.instanceId) {
+                <span class="combat-board__casualty" [title]="unit.unitName + ' (casualty)'">
+                  <wwiii-unit-icon [unitId]="unit.unitId" [color]="unit.color" [size]="20" />
+                  @if (defenderRollFor(unit.instanceId); as rollInfo) {
+                    <span class="combat-board__roll" [class.combat-board__roll--hit]="rollInfo.hit">{{
+                      rollInfo.roll
+                    }}</span>
+                  }
+                </span>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      <footer class="combat-board__side combat-board__side--defender">
+        <p class="combat-board__side-name">{{ defenderName() }}</p>
+        <h1>Defender</h1>
+      </footer>
+    </div>
+  </div>
+}

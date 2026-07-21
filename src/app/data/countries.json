@@ -1,0 +1,946 @@
+{
+  "regions": [
+    {
+      "id": "greenland",
+      "name": "Greenland",
+      "ownerId": "euto",
+      "value": 1,
+      "factory": 1,
+      "neighbors": [],
+      "position": {
+        "x": 0.1833,
+        "y": 0.012
+      },
+      "isVictoryStar": false
+    },
+    {
+      "id": "east-canada",
+      "name": "East Canada",
+      "ownerId": "euto",
+      "value": 2,
+      "factory": 1,
+      "neighbors": [
+        "north-usa",
+        "west-canada"
+      ],
+      "position": {
+        "x": 0.0795,
+        "y": 0.0735
+      },
+      "isVictoryStar": false
+    },
+    {
+      "id": "west-canada",
+      "name": "West Canada",
+      "ownerId": "euto",
+      "value": 2,
+      "factory": 1,
+      "neighbors": [
+        "alaska-usa",
+        "east-canada",
+        "west-usa"
+      ],
+      "position": {
+        "x": 0.9763,
+        "y": 0.068
+      },
+      "isVictoryStar": false
+    },
+    {
+      "id": "great-britain",
+      "name": "Great Britain",
+      "ownerId": "euto",
+      "value": 4,
+      "factory": 4,
+      "neighbors": [],
+      "position": {
+        "x": 0.2405,
+        "y": 0.1545
+      },
+      "iconAnchor": {
+        "x": 0.2555,
+        "y": 0.1865
+      },
+      "isVictoryStar": true
+    },
+    {
+      "id": "norway-sweden",
+      "name": "Norway Sweden",
+      "ownerId": "euto",
+      "value": 3,
+      "factory": 3,
+      "neighbors": [
+        "c-east-europe",
+        "great-finland"
+      ],
+      "position": {
+        "x": 0.3405,
+        "y": 0.0765
+      },
+      "isVictoryStar": false
+    },
+    {
+      "id": "great-finland",
+      "name": "Great Finland",
+      "ownerId": "euto",
+      "value": 2,
+      "factory": 2,
+      "neighbors": [
+        "norway-sweden",
+        "nwest-russia"
+      ],
+      "position": {
+        "x": 0.3645,
+        "y": 0.038
+      },
+      "isVictoryStar": false
+    },
+    {
+      "id": "west-europe",
+      "name": "West Europe",
+      "ownerId": "euto",
+      "value": 2,
+      "factory": 2,
+      "neighbors": [
+        "c-west-europe",
+        "nwest-africa"
+      ],
+      "position": {
+        "x": 0.258,
+        "y": 0.4465
+      },
+      "isVictoryStar": false
+    },
+    {
+      "id": "c-west-europe",
+      "name": "C. West Europe",
+      "ownerId": "euto",
+      "value": 5,
+      "factory": 5,
+      "neighbors": [
+        "c-east-europe",
+        "south-europe",
+        "west-europe"
+      ],
+      "position": {
+        "x": 0.282,
+        "y": 0.405
+      },
+      "isVictoryStar": true
+    },
+    {
+      "id": "c-east-europe",
+      "name": "C. East Europe",
+      "ownerId": "euto",
+      "value": 6,
+      "factory": 6,
+      "neighbors": [
+        "c-west-europe",
+        "east-europe",
+        "norway-sweden",
+        "south-europe"
+      ],
+      "position": {
+        "x": 0.3086,
+        "y": 0.3375
+      },
+      "isVictoryStar": true
+    },
+    {
+      "id": "east-europe",
+      "name": "East Europe",
+      "ownerId": "euto",
+      "value": 3,
+      "factory": 3,
+      "neighbors": [
+        "c-east-europe",
+        "cwest-russia",
+        "balkan-europe",
+        "swest-russia"
+      ],
+      "position": {
+        "x": 0.3645,
+        "y": 0.3498
+      },
+      "isVictoryStar": false
+    },
+    {
+      "id": "south-europe",
+      "name": "South Europe",
+      "ownerId": "euto",
+      "value": 3,
+      "factory": 3,
+      "neighbors": [
+        "balkan-europe",
+        "c-east-europe",
+        "c-west-europe",
+        "serbia-bosnia"
+      ],
+      "position": {
+        "x": 0.3115,
+        "y": 0.393
+      },
+      "isVictoryStar": false
+    },
+    {
+      "id": "balkan-europe",
+      "name": "Balkan Europe",
+      "ownerId": "euto",
+      "value": 2,
+      "factory": 2,
+      "neighbors": [
+        "serbia-bosnia",
+        "south-europe",
+        "turkey-europe",
+        "east-europe"
+      ],
+      "position": {
+        "x": 0.37335,
+        "y": 0.5
+      },
+      "isVictoryStar": false
+    },
+    {
+      "id": "turkey-europe",
+      "name": "Turkey Europe",
+      "ownerId": "euto",
+      "value": 2,
+      "factory": 2,
+      "neighbors": [
+        "balkan-europe",
+        "great-iran",
+        "north-arabia",
+        "swest-russia"
+      ],
+      "position": {
+        "x": 0.4051,
+        "y": 0.492
+      },
+      "isVictoryStar": false
+    },
+    {
+      "id": "north-usa",
+      "name": "North USA",
+      "ownerId": "usa",
+      "value": 5,
+      "factory": 5,
+      "neighbors": [
+        "east-canada",
+        "south-usa",
+        "west-usa"
+      ],
+      "position": {
+        "x": 0.0074,
+        "y": 0.3225
+      },
+      "isVictoryStar": false
+    },
+    {
+      "id": "south-usa",
+      "name": "South USA",
+      "ownerId": "usa",
+      "value": 6,
+      "factory": 6,
+      "neighbors": [
+        "middle-america",
+        "north-usa",
+        "west-usa"
+      ],
+      "position": {
+        "x": 0.0077,
+        "y": 0.4555
+      },
+      "isVictoryStar": true
+    },
+    {
+      "id": "alaska-usa",
+      "name": "Alaska USA",
+      "ownerId": "usa",
+      "value": 2,
+      "factory": 2,
+      "neighbors": [
+        "west-canada"
+      ],
+      "position": {
+        "x": 0.9095,
+        "y": 0.0678
+      },
+      "isVictoryStar": false
+    },
+    {
+      "id": "west-usa",
+      "name": "West USA",
+      "ownerId": "usa",
+      "value": 6,
+      "factory": 5,
+      "neighbors": [
+        "north-usa",
+        "south-usa",
+        "west-canada",
+        "middle-america"
+      ],
+      "position": {
+        "x": 0.9804,
+        "y": 0.308
+      },
+      "isVictoryStar": true
+    },
+    {
+      "id": "hawaii-usa",
+      "name": "Hawaii USA",
+      "ownerId": "usa",
+      "value": 3,
+      "factory": 2,
+      "neighbors": [],
+      "position": {
+        "x": 0.9182,
+        "y": 0.45695
+      },
+      "isVictoryStar": false
+    },
+    {
+      "id": "israel",
+      "name": "Israel",
+      "ownerId": "usa",
+      "value": 3,
+      "factory": 3,
+      "neighbors": [
+        "north-arabia",
+        "center-arabia"
+      ],
+      "position": {
+        "x": 0.8512,
+        "y": 0.8679
+      },
+      "isVictoryStar": true
+    },
+    {
+      "id": "nwest-russia",
+      "name": "N. West Russia",
+      "ownerId": "russia",
+      "value": 3,
+      "factory": 2,
+      "neighbors": [
+        "center-russia",
+        "cwest-russia",
+        "east-europe",
+        "great-finland",
+        "russia"
+      ],
+      "position": {
+        "x": 0.487,
+        "y": 0.066
+      },
+      "isVictoryStar": true
+    },
+    {
+      "id": "center-russia",
+      "name": "Center Russia",
+      "ownerId": "russia",
+      "value": 3,
+      "factory": 2,
+      "neighbors": [
+        "east-russia",
+        "nwest-russia",
+        "russia",
+        "seast-russia",
+        "mongolia-china",
+        "north-china"
+      ],
+      "position": {
+        "x": 0.6304,
+        "y": 0.071
+      },
+      "isVictoryStar": false
+    },
+    {
+      "id": "cwest-russia",
+      "name": "C. West Russia",
+      "ownerId": "russia",
+      "value": 3,
+      "factory": 3,
+      "neighbors": [
+        "nwest-russia",
+        "russia",
+        "swest-russia",
+        "east-europe"
+      ],
+      "position": {
+        "x": 0.43,
+        "y": 0.183
+      },
+      "isVictoryStar": true
+    },
+    {
+      "id": "russia",
+      "name": "Russia",
+      "ownerId": "russia",
+      "value": 6,
+      "factory": 6,
+      "neighbors": [
+        "center-russia",
+        "cwest-russia",
+        "nwest-russia",
+        "seast-russia",
+        "swest-russia"
+      ],
+      "position": {
+        "x": 0.5454,
+        "y": 0.2485
+      },
+      "isVictoryStar": true
+    },
+    {
+      "id": "swest-russia",
+      "name": "S. West Russia",
+      "ownerId": "russia",
+      "value": 3,
+      "factory": 3,
+      "neighbors": [
+        "cwest-russia",
+        "great-iran",
+        "russia",
+        "seast-russia",
+        "turkey-europe",
+        "east-europe"
+      ],
+      "position": {
+        "x": 0.4905,
+        "y": 0.3955
+      },
+      "isVictoryStar": false
+    },
+    {
+      "id": "seast-russia",
+      "name": "S. East Russia",
+      "ownerId": "russia",
+      "value": 3,
+      "factory": 3,
+      "neighbors": [
+        "russia",
+        "swest-russia",
+        "center-russia",
+        "great-iran",
+        "west-china"
+      ],
+      "position": {
+        "x": 0.5215,
+        "y": 0.38
+      },
+      "isVictoryStar": false
+    },
+    {
+      "id": "east-russia",
+      "name": "East Russia",
+      "ownerId": "russia",
+      "value": 3,
+      "factory": 2,
+      "neighbors": [
+        "center-russia",
+        "north-china"
+      ],
+      "position": {
+        "x": 0.7458,
+        "y": 0.054
+      },
+      "isVictoryStar": true
+    },
+    {
+      "id": "north-samerica",
+      "name": "North S. America",
+      "ownerId": "russia",
+      "value": 2,
+      "factory": 2,
+      "neighbors": [
+        "east-samerica",
+        "west-samerica",
+        "middle-america"
+      ],
+      "position": {
+        "x": 0.078,
+        "y": 0.623
+      },
+      "isVictoryStar": false
+    },
+    {
+      "id": "north-china",
+      "name": "North China",
+      "ownerId": "china",
+      "value": 6,
+      "factory": 6,
+      "neighbors": [
+        "east-china",
+        "east-russia",
+        "mongolia-china",
+        "north-korea",
+        "center-china",
+        "center-russia"
+      ],
+      "position": {
+        "x": 0.709,
+        "y": 0.308
+      },
+      "isVictoryStar": true
+    },
+    {
+      "id": "mongolia-china",
+      "name": "Mongolia China",
+      "ownerId": "china",
+      "value": 2,
+      "factory": 2,
+      "neighbors": [
+        "north-china",
+        "center-russia",
+        "west-china"
+      ],
+      "position": {
+        "x": 0.6553,
+        "y": 0.3925
+      },
+      "isVictoryStar": true
+    },
+    {
+      "id": "west-china",
+      "name": "West China",
+      "ownerId": "china",
+      "value": 4,
+      "factory": 3,
+      "neighbors": [
+        "center-china",
+        "mongolia-china",
+        "seast-russia"
+      ],
+      "position": {
+        "x": 0.609,
+        "y": 0.484
+      },
+      "isVictoryStar": false
+    },
+    {
+      "id": "center-china",
+      "name": "Center China",
+      "ownerId": "china",
+      "value": 4,
+      "factory": 3,
+      "neighbors": [
+        "east-china",
+        "south-china",
+        "west-china",
+        "north-china"
+      ],
+      "position": {
+        "x": 0.6278,
+        "y": 0.522
+      },
+      "isVictoryStar": false
+    },
+    {
+      "id": "east-china",
+      "name": "East China",
+      "ownerId": "china",
+      "value": 5,
+      "factory": 3,
+      "neighbors": [
+        "center-china",
+        "north-china",
+        "north-korea",
+        "south-china"
+      ],
+      "position": {
+        "x": 0.694,
+        "y": 0.4741
+      },
+      "isVictoryStar": true
+    },
+    {
+      "id": "south-china",
+      "name": "South China",
+      "ownerId": "china",
+      "value": 3,
+      "factory": 2,
+      "neighbors": [
+        "center-china",
+        "east-china",
+        "great-india"
+      ],
+      "position": {
+        "x": 0.6565,
+        "y": 0.6595
+      },
+      "isVictoryStar": false
+    },
+    {
+      "id": "south-africa",
+      "name": "South Africa",
+      "ownerId": "china",
+      "value": 2,
+      "factory": 1,
+      "neighbors": [
+        "center-africa"
+      ],
+      "position": {
+        "x": 0.356,
+        "y": 0.9225
+      },
+      "isVictoryStar": false
+    },
+    {
+      "id": "north-korea",
+      "name": "North Korea",
+      "ownerId": "china",
+      "value": 2,
+      "factory": 3,
+      "neighbors": [
+        "north-china",
+        "south-korea"
+      ],
+      "position": {
+        "x": 0.9295,
+        "y": 0.8275
+      },
+      "isVictoryStar": true
+    },
+    {
+      "id": "great-india",
+      "name": "Great India",
+      "ownerId": "seato",
+      "value": 6,
+      "factory": 6,
+      "neighbors": [
+        "great-iran",
+        "south-china"
+      ],
+      "position": {
+        "x": 0.5779,
+        "y": 0.5079
+      },
+      "isVictoryStar": true
+    },
+    {
+      "id": "great-japan",
+      "name": "Great Japan",
+      "ownerId": "seato",
+      "value": 4,
+      "factory": 4,
+      "neighbors": [],
+      "position": {
+        "x": 0.7969,
+        "y": 0.3955
+      },
+      "isVictoryStar": true
+    },
+    {
+      "id": "philippines",
+      "name": "Philippines",
+      "ownerId": "seato",
+      "value": 3,
+      "factory": 2,
+      "neighbors": [],
+      "position": {
+        "x": 0.7597,
+        "y": 0.6545
+      },
+      "iconAnchor": {
+        "x": 0.7597,
+        "y": 0.658
+      },
+      "isVictoryStar": false
+    },
+    {
+      "id": "australia",
+      "name": "Australia",
+      "ownerId": "seato",
+      "value": 5,
+      "factory": 5,
+      "neighbors": [],
+      "position": {
+        "x": 0.7797,
+        "y": 0.9155
+      },
+      "isVictoryStar": true
+    },
+    {
+      "id": "south-korea",
+      "name": "South Korea",
+      "ownerId": "seato",
+      "value": 3,
+      "factory": 3,
+      "neighbors": [
+        "north-korea"
+      ],
+      "position": {
+        "x": 0.9804,
+        "y": 0.9741
+      },
+      "isVictoryStar": false
+    },
+    {
+      "id": "north-arabia",
+      "name": "North Arabia",
+      "ownerId": "arabia-league",
+      "value": 3,
+      "factory": 2,
+      "neighbors": [
+        "center-arabia",
+        "great-iran",
+        "turkey-europe",
+        "israel"
+      ],
+      "position": {
+        "x": 0.49,
+        "y": 0.5625
+      },
+      "isVictoryStar": false
+    },
+    {
+      "id": "center-arabia",
+      "name": "Center Arabia",
+      "ownerId": "arabia-league",
+      "value": 6,
+      "factory": 6,
+      "neighbors": [
+        "israel",
+        "north-arabia",
+        "south-arabia"
+      ],
+      "position": {
+        "x": 0.498,
+        "y": 0.615
+      },
+      "isVictoryStar": true
+    },
+    {
+      "id": "south-arabia",
+      "name": "South Arabia",
+      "ownerId": "arabia-league",
+      "value": 4,
+      "factory": 4,
+      "neighbors": [
+        "center-arabia"
+      ],
+      "position": {
+        "x": 0.484,
+        "y": 0.68
+      },
+      "isVictoryStar": true
+    },
+    {
+      "id": "nwest-africa",
+      "name": "N. West Africa",
+      "ownerId": "arabia-league",
+      "value": 3,
+      "factory": 2,
+      "neighbors": [
+        "neast-africa"
+      ],
+      "position": {
+        "x": 0.229,
+        "y": 0.587
+      },
+      "isVictoryStar": false
+    },
+    {
+      "id": "neast-africa",
+      "name": "N. East Africa",
+      "ownerId": "arabia-league",
+      "value": 3,
+      "factory": 3,
+      "neighbors": [
+        "nwest-africa",
+        "east-africa"
+      ],
+      "position": {
+        "x": 0.355,
+        "y": 0.629
+      },
+      "isVictoryStar": true
+    },
+    {
+      "id": "middle-america",
+      "name": "Middle America",
+      "ownerId": null,
+      "value": 2,
+      "factory": 2,
+      "neighbors": [
+        "south-usa"
+      ],
+      "position": {
+        "x": 0.008,
+        "y": 0.552
+      },
+      "isVictoryStar": false
+    },
+    {
+      "id": "cuba-jamaica",
+      "name": "Cuba Jamaica",
+      "ownerId": null,
+      "value": 1,
+      "factory": 1,
+      "neighbors": [],
+      "position": {
+        "x": 0.0775,
+        "y": 0.547
+      },
+      "isVictoryStar": true
+    },
+    {
+      "id": "west-samerica",
+      "name": "West S. America",
+      "ownerId": null,
+      "value": 2,
+      "factory": 1,
+      "neighbors": [
+        "east-samerica",
+        "north-samerica",
+        "south-samerica"
+      ],
+      "position": {
+        "x": 0.058,
+        "y": 0.75
+      },
+      "isVictoryStar": false
+    },
+    {
+      "id": "east-samerica",
+      "name": "East S. America",
+      "ownerId": null,
+      "value": 3,
+      "factory": 3,
+      "neighbors": [
+        "north-samerica",
+        "south-samerica",
+        "west-samerica"
+      ],
+      "position": {
+        "x": 0.114,
+        "y": 0.761
+      },
+      "isVictoryStar": true
+    },
+    {
+      "id": "south-samerica",
+      "name": "South S. America",
+      "ownerId": null,
+      "value": 3,
+      "factory": 2,
+      "neighbors": [
+        "east-samerica",
+        "west-samerica"
+      ],
+      "position": {
+        "x": 0.0565,
+        "y": 0.88
+      },
+      "isVictoryStar": true
+    },
+    {
+      "id": "west-africa",
+      "name": "West Africa",
+      "ownerId": null,
+      "value": 1,
+      "factory": 1,
+      "neighbors": [
+        "center-africa"
+      ],
+      "position": {
+        "x": 0.207,
+        "y": 0.703
+      },
+      "isVictoryStar": true
+    },
+    {
+      "id": "great-iran",
+      "name": "Great Iran",
+      "ownerId": null,
+      "value": 3,
+      "factory": 3,
+      "neighbors": [
+        "great-india",
+        "north-arabia",
+        "swest-russia",
+        "turkey-europe",
+        "seast-russia"
+      ],
+      "position": {
+        "x": 0.534,
+        "y": 0.573
+      },
+      "isVictoryStar": true
+    },
+    {
+      "id": "east-africa",
+      "name": "East Africa",
+      "ownerId": null,
+      "value": 1,
+      "factory": 1,
+      "neighbors": [
+        "center-africa",
+        "neast-africa"
+      ],
+      "position": {
+        "x": 0.463,
+        "y": 0.794
+      },
+      "isVictoryStar": false
+    },
+    {
+      "id": "center-africa",
+      "name": "Center Africa",
+      "ownerId": null,
+      "value": 1,
+      "factory": 2,
+      "neighbors": [
+        "east-africa",
+        "south-africa",
+        "west-africa"
+      ],
+      "position": {
+        "x": 0.4305,
+        "y": 0.856
+      },
+      "isVictoryStar": false
+    },
+    {
+      "id": "serbia-bosnia",
+      "name": "Serbia Bosnia",
+      "ownerId": null,
+      "value": 1,
+      "factory": 0,
+      "neighbors": [
+        "balkan-europe",
+        "south-europe"
+      ],
+      "position": {
+        "x": 0.3615,
+        "y": 0.41
+      },
+      "isVictoryStar": false
+    },
+    {
+      "id": "papua-borneo",
+      "name": "Papua Borneo",
+      "ownerId": null,
+      "value": 2,
+      "factory": 1,
+      "neighbors": [],
+      "position": {
+        "x": 0.799,
+        "y": 0.761
+      },
+      "isVictoryStar": false
+    },
+    {
+      "id": "indonesia",
+      "name": "Indonesia",
+      "ownerId": null,
+      "value": 4,
+      "factory": 1,
+      "neighbors": [],
+      "position": {
+        "x": 0.7198,
+        "y": 0.812
+      },
+      "isVictoryStar": true
+    }
+  ]
+}

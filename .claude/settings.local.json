@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc *)",
+      "Skill(run)",
+      "Skill(run:*)",
+      "Bash(timeout 60 bash -c 'until curl -sf http://localhost:4300 >/dev/null; do sleep 1; done')",
+      "Bash(SCRATCH=\"C:\\\\Users\\\\tbara\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-tbara-OneDrive-world-war-iii\\\\e3ead102-a7cb-4a91-a449-c881d0026653\\\\scratchpad\" npx --yes playwright@1.61.1 --version)",
+      "Bash(SCRATCH=\"C:\\\\Users\\\\tbara\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-tbara-OneDrive-world-war-iii\\\\e3ead102-a7cb-4a91-a449-c881d0026653\\\\scratchpad\" node \"C:\\\\Users\\\\tbara\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-tbara-OneDrive-world-war-iii\\\\e3ead102-a7cb-4a91-a449-c881d0026653\\\\scratchpad\\\\shot.js\")",
+      "Bash(SCRATCH=\"C:\\\\Users\\\\tbara\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-tbara-OneDrive-world-war-iii\\\\e3ead102-a7cb-4a91-a449-c881d0026653\\\\scratchpad\" npx --yes -p playwright@1.61.1 node \"C:\\\\Users\\\\tbara\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-tbara-OneDrive-world-war-iii\\\\e3ead102-a7cb-4a91-a449-c881d0026653\\\\scratchpad\\\\shot.js\")",
+      "Bash(npm init *)",
+      "Bash(npm install *)",
+      "Bash(npx playwright *)"
+    ]
+  }
+}

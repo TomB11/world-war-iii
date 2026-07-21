@@ -1,0 +1,268 @@
+:host {
+  display: contents;
+}
+
+.combat-board {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(5, 6, 10, 0.82);
+  padding: 24px;
+}
+
+.combat-board__card {
+  position: relative;
+  width: 100%;
+  max-width: 920px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: var(--wwiii-bg-panel);
+  border: 1px solid var(--wwiii-accent);
+  border-radius: 10px;
+  padding: 24px 32px;
+  box-shadow: 0 0 60px rgba(224, 172, 77, 0.2);
+}
+
+.combat-board__close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--wwiii-text-dim);
+  background: var(--wwiii-bg-panel);
+  border: 1px solid var(--wwiii-border);
+  border-radius: 50%;
+  font-size: 13px;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--wwiii-danger);
+    border-color: var(--wwiii-danger);
+  }
+}
+
+.combat-board__region {
+  margin: 0 0 12px;
+  text-align: center;
+  color: var(--wwiii-text-dim);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.combat-board__side {
+  text-align: center;
+  margin-bottom: 12px;
+
+  h1 {
+    margin: 0;
+    color: var(--wwiii-accent);
+    font-size: 24px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+}
+
+.combat-board__side--defender {
+  margin-top: 12px;
+  margin-bottom: 0;
+}
+
+.combat-board__side-name {
+  margin: 2px 0 0;
+  color: var(--wwiii-text-dim);
+  font-size: 13px;
+}
+
+.combat-board__columns {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+
+.combat-board__column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 4px;
+  border: 1px solid var(--wwiii-border);
+  border-radius: 6px;
+  min-height: 96px;
+}
+
+.combat-board__badge {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--wwiii-accent);
+  color: var(--wwiii-accent);
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.combat-board__units {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 32px;
+}
+
+.combat-board__unit {
+  position: relative;
+  padding: 2px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: default;
+
+  &:disabled {
+    opacity: 0.9;
+  }
+}
+
+.combat-board__unit--clickable {
+  cursor: pointer;
+  border-color: var(--wwiii-danger);
+
+  &:hover {
+    background: rgba(184, 67, 63, 0.25);
+  }
+}
+
+/** Reserved casualty slot under each column's dice badge — units that die stay visible here instead of vanishing. */
+.combat-board__casualties {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-height: 24px;
+  width: 100%;
+  padding: 2px 0;
+  border-top: 1px dashed var(--wwiii-danger);
+  border-bottom: 1px dashed var(--wwiii-danger);
+}
+
+.combat-board__casualty {
+  position: relative;
+  display: inline-flex;
+  opacity: 0.55;
+  filter: grayscale(70%);
+}
+
+/** Which number a unit rolled, pinned to the corner of its own icon — hit (green) vs miss (dim), so it's obvious at a glance without a separate unlabeled list. */
+.combat-board__roll {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--wwiii-bg);
+  border: 1px solid var(--wwiii-border);
+  color: var(--wwiii-text-dim);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.combat-board__roll--hit {
+  background: var(--wwiii-success);
+  border-color: var(--wwiii-success);
+  color: var(--wwiii-bg);
+}
+
+.combat-board__note {
+  margin: 6px 0 0;
+  color: var(--wwiii-text-dim);
+  font-size: 11px;
+  text-align: center;
+}
+
+.combat-board__status {
+  margin: 16px 0;
+  padding: 12px;
+  text-align: center;
+  border-top: 1px solid var(--wwiii-border);
+  border-bottom: 1px solid var(--wwiii-border);
+}
+
+.combat-board__round {
+  margin: 0 0 6px;
+  color: var(--wwiii-text-dim);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.combat-board__prompt {
+  margin: 0 0 8px;
+  color: var(--wwiii-text);
+  font-size: 14px;
+}
+
+.combat-board__missile-result {
+  margin: 0 0 10px;
+  color: var(--wwiii-accent);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.combat-board__missile-choices {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.combat-board__prompt--danger {
+  color: var(--wwiii-danger);
+  font-weight: 600;
+}
+
+.combat-board__rejection {
+  color: var(--wwiii-danger);
+  font-size: 12px;
+  margin: 0 0 8px;
+}
+
+.combat-board__outcome {
+  margin: 0 0 10px;
+  color: var(--wwiii-accent);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.combat-board__btn {
+  padding: 8px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--wwiii-text);
+  background: var(--wwiii-bg);
+  border: 1px solid var(--wwiii-border);
+  border-radius: 4px;
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--wwiii-accent);
+    color: var(--wwiii-accent);
+  }
+}

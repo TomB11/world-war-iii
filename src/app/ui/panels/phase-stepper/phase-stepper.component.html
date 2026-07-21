@@ -1,0 +1,13 @@
+@if (store.state()) {
+  <ol class="phase-stepper">
+    @for (step of steps(); track step.phase) {
+      <li
+        class="phase-stepper__step"
+        [class.is-current]="step.isCurrent"
+        [class.is-past]="step.isPast"
+      >
+        {{ step.label }}
+      </li>
+    }
+  </ol>
+}

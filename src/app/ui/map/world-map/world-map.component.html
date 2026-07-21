@@ -1,0 +1,14 @@
+<div class="map-shell">
+  <canvas
+    #mapCanvas
+    [width]="config.mapViewBoxWidth"
+    [height]="config.mapViewBoxHeight"
+    (click)="onCanvasClick($event)"
+    (wheel)="onCanvasWheel($event)"
+    (pointerdown)="onPointerDown($event)"
+    (pointermove)="onPointerMove($event)"
+    (pointerup)="onPointerUp($event)"
+    (pointerleave)="onPointerLeave()"
+  ></canvas>
+  <button type="button" class="reset-view" (click)="resetView()">Reset View</button>
+</div>

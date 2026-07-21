@@ -1,0 +1,436 @@
+{
+  "deployment": {
+    "euto": [
+      {
+        "unitId": "infantry",
+        "regionId": "c-east-europe",
+        "quantity": 1
+      },
+      {
+        "unitId": "infantry",
+        "regionId": "c-west-europe",
+        "quantity": 1
+      },
+      {
+        "unitId": "infantry",
+        "regionId": "great-britain",
+        "quantity": 1
+      },
+      {
+        "unitId": "tank",
+        "regionId": "norway-sweden",
+        "quantity": 1
+      },
+      {
+        "unitId": "tank",
+        "regionId": "east-europe",
+        "quantity": 1
+      },
+      {
+        "unitId": "fighter",
+        "regionId": "south-europe",
+        "quantity": 1
+      },
+      {
+        "unitId": "rocket-system",
+        "regionId": "great-finland",
+        "quantity": 1
+      },
+      {
+        "unitId": "helicopter",
+        "regionId": "west-europe",
+        "quantity": 1
+      },
+      {
+        "unitId": "land-transport",
+        "regionId": "sea-1",
+        "quantity": 1
+      },
+      {
+        "unitId": "stealth-boat",
+        "regionId": "sea-2",
+        "quantity": 1
+      },
+      {
+        "unitId": "destroyer",
+        "regionId": "sea-3",
+        "quantity": 1
+      }
+    ],
+    "usa": [
+      {
+        "unitId": "infantry",
+        "regionId": "south-usa",
+        "quantity": 1
+      },
+      {
+        "unitId": "infantry",
+        "regionId": "north-usa",
+        "quantity": 1
+      },
+      {
+        "unitId": "infantry",
+        "regionId": "west-usa",
+        "quantity": 1
+      },
+      {
+        "unitId": "tank",
+        "regionId": "israel",
+        "quantity": 1
+      },
+      {
+        "unitId": "tank",
+        "regionId": "alaska-usa",
+        "quantity": 1
+      },
+      {
+        "unitId": "tank",
+        "regionId": "hawaii-usa",
+        "quantity": 1
+      },
+      {
+        "unitId": "fighter",
+        "regionId": "south-usa",
+        "quantity": 1
+      },
+      {
+        "unitId": "fighter",
+        "regionId": "north-usa",
+        "quantity": 1
+      },
+      {
+        "unitId": "fighter",
+        "regionId": "west-usa",
+        "quantity": 1
+      },
+      {
+        "unitId": "rocket-system",
+        "regionId": "israel",
+        "quantity": 1
+      },
+      {
+        "unitId": "rocket-system",
+        "regionId": "alaska-usa",
+        "quantity": 1
+      },
+      {
+        "unitId": "helicopter",
+        "regionId": "hawaii-usa",
+        "quantity": 1
+      },
+      {
+        "unitId": "land-transport",
+        "regionId": "sea-5",
+        "quantity": 1
+      },
+      {
+        "unitId": "aircraft-carrier",
+        "regionId": "sea-6",
+        "quantity": 1
+      },
+      {
+        "unitId": "stealth-boat",
+        "regionId": "sea-33",
+        "quantity": 1
+      },
+      {
+        "unitId": "stealth-boat",
+        "regionId": "sea-34",
+        "quantity": 1
+      },
+      {
+        "unitId": "destroyer",
+        "regionId": "sea-35",
+        "quantity": 1
+      },
+      {
+        "unitId": "destroyer",
+        "regionId": "sea-36",
+        "quantity": 1
+      }
+    ],
+    "russia": [
+      {
+        "unitId": "infantry",
+        "regionId": "russia",
+        "quantity": 1
+      },
+      {
+        "unitId": "infantry",
+        "regionId": "cwest-russia",
+        "quantity": 1
+      },
+      {
+        "unitId": "infantry",
+        "regionId": "swest-russia",
+        "quantity": 1
+      },
+      {
+        "unitId": "infantry",
+        "regionId": "seast-russia",
+        "quantity": 1
+      },
+      {
+        "unitId": "tank",
+        "regionId": "nwest-russia",
+        "quantity": 1
+      },
+      {
+        "unitId": "tank",
+        "regionId": "center-russia",
+        "quantity": 1
+      },
+      {
+        "unitId": "tank",
+        "regionId": "east-russia",
+        "quantity": 1
+      },
+      {
+        "unitId": "tank",
+        "regionId": "north-samerica",
+        "quantity": 1
+      },
+      {
+        "unitId": "fighter",
+        "regionId": "russia",
+        "quantity": 1
+      },
+      {
+        "unitId": "fighter",
+        "regionId": "cwest-russia",
+        "quantity": 1
+      },
+      {
+        "unitId": "rocket-system",
+        "regionId": "swest-russia",
+        "quantity": 1
+      },
+      {
+        "unitId": "helicopter",
+        "regionId": "seast-russia",
+        "quantity": 1
+      },
+      {
+        "unitId": "stealth-boat",
+        "regionId": "sea-15",
+        "quantity": 1
+      },
+      {
+        "unitId": "destroyer",
+        "regionId": "sea-20",
+        "quantity": 1
+      }
+    ],
+    "china": [
+      {
+        "unitId": "infantry",
+        "regionId": "north-china",
+        "quantity": 1
+      },
+      {
+        "unitId": "infantry",
+        "regionId": "west-china",
+        "quantity": 1
+      },
+      {
+        "unitId": "infantry",
+        "regionId": "center-china",
+        "quantity": 1
+      },
+      {
+        "unitId": "infantry",
+        "regionId": "east-china",
+        "quantity": 1
+      },
+      {
+        "unitId": "infantry",
+        "regionId": "north-korea",
+        "quantity": 1
+      },
+      {
+        "unitId": "tank",
+        "regionId": "mongolia-china",
+        "quantity": 1
+      },
+      {
+        "unitId": "tank",
+        "regionId": "south-china",
+        "quantity": 1
+      },
+      {
+        "unitId": "tank",
+        "regionId": "south-africa",
+        "quantity": 1
+      },
+      {
+        "unitId": "tank",
+        "regionId": "north-china",
+        "quantity": 1
+      },
+      {
+        "unitId": "fighter",
+        "regionId": "west-china",
+        "quantity": 1
+      },
+      {
+        "unitId": "fighter",
+        "regionId": "center-china",
+        "quantity": 1
+      },
+      {
+        "unitId": "rocket-system",
+        "regionId": "east-china",
+        "quantity": 1
+      },
+      {
+        "unitId": "rocket-system",
+        "regionId": "north-korea",
+        "quantity": 1
+      },
+      {
+        "unitId": "helicopter",
+        "regionId": "mongolia-china",
+        "quantity": 1
+      },
+      {
+        "unitId": "land-transport",
+        "regionId": "sea-27",
+        "quantity": 1
+      },
+      {
+        "unitId": "land-transport",
+        "regionId": "sea-28",
+        "quantity": 1
+      },
+      {
+        "unitId": "stealth-boat",
+        "regionId": "sea-29",
+        "quantity": 1
+      },
+      {
+        "unitId": "stealth-boat",
+        "regionId": "sea-27",
+        "quantity": 1
+      },
+      {
+        "unitId": "destroyer",
+        "regionId": "sea-28",
+        "quantity": 1
+      },
+      {
+        "unitId": "destroyer",
+        "regionId": "sea-29",
+        "quantity": 1
+      }
+    ],
+    "seato": [
+      {
+        "unitId": "infantry",
+        "regionId": "great-india",
+        "quantity": 1
+      },
+      {
+        "unitId": "infantry",
+        "regionId": "australia",
+        "quantity": 1
+      },
+      {
+        "unitId": "infantry",
+        "regionId": "great-japan",
+        "quantity": 1
+      },
+      {
+        "unitId": "infantry",
+        "regionId": "south-korea",
+        "quantity": 1
+      },
+      {
+        "unitId": "infantry",
+        "regionId": "philippines",
+        "quantity": 1
+      },
+      {
+        "unitId": "tank",
+        "regionId": "great-india",
+        "quantity": 1
+      },
+      {
+        "unitId": "tank",
+        "regionId": "australia",
+        "quantity": 1
+      },
+      {
+        "unitId": "tank",
+        "regionId": "great-japan",
+        "quantity": 1
+      },
+      {
+        "unitId": "fighter",
+        "regionId": "south-korea",
+        "quantity": 1
+      },
+      {
+        "unitId": "fighter",
+        "regionId": "philippines",
+        "quantity": 1
+      },
+      {
+        "unitId": "rocket-system",
+        "regionId": "great-india",
+        "quantity": 1
+      },
+      {
+        "unitId": "land-transport",
+        "regionId": "sea-30",
+        "quantity": 1
+      },
+      {
+        "unitId": "stealth-boat",
+        "regionId": "sea-31",
+        "quantity": 1
+      },
+      {
+        "unitId": "destroyer",
+        "regionId": "sea-32",
+        "quantity": 1
+      }
+    ],
+    "arabia-league": [
+      {
+        "unitId": "infantry",
+        "regionId": "center-arabia",
+        "quantity": 1
+      },
+      {
+        "unitId": "infantry",
+        "regionId": "south-arabia",
+        "quantity": 1
+      },
+      {
+        "unitId": "infantry",
+        "regionId": "neast-africa",
+        "quantity": 1
+      },
+      {
+        "unitId": "tank",
+        "regionId": "north-arabia",
+        "quantity": 1
+      },
+      {
+        "unitId": "tank",
+        "regionId": "nwest-africa",
+        "quantity": 1
+      },
+      {
+        "unitId": "fighter",
+        "regionId": "center-arabia",
+        "quantity": 1
+      },
+      {
+        "unitId": "rocket-system",
+        "regionId": "south-arabia",
+        "quantity": 1
+      }
+    ]
+  }
+}

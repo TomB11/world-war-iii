@@ -1,0 +1,876 @@
+# WORLD WAR III
+# PROJECT RULES
+Version 2.0 — updated to match the "World War III 2100" reference manual
+(phases, citizen/cyber systems, per-unit rules, starting deployment).
+
+---
+
+# 1. GAME OVERVIEW
+
+World War III is a turn-based grand strategy game inspired by Axis & Allies.
+
+Players command modern military alliances, conquer territories, develop their economy, launch missile strikes and use cyber warfare to dominate the world.
+
+The game is entirely turn based.
+
+No real-time gameplay exists.
+
+Every action is deterministic except dice rolls.
+
+---
+
+# 2. OBJECTIVE
+
+Victory is achieved by capturing regions marked with a white star.
+
+A TEAM (an alliance of factions) wins by jointly capturing 15 white-star regions.
+
+A SINGLE faction wins by capturing 7 white-star regions on its own.
+
+Which regions carry a white star is data-driven (see data/countries.json,
+Region.isVictoryStar) — never hardcoded.
+
+CURRENT IMPLEMENTATION STATUS: 19 of the ~24 white stars visible on the map
+artwork are marked (identified via pixel analysis of assets/maps/world-map.png,
+cross-referenced against each region's known position). A handful in the
+dense North Arabia/Center Arabia/Himalayas cluster couldn't be pinned to a
+specific region with confidence and were left unmarked rather than guessed
+— flag any region that visibly has a star on the map but isn't triggering
+victory-star behavior, and it can be added with a one-line countries.json
+edit (`"isVictoryStar": true`).
+
+Team alliances (PROJECT_RULES.md section 2's "TEAM"): team-west = EUTO,
+USA, SEATO; team-east = Russia, China, Arabia League (Faction.teamId,
+data/factions.json).
+
+## NEUTRAL COUNTRIES
+
+Every neutral (unowned) region starts the game with a standing army — 3
+Infantry, 2 Tanks, and 1 Helicopter (data/economy.json "neutralArmy") —
+defending it. This is a real, data-driven army, not an abstract difficulty
+modifier: attacking a neutral region means fighting these actual units
+(section 8), same as attacking an enemy-owned region.
+
+If a neutral region is captured politically (Political Influence, section
+6), this army defects and joins the capturing player, immediately available.
+
+If a neutral region is captured by force, the capturing player's Citizen
+marker immediately drops by 5 places (captureSatisfactionPenaltyAttacker,
+section 5) — same penalty as capturing an enemy region by force.
+
+---
+
+# 3. GAME FLOW
+
+Every player completes all phases before the next player begins.
+
+Turn order:
+
+1. Buy Units Phase
+2. Cyber Attack Phase
+3. Attack Moves Phase
+4. Attack Phase
+5. Tactical Moves Phase
+6. Place New Units Phase
+7. Collect Income Phase
+
+Income is collected LAST, at the end of the turn — it funds next turn's Buy Units
+Phase, not this one.
+
+---
+
+# 4. BUY UNITS PHASE
+
+The player may purchase:
+
+- Units
+- Missiles
+- Buildings
+- Technologies (future)
+
+Purchased units enter the player's Reserve; they are not on the map yet.
+
+The player may also spend money here on Citizen / Public Spending (section 5).
+
+Money cannot become negative (section 27).
+
+---
+
+# 5. CITIZEN / PUBLIC SPENDING
+
+Each faction has a Citizen Satisfaction marker on a 1-80 track (see
+data/economy.json citizenSatisfactionMin/Max), starting at 30. The track is
+divided into six data-driven zones (data/economy.json
+citizenSatisfactionZones), lowest to highest:
+
+- 1-20, red "rebellion" zone — see below.
+- 21-40, black "neutral" zone — no effect.
+- 41-50, gold zone — +2 income to treasury per turn.
+- 51-60, gold zone — +3 income to treasury per turn.
+- 61-70, gray zone — +2 victory points per turn.
+- 71-80, gray zone — +2 victory points per turn.
+
+The marker drops by 5 places automatically at the start of each of the
+player's turns (EndTurnCommand), before that turn's income is credited.
+
+If the resulting value falls in the red zone (<=20), the player's
+rebellionLevel escalates by 1 (capped at 3) that turn:
+
+- Level 1: no effect yet.
+- Level 2 (and 3): that turn's income (including any zone bonus above) is
+  halved.
+- Level 3: the moment it is FIRST reached, the rebel army from
+  data/economy.json's "rebelArmy" list (3 Infantry + 2 Tanks) spawns at the
+  player's capital, if they still control it. This only spawns once per
+  escalation to level 3, not every subsequent turn spent there.
+
+CURRENT IMPLEMENTATION STATUS: the rebel army spawns as real units (owned by
+a synthetic "rebels" id, never a real faction/player), but whether they
+actually take the capital is not resolved — same scope boundary as section 8
+(Attack Phase): full combat resolution against defended regions is future
+work, not faked here.
+
+During the Buy Units Phase, the player may spend money to raise their own
+Citizen marker back up: 1 money = 1 point (data/economy.json has no separate
+cost table — it's a flat rate), up to the track's max of 80. Since the
+marker decays by 5 every turn, spending exactly 5 offsets that turn's decay
+with no net change; spending more builds a buffer against future drops
+(rebellion decay, or losing a region by force — see below). Once the marker
+crosses back above 20 this way, rebellionLevel resets to 0.
+
+Whenever a region is captured by force (not by political hacking):
+
+- The capturing player's Citizen marker drops by 5
+  (captureSatisfactionPenaltyAttacker, data/economy.json).
+- The previous owner's Citizen marker drops by 2
+  (captureSatisfactionPenaltyDefender, data/economy.json) — losing a home
+  region also hurts morale, not just conquering one.
+
+---
+
+# 6. CYBER ATTACK PHASE
+
+During the Cyber Attack Phase, the player may spend a flat
+economyConfig.cyberAttackCost (data/economy.json, 3 by default) to attempt
+ONE Cyber Attack action — Hacking or Political Influence, not one of each.
+The cost is paid whether the attempt succeeds or fails; each is one d6
+roll. This is enforced by PlayerState.hasUsedCyberAttackThisTurn, which
+both HackCommand and PoliticalInfluenceCommand check and set, and which
+resets when the player's own Cyber Attack Phase comes around again next
+round (AdvancePhaseCommand) — not just documented behavior.
+
+## HACKING
+
+Target an enemy player, then roll a d6. If the roll is less than or equal
+to the target's Hack Level (tracked per player, starts at 1), the attempt
+succeeds: the target rolls a d6 too, and that many money transfers
+straight from their treasury to the attacker's (clamped to whatever the
+target actually has — you can never take more than they own).
+
+## UPGRADE HACK LEVEL
+
+Instead of Hacking or Political Influence, the player may spend
+economyConfig.hackLevelUpgradeCost (10 by default) to raise their own Hack
+Level by 1, up to economyConfig.hackLevelMax (4 by default). This is the
+same Cyber Attack action pool — one of Hacking, Political Influence, or
+Upgrade Hack Level per turn, not a separate allowance.
+
+## POLITICAL INFLUENCE
+
+Target a neutral (unowned) region, then roll a d6. If the result is less
+than or equal to economyConfig.politicalInfluenceThreshold (3 by default),
+the attacker places one influence token there.
+
+A neutral region becomes the attacker's once they hold at least
+economyConfig.politicalInfluenceMajority (2 by default) more influence
+tokens there than any other faction. Capturing a region this way (political
+takeover, not force) does not drop the Citizen marker (contrast section 5's
+force-capture penalties), and any units already garrisoned there — every
+neutral region has one, see section 2 — defect to the new owner
+immediately.
+
+Placed tokens are visible, not just tracked internally: the region detail
+bar shows a per-faction token count (Region.influenceTokens), and the map
+itself draws a small colored, numbered dot per faction next to the flag of
+any region with tokens on it.
+
+CURRENT IMPLEMENTATION STATUS: "available starting their next turn" for
+defecting units isn't enforced separately — they get the new owner
+immediately with whatever movesRemaining they already had.
+
+---
+
+# 7. ATTACK MOVES PHASE
+
+This is the "combat move": the ONLY thing a unit does here is move INTO an
+enemy (or garrisoned-neutral) region to attack it. Attack Moves is
+ATTACK-ONLY — you cannot make a plain move into your own territory during
+this phase (repositioning within your own lines is Tactical Moves,
+section 17). Combat itself belongs to the following Attack Phase (section 8).
+
+Units may move according to their Movement value (section 26). A unit may
+never exceed its movement allowance, and movement is multi-hop: the range
+is the movement value, not a single step. A Fighter (movement 4) can reach
+a target up to 4 regions away, a Helicopter (movement 3) up to 3; the
+attack consumes as many movement points as the path is long.
+
+Pathing rules for reaching a target:
+- Land units path through friendly/empty regions and enter the hostile
+  region on the final hop (they cannot pass through hostile territory, and
+  may cross a strait bridge only if they own both sides — data/straits.json).
+- Aircraft ignore terrain: they fly over anything (friendly, hostile, sea)
+  within their movement range.
+- Naval units move through sea zones (data/sea-zones.json); naval combat is
+  not modelled yet, so they have no attack targets.
+
+On the map, dragging a unit onto an ATTACK target (red highlight) attacks
+it. Only units that can reach a hostile region this phase are outlined in
+gold as movable — an interior unit with no reachable enemy has nothing to
+do during Attack Moves.
+
+---
+
+# 8. ATTACK PHASE
+
+The player declares all attacks using units positioned during Attack Moves.
+
+Missile attacks resolve FIRST, before any other combat.
+
+For every attack:
+
+Select source region.
+
+Select target region.
+
+Missiles are declared and resolve immediately (section 15).
+
+Then remaining combat resolves per the Combat Order (section 10).
+
+CURRENT IMPLEMENTATION STATUS: attacks are declared by moving a unit into
+the target region during the Attack Moves Phase (section 7) — the
+AttackCommand, dispatched by dragging a unit onto an enemy region or via
+the movement panel's Attack action, both valid only during Attack Moves.
+Land/air only — naval combat is not implemented, so naval units have zero
+attack targets. Two outcomes:
+
+- UNDEFENDED target: the region is captured immediately, the attacking unit
+  occupies it, and the by-force Citizen Satisfaction penalties apply
+  (section 5). A Helicopter can't take ground alone (section 22), so it's
+  rejected against an empty region.
+- DEFENDED target: the attacking unit MOVES IN alongside the defenders and
+  the region becomes "contested" — both armies co-locate, ownership does
+  NOT change, and no Citizen penalty applies yet. The region detail panel
+  shows the pending battle as "defenders (X) ⚔ attackers (you)". This is
+  the combat move; the actual battle belongs to the Attack Phase.
+
+The ATTACK PHASE itself is still a pass-through: the dice-based combat that
+would resolve a contested region (sections 9-14, missiles section 15, hit
+points, casualties, retreat) is future work. A red "resolve combat" control
+on contested regions will live here once that exists. A successful
+attack/contest consumes the unit's path cost in movement points and marks
+it as having fought this turn, excluding it from Tactical Moves (section 17).
+
+---
+
+# 9. COMBAT PHASE (WITHIN THE ATTACK PHASE)
+
+Battles are resolved one at a time.
+
+Combat continues until:
+
+- attacker destroyed
+- defender destroyed
+- attacker retreats
+- defender retreats
+
+---
+
+# 10. COMBAT ORDER
+
+Each combat round is a simultaneous exchange — both sides roll before
+either side's casualties are removed, so a unit that will die this round
+still gets its own roll first. Exact order:
+
+1. Missile attacks
+2. Attacker rolls
+3. Defender rolls
+4. Defender removes casualties
+5. Attacker removes casualties
+6. Retreat check
+7. Repeat
+
+---
+
+# 11. DICE
+
+Every unit rolls exactly one D6.
+
+Hit occurs when
+
+Roll <= Attack Value
+
+while attacking.
+
+Hit occurs when
+
+Roll <= Defense Value
+
+while defending.
+
+Attack and Defense values are loaded from units.json.
+
+Never hardcode values.
+
+---
+
+# 12. HIT POINTS
+
+Most units are destroyed by a single hit.
+
+Some units have more than one hit point (e.g. Super Aircraft Carrier needs
+2 hits to be destroyed). Hit points are data-driven per unit, never
+hardcoded.
+
+---
+
+# 13. CASUALTIES
+
+Both sides roll before either side's casualties are removed (section 10)
+— a unit due to be destroyed this round still gets its own roll first.
+
+After both rolls:
+
+Defender removes units hit by the attacker's roll.
+
+Attacker removes units hit by the defender's roll.
+
+Destroyed units never participate in later rounds.
+
+---
+
+# 14. RETREAT
+
+No retreat is allowed during Combat Round 1.
+
+Beginning with Combat Round 2:
+
+Attacker may retreat.
+
+Defender may retreat.
+
+Retreat destination must be a friendly adjacent region.
+
+If none exists, retreat is impossible.
+
+---
+
+# 15. MISSILES
+
+A Rocket System moved into a DEFENDED enemy region during Attack Moves
+(section 7) declares a missile strike there instead of a normal attack —
+its own Attack value is 0, so this is the only offensive thing it can do.
+It still physically occupies the region afterward like any other attacking
+unit (co-located with the defenders, "contested").
+
+Missiles resolve FIRST in the Attack Phase, before any other combat
+(section 8). When that region's battle opens, the attacker chooses one
+missile from their Arsenal (Reserve) to fire, if they have any — no missile
+owned means the missile sub-phase is skipped entirely and the battle goes
+straight to normal combat (with the Rocket System itself contributing
+nothing, since its Attack is 0).
+
+Interception: possible only if the defender has their OWN Rocket System in
+the targeted region or an adjacent one. Roll <= 2 destroys the incoming
+missile before it hits — remove one missile from Arsenal, nothing else
+happens. No defending Rocket System in range means no interception attempt
+at all.
+
+Hit resolution: if not intercepted, the attacker rolls against the
+missile's own Attack value (section 16). A hit destroys one defending unit
+in the target region, chosen by the defender. Remove one missile from
+Arsenal either way (fired or intercepted).
+
+---
+
+# 16. MISSILE TYPES
+
+Missile A
+
+Hits on a roll of <= 2.
+
+Missile B
+
+Hits on a roll of <= 4.
+
+Attack values are loaded from units.json (section 41) — never hardcoded.
+There are no nuclear missiles.
+
+---
+
+# 17. TACTICAL MOVES PHASE
+
+After the Attack Phase resolves, the player may reposition units that did
+NOT participate in an attack this turn ("non-combat move"). Units that
+fought this turn (moved into an enemy region during Attack Moves, section 7)
+cannot move at all during Tactical Moves.
+
+Unlike Attack Moves, destinations here are restricted to territory the
+player already owns — no entering enemy or neutral regions at all. Tactical
+Moves is for repositioning within your own lines, not expansion (that's what
+Attack Moves is for). On the map, only units that did NOT fight this turn
+and still have a friendly destination are outlined in gold as movable.
+
+Same movement allowance and terrain-connection rules as Attack Moves
+(section 7): movement allowance, terrain connections, strait bridges. Naval
+units are unrestricted between sea zones (sea zones have no owner).
+
+Future work: per-unit exceptions to "fought units can't move" (e.g. Fighters
+returning to a friendly region after combat, per sections 20-30) are not yet
+implemented — this depends on the dice-based combat system (section 9-14),
+which does not exist yet (see section 8).
+
+---
+
+# 18. PLACE NEW UNITS PHASE
+
+Units purchased this turn (Buy Units Phase, section 4) leave the Reserve and
+are deployed onto the map now, at a factory region the player controls.
+
+Production capacity per region is loaded from JSON (never hardcoded).
+
+---
+
+# 19. COLLECT INCOME PHASE
+
+This phase remains in the turn cycle for pacing/UI purposes, but it takes no
+player action — the engine automates income collection (see below).
+
+Income equals the sum of all controlled region values.
+
+Factories, technologies and future bonuses may modify income.
+
+Income is credited automatically, not manually collected here. As soon as a
+player's turn ENDS (the engine advances past this phase to the next player),
+the engine immediately credits the INCOMING player's treasury before their
+Buy Units Phase begins. This means a player's money is always ready the
+instant their turn starts — there is no manual "Collect Income" action and
+no risk of forgetting to collect.
+
+---
+
+# 20. INFANTRY
+
+Base stats come from units.json.
+
+For an additional cost (see units.json), Infantry may be upgraded to an
+Airborne variant: 3 Movement, can fly (ignores terrain connections like
+Aircraft).
+
+IMPLEMENTED as a directly-purchasable catalog entry ("infantry-airborne" in
+units.json, cost 10 = 5 base + 5 upgrade) rather than a conversion command
+on an already-deployed/reserved Infantry — buying it through the normal
+Buy Units picker achieves the same "spend +5 more to get the airborne
+version" outcome without a separate upgrade action.
+
+---
+
+# 21. TANK
+
+If the first region in its attack path is unoccupied, a Tank may continue
+into and capture a second region in the same move (capture-through).
+
+IMPLEMENTED (units.json "captureThrough": true on tank; AttackCommand).
+Naturally capped at 2 captures per turn by the Tank's own movement
+allowance — no separate counter needed.
+
+---
+
+# 22. HELICOPTER
+
+Movement 3 (can travel up to 3 regions), ignores terrain like all aircraft.
+IMPLEMENTED — multi-hop air range (units.json movement: 3; RulesEngine BFS).
+
+Cannot capture a region on its own.
+
+IMPLEMENTED (units.json "canCapture": false; AttackCommand rejects it
+outright against an undefended target — though it CAN move into a defended
+region to join a contested battle, section 8).
+
+When transported, a Helicopter can be carried by ANY air-capable transport —
+Aircraft Carrier, Land Transport, or Stealth Boat (unlike the Fighter,
+section 26, which needs a carrier). IMPLEMENTED.
+
+Gets +1 Attack when fighting a Submarine.
+
+CURRENT IMPLEMENTATION STATUS: not implemented — combat resolution against
+a defended region doesn't exist yet (section 8), so there's no attack roll
+to modify.
+
+---
+
+# 23. SUBMARINE
+
+May submerge (avoid combat/detection) if no enemy Helicopter or Stealth Boat
+is present in that fight.
+
+May carry and fire a missile.
+
+CURRENT IMPLEMENTATION STATUS: not implemented — submerging is a defensive
+combat mechanic (needs section 9-14's dice resolution) and firing a missile
+needs the missile system (section 15/16), neither of which exists yet.
+
+---
+
+May either transfer one land unit across a sea zone, or carry one
+Helicopter — not both at once.
+
+PARTIALLY IMPLEMENTED (units.json transportLandCapacity 1 +
+transportAirCapacity 1; LoadUnitCommand enforces typed slots). It accepts a
+Helicopter but NOT a Fighter (its air slot is helicopter-only —
+transportAcceptsFighters is false; only the Aircraft Carrier accepts
+Fighters, section 26). Modelled as 1 land slot + 1 air slot, so it can
+currently hold BOTH (2 total) rather than the manual's strict XOR of 1 — a
+deliberate simplification until the XOR rule matters.
+
+---
+
+# 25. DESTROYER
+
+May fire either Missile Type A or Missile Type B.
+
+May carry up to 2 Rocket System units.
+
+CURRENT IMPLEMENTATION STATUS: not implemented — needs the missile system
+(section 15/16) and the same differentiated-transport-slot work as the
+Stealth Boat above.
+
+---
+
+# 26. FIGHTER
+
+Movement 4 (can travel up to 4 regions), ignores terrain like all aircraft.
+IMPLEMENTED — multi-hop air range (units.json movement: 4; RulesEngine BFS).
+
+When transported, a Fighter can ONLY be carried by an Aircraft Carrier —
+never a Land Transport or Stealth Boat (units.json "requiresCarrier": true,
+matched against the transport's transportAcceptsFighters). Helicopters have
+no such restriction (section 22). IMPLEMENTED (LoadUnitCommand /
+getLoadableTransportTargets).
+
+Must always end its move on a friendly region.
+
+Cannot land on a region it just fought in this turn — it must land
+elsewhere (section 17).
+
+CURRENT IMPLEMENTATION STATUS: the "must end on friendly / can't land where
+it fought" landing constraints are not implemented — they depend on the
+dice-based combat system (section 17) existing first, so there's a real
+"just fought in" outcome to react to. Multi-hop range itself is done.
+
+---
+
+# 27. ROCKET SYSTEM
+
+Rocket Systems never perform normal attacks; they only launch missiles.
+
+A Rocket System must carry (hold) a missile for at least one full turn
+before it can be fired.
+
+Rocket Systems defend their own region and adjacent friendly regions
+against enemy missile attacks.
+
+Gets +1 Attack when defending against Fighters.
+
+CURRENT IMPLEMENTATION STATUS: not implemented — entirely dependent on the
+missile system (section 15/16), which doesn't exist yet (no
+FireMissileCommand, no missile inventory tracking).
+
+---
+
+# 28. LAND TRANSPORT CARRIER
+
+Capacity: 2 land units + 1 air unit.
+
+Example loadouts: 2x Infantry; or 1x Infantry + 1x Tank; or 1x Infantry +
+1x Rocket System.
+
+Transporting units does not reduce the carrier's own combat capability.
+
+IMPLEMENTED (units.json transportLandCapacity 2 + transportAirCapacity 1;
+LoadUnitCommand enforces per-category free slots). Land AND support units
+(e.g. Rocket System) use the 2 land slots; a Helicopter uses the 1 air slot.
+A Fighter CANNOT board a Land Transport (its air slot is helicopter-only —
+only the Aircraft Carrier accepts Fighters, sections 26/29).
+
+---
+
+# 29. SUPER AIRCRAFT CARRIER
+
+Capacity: 3 air units.
+
+Requires 2 hits to be destroyed (section 12).
+
+Transporting units does not reduce the carrier's own combat capability.
+
+PARTIALLY IMPLEMENTED: the 3-air-unit capacity is done (units.json
+"aircraft-carrier" transportAirCapacity 3, transportLandCapacity 0,
+transportAcceptsFighters true; LoadUnitCommand enforces it — Fighters AND
+Helicopters, no land units). The Aircraft Carrier is the ONLY transport a
+Fighter can board (sections 26). The "2 hits to destroy" multi-hit-point
+rule is still future work (needs the combat/hit-point system, section 12).
+
+---
+
+# 30. TRANSPORT (GENERAL)
+
+Transports (Land Transport Carrier, Aircraft Carrier, Stealth Boat) are
+naval vessels that sit in sea zones and move up to their Movement value in
+sea zones (the Land Transport moves 2). To LOAD, the transport must be in a
+sea zone that borders (SeaZone.adjacentRegionIds) the region holding the
+land/air unit — the passenger boards from the coast and then rides in the
+transport's sea zone, MOVING WITH IT when the transport sails (embarked
+units follow the transport's location and don't spend their own movement
+while carried). Loading is done by DRAGGING a unit onto the transport's sea
+zone on the map; there is no movement panel, only a small utility panel for
+Deploy (Place New Units) and Unload.
+
+UNLOADING is phase-dependent and always costs the unit one movement point
+(the landing is its move for the turn):
+- During TACTICAL MOVES: a peaceful landing onto a friendly or empty coast
+  bordering the transport's sea zone.
+- During ATTACK MOVES: an amphibious ASSAULT onto a HOSTILE coast — the
+  disembark IS the attack. An undefended coast is captured (with the
+  section-5 by-force Citizen penalties); a defended coast becomes contested
+  (both armies co-locate, ownership unchanged), exactly like a land attack
+  (section 8). A Helicopter still can't take an undefended coast on its own
+  (section 22). So the typical flow is "load + sail this turn, then next
+  turn disembark as the unit's move — peacefully in Tactical Moves, or as an
+  amphibious assault in Attack Moves."
+
+Transported units:
+
+Cannot attack while embarked.
+
+Move with the transport when it sails; disembarking costs the unit one
+movement point.
+
+If the transport is destroyed, all transported units are destroyed.
+
+CURRENT IMPLEMENTATION STATUS: loading (from an adjacent coast, typed
+land/air capacity, Fighters carriers-only), boarding, sea movement carrying
+cargo (embarked units' regionId follows the transport, their own movement
+untouched), peaceful unloading (Tactical Moves) and amphibious-assault
+unloading (Attack Moves — capture or contest) are all implemented
+(LoadUnitCommand / MoveUnitCommand / UnloadUnitCommand). "Cannot attack
+while embarked" holds (embarked units aren't pickable). "Destroyed
+transport destroys its cargo" is not implemented — there's no
+unit-destruction path yet, since dice-based combat resolution doesn't exist
+(section 8).
+
+---
+
+# 31. REGION CONTROL
+
+A region belongs to the player occupying it after combat.
+
+If enemy units remain:
+
+Ownership does not change.
+
+If all defenders are destroyed:
+
+Ownership immediately changes.
+
+Income changes next Collect Income Phase.
+
+Capturing by force drops the capturing player's Citizen marker by 5
+(section 5). Capturing by political hacking does not.
+
+---
+
+# 32. CAPITALS
+
+Every faction owns one Capital.
+
+Loss of Capital does not immediately eliminate a player.
+
+If a faction's Citizen marker triggers a rebellion (section 5), the rebel
+army attacks the faction's own Capital region.
+
+---
+
+# 33. STARTING SETUP
+
+Each faction begins the game with a fixed roster of units pre-deployed
+across specific regions and adjacent sea zones, per the recommended setup.
+
+Naval units must start in sea zones adjacent to a friendly region.
+
+Fighters and Helicopters start in friendly land regions or airbases.
+
+Missile A and Missile B tokens are NOT placed during setup unless a
+scenario says otherwise.
+
+The concrete per-faction, per-region starting roster is entirely
+data-driven — see data/starting-deployment.json. Never hardcode it.
+
+---
+
+# 34. ECONOMY
+
+Income is generated every turn, collected last (section 19).
+
+Income values are loaded from economy.json.
+
+No hardcoded values exist.
+
+---
+
+# 35. FACTORIES
+
+Factories produce units.
+
+Production capacity is loaded from JSON.
+
+Factories may become disabled by Cyber Warfare.
+
+---
+
+# 36. PLAYER TREASURY
+
+Players spend money only during the Buy Units Phase (purchases and citizen
+spending) and the Cyber Attack Phase (hacking/political influence costs).
+
+Money cannot become negative.
+
+---
+
+# 37. PLAYER RESERVE
+
+Purchased units enter Reserve during the Buy Units Phase.
+
+Reserve units deploy during the Place New Units Phase (section 18).
+
+---
+
+# 38. UNIT TYPES
+
+Every unit belongs to one category:
+
+Land
+
+Air
+
+Naval
+
+Support
+
+Transport
+
+Missile
+
+---
+
+# 39. UNIT DATA
+
+Every unit contains:
+
+ID
+
+Name
+
+Cost
+
+Attack
+
+Defense
+
+Movement
+
+Hit Points
+
+Transport Capacity
+
+Special Abilities
+
+Sprite
+
+Animation
+
+Sound
+
+---
+
+# 40. SAVE GAME
+
+Entire game state must be saved.
+
+Including:
+
+Players
+
+Money
+
+Citizen marker per player
+
+Hack Level per player
+
+Regions
+
+Ownership
+
+Political influence tokens
+
+Units
+
+Factories
+
+Missiles
+
+Combat Queue
+
+Current Turn
+
+Random Seed
+
+---
+
+# 41. DATA DRIVEN
+
+Everything is loaded from JSON.
+
+Never hardcode:
+
+Attack values
+
+Defense values
+
+Movement
+
+Hit points
+
+Income
+
+Costs
+
+Factories
+
+Players
+
+Countries
+
+Connections
+
+Missile ranges
+
+Hacking costs and hack levels
+
+Citizen marker thresholds and rebellion army composition
+
+Starting deployment
+
+Everything must be configurable.
+
+---
+
+END OF DOCUMENT

@@ -1,0 +1,11 @@
+@if (store.victoryStatus(); as status) {
+  <div class="victory-banner">
+    <div class="victory-banner__card">
+      <p class="victory-banner__kicker">{{ status.type === 'solo' ? 'Solo Victory' : 'Team Victory' }}</p>
+      <h1 class="victory-banner__winner">{{ winnerLabel() }}</h1>
+      <p class="victory-banner__detail">
+        Captured {{ status.starCount }} white-star region{{ status.starCount === 1 ? '' : 's' }}
+      </p>
+    </div>
+  </div>
+}

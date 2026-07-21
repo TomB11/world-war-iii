@@ -1,0 +1,25 @@
+{
+  "_comment": "Special movement chokepoints. Not regular neighbors - the two regions listed are separated by water and can only be crossed if both are controlled by the same player. Not yet enforced by any engine (Phase 5 Movement Engine will read this).",
+  "straits": [
+    {
+      "id": "gibraltar",
+      "regionA": "south-europe",
+      "regionB": "nwest-africa"
+    },
+    {
+      "id": "suez",
+      "regionA": "center-arabia",
+      "regionB": "neast-africa"
+    },
+    {
+      "id": "bering",
+      "regionA": "alaska-usa",
+      "regionB": "east-russia"
+    },
+    {
+      "id": "panama",
+      "regionA": "middle-america",
+      "regionB": "north-samerica"
+    }
+  ]
+}

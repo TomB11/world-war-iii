@@ -1,0 +1,8 @@
+@if (store.state(); as state) {
+  <button type="button" class="advance-btn" (click)="advance(state.activePlayerId)">
+    {{ state.phase === 'collectIncome' ? 'End Turn' : 'Advance Phase' }}
+  </button>
+  @if (store.phaseAdvanceRejectionReason(); as reason) {
+    <p class="rejection">{{ reason }}</p>
+  }
+}

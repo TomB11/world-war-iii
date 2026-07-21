@@ -1,0 +1,619 @@
+{
+  "seaZones": [
+    {
+      "id": "sea-1",
+      "label": "1",
+      "position": {
+        "x": 0.14,
+        "y": 0.16
+      },
+      "neighbors": [
+        "sea-4",
+        "sea-2",
+        "sea-5"
+      ],
+      "adjacentRegionIds": [
+        "east-canada"
+      ]
+    },
+    {
+      "id": "sea-2",
+      "label": "2",
+      "position": {
+        "x": 0.23,
+        "y": 0.05
+      },
+      "neighbors": [
+        "sea-1",
+        "sea-13",
+        "sea-3"
+      ],
+      "adjacentRegionIds": [
+        "greenland"
+      ]
+    },
+    {
+      "id": "sea-3",
+      "label": "3",
+      "position": {
+        "x": 0.20,
+        "y": 0.17
+      },
+      "neighbors": [
+        "sea-14",
+        "sea-2",
+        "sea-4",
+        "sea-8"
+      ],
+      "adjacentRegionIds": [
+        "great-britain",
+        "c-west-europe"
+      ]
+    },
+    {
+      "id": "sea-4",
+      "label": "4",
+      "position": {
+        "x": 0.17,
+        "y": 0.26
+      },
+      "neighbors": [
+        "sea-7",
+        "sea-1",
+        "sea-3"
+      ],
+      "adjacentRegionIds": []
+    },
+    {
+      "id": "sea-5",
+      "label": "5",
+      "position": {
+        "x": 0.0875,
+        "y": 0.4182
+      },
+      "neighbors": [
+        "sea-16",
+        "sea-6"
+      ],
+      "adjacentRegionIds": [
+        "north-usa"
+      ]
+    },
+    {
+      "id": "sea-6",
+      "label": "6",
+      "position": {
+        "x": 0.08,
+        "y": 0.50
+      },
+      "neighbors": [
+        "sea-5",
+        "sea-7",
+        "sea-9",
+        "sea-34"
+      ],
+      "adjacentRegionIds": [
+        "south-usa",
+        "middle-usa",
+        "cuba-jamaica",
+        "north-samerica"
+      ]
+    },
+    {
+      "id": "sea-7",
+      "label": "7",
+      "position": {
+        "x": 0.14,
+        "y": 0.50
+      },
+      "neighbors": [
+        "sea-4",
+        "sea-5",
+        "sea-6",
+        "sea-8",
+        "sea-9"
+      ],
+      "adjacentRegionIds": []
+    },
+    {
+      "id": "sea-8",
+      "label": "8",
+      "position": {
+        "x": 0.20,
+        "y": 0.58
+      },
+      "neighbors": [
+        "sea-10",
+        "sea-16",
+        "sea-7",
+        "sea-3"
+      ],
+      "adjacentRegionIds": [
+        "west-europe",
+        "nwest-africa"
+      ]
+    },
+    {
+      "id": "sea-9",
+      "label": "9",
+      "position": {
+        "x": 0.16,
+        "y": 0.76
+      },
+      "neighbors": [
+        "sea-10",
+        "sea-11",
+        "sea-7",
+        "sea-6"
+      ],
+      "adjacentRegionIds": [
+        "east-samerica"
+      ]
+    },
+    {
+      "id": "sea-10",
+      "label": "10",
+      "position": {
+        "x": 0.19,
+        "y": 0.79
+      },
+      "neighbors": [
+        "sea-17",
+        "sea-18",
+        "sea-8",
+        "sea-9"
+      ],
+      "adjacentRegionIds": [
+        "west-africa"
+      ]
+    },
+    {
+      "id": "sea-11",
+      "label": "11",
+      "position": {
+        "x": 0.03,
+        "y": 0.95
+      },
+      "neighbors": [
+        "sea-12",
+        "sea-16",
+        "sea-9"
+      ],
+      "adjacentRegionIds": [
+        "south-samerica"
+      ]
+    },
+    {
+      "id": "sea-12",
+      "label": "12",
+      "position": {
+        "x": 0.02,
+        "y": 0.77
+      },
+      "neighbors": [
+        "sea-11",
+        "sea-34",
+        "sea-36"
+      ],
+      "adjacentRegionIds": [
+        "west-samerica"
+      ]
+    },
+    {
+      "id": "sea-13",
+      "label": "13",
+      "position": {
+        "x": 0.31,
+        "y": 0.02
+      },
+      "neighbors": [
+        "sea-2",
+        "sea-14",
+        "sea-15"
+      ],
+      "adjacentRegionIds": []
+    },
+    {
+      "id": "sea-14",
+      "label": "14",
+      "position": {
+        "x": 0.308,
+        "y": 0.09
+      },
+      "neighbors": [
+        "sea-3",
+        "sea-14"
+      ],
+      "adjacentRegionIds": [
+        "great-finland",
+        "cwest-russia",
+        "c-east-europe",
+        "east-europe",
+        "norway-sweden"
+      ]
+    },
+    {
+      "id": "sea-15",
+      "label": "15",
+      "position": {
+        "x": 0.44,
+        "y": 0.03
+      },
+      "neighbors": [
+        "sea-13"
+      ],
+      "adjacentRegionIds": [
+        "nwest-russia"
+      ]
+    },
+    {
+      "id": "sea-16",
+      "label": "16",
+      "position": {
+        "x": 0.35,
+        "y": 0.57
+      },
+      "neighbors": [
+        "sea-8",
+        "sea-20",
+        "sea-21"
+      ],
+      "adjacentRegionIds": [
+        "nwest-africa",
+        "neast-africa",
+        "israel",
+        "north-arabia",
+        "turkey-europe",
+        "balkan-europe",
+        "west-europe",
+        "south-europe",
+        "c-west-europe"
+      ]
+    },
+    {
+      "id": "sea-17",
+      "label": "17",
+      "position": {
+        "x": 0.29,
+        "y": 0.90
+      },
+      "neighbors": [
+        "sea-18",
+        "sea-19",
+        "sea-10"
+      ],
+      "adjacentRegionIds": [
+        "center-africa"
+      ]
+    },
+    {
+      "id": "sea-18",
+      "label": "18",
+      "position": {
+        "x": 0.19,
+        "y": 0.95
+      },
+      "neighbors": [
+        "sea-10",
+        "sea-11",
+        "sea-17",
+        "sea-19"
+      ],
+      "adjacentRegionIds": []
+    },
+    {
+      "id": "sea-19",
+      "label": "19",
+      "position": {
+        "x": 0.33,
+        "y": 0.9739
+      },
+      "neighbors": [
+        "sea-17",
+        "sea-18",
+        "sea-22",
+        "sea-23"
+      ],
+      "adjacentRegionIds": [
+        "south-africa"
+      ]
+    },
+    {
+      "id": "sea-20",
+      "label": "20",
+      "position": {
+        "x": 0.44,
+        "y": 0.4095
+      },
+      "neighbors": [
+        "sea-16"
+      ],
+      "adjacentRegionIds": [
+        "swest-russia",
+        "turkey-europe",
+        "balkan-europe",
+        "east-europe"
+      ]
+    },
+    {
+      "id": "sea-21",
+      "label": "21",
+      "position": {
+        "x": 0.51,
+        "y": 0.72
+      },
+      "neighbors": [
+        "sea-22",
+        "sea-16",
+        "sea-24",
+        "sea-25"
+      ],
+      "adjacentRegionIds": [
+        "east-africa",
+        "neast-africa",
+        "center-arabia",
+        "south-arabia",
+        "north-arabia",
+        "great-iran"
+      ]
+    },
+    {
+      "id": "sea-22",
+      "label": "22",
+      "position": {
+        "x": 0.46,
+        "y": 0.9
+      },
+      "neighbors": [
+        "sea-19",
+        "sea-21",
+        "sea-23",
+        "sea-24"
+      ],
+      "adjacentRegionIds": [
+        "center-africa"
+      ]
+    },
+    {
+      "id": "sea-23",
+      "label": "23",
+      "position": {
+        "x": 0.6,
+        "y": 0.96
+      },
+      "neighbors": [
+        "sea-19",
+        "sea-22",
+        "sea-24",
+        "sea-27"
+      ],
+      "adjacentRegionIds": []
+    },
+    {
+      "id": "sea-24",
+      "label": "24",
+      "position": {
+        "x": 0.5645,
+        "y": 0.85
+      },
+      "neighbors": [
+        "sea-21",
+        "sea-22",
+        "sea-23",
+        "sea-25",
+        "sea-26"
+      ],
+      "adjacentRegionIds": []
+    },
+    {
+      "id": "sea-25",
+      "label": "25",
+      "position": {
+        "x": 0.57,
+        "y": 0.65
+      },
+      "neighbors": [
+        "sea-21",
+        "sea-28",
+        "sea-24",
+        "sea-26"
+      ],
+      "adjacentRegionIds": [
+        "great-india"
+      ]
+    },
+    {
+      "id": "sea-26",
+      "label": "26",
+      "position": {
+        "x": 0.74,
+        "y": 0.78
+      },
+      "neighbors": [
+        "sea-24",
+        "sea-25",
+        "sea-27",
+        "sea-28",
+        "sea-35",
+        "sea-36"
+      ],
+      "adjacentRegionIds": [
+        "indonesia",
+        "papua-borneo"
+      ]
+    },
+    {
+      "id": "sea-27",
+      "label": "27",
+      "position": {
+        "x": 0.71,
+        "y": 0.96
+      },
+      "neighbors": [
+        "sea-23",
+        "sea-26",
+        "sea-11"
+      ],
+      "adjacentRegionIds": [
+        "australia"
+      ]
+    },
+    {
+      "id": "sea-28",
+      "label": "28",
+      "position": {
+        "x": 0.68,
+        "y": 0.64
+      },
+      "neighbors": [
+        "sea-25",
+        "sea-26",
+        "sea-29",
+        "sea-35"
+      ],
+      "adjacentRegionIds": [
+        "south-china"
+      ]
+    },
+    {
+      "id": "sea-29",
+      "label": "29",
+      "position": {
+        "x": 0.742,
+        "y": 0.4385
+      },
+      "neighbors": [
+        "sea-30",
+        "sea-28",
+        "sea-32",
+        "sea-35"
+      ],
+      "adjacentRegionIds": [
+        "north-china",
+        "east-china",
+        "north-korea",
+        "south-korea"
+      ]
+    },
+    {
+      "id": "sea-30",
+      "label": "30",
+      "position": {
+        "x": 0.84,
+        "y": 0.30
+      },
+      "neighbors": [
+        "sea-31",
+        "sea-32",
+        "sea-29"
+      ],
+      "adjacentRegionIds": [
+        "east-russia"
+      ]
+    },
+    {
+      "id": "sea-31",
+      "label": "31",
+      "position": {
+        "x": 0.90,
+        "y": 0.30
+      },
+      "neighbors": [
+        "sea-30",
+        "sea-33",
+        "sea-34"
+      ],
+      "adjacentRegionIds": [
+        "alaska-usa",
+        "west-canada"
+      ]
+    },
+    {
+      "id": "sea-32",
+      "label": "32",
+      "position": {
+        "x": 0.83,
+        "y": 0.5
+      },
+      "neighbors": [
+        "sea-29",
+        "sea-30",
+        "sea-33",
+        "sea-35"
+      ],
+      "adjacentRegionIds": [
+        "great-japan"
+      ]
+    },
+    {
+      "id": "sea-33",
+      "label": "33",
+      "position": {
+        "x": 0.89,
+        "y": 0.4
+      },
+      "neighbors": [
+        "sea-31",
+        "sea-32",
+        "sea-34",
+        "sea-36"
+      ],
+      "adjacentRegionIds": [
+        "hawaii-usa"
+      ]
+    },
+    {
+      "id": "sea-34",
+      "label": "34",
+      "position": {
+        "x": 0.96,
+        "y": 0.4056
+      },
+      "neighbors": [
+        "sea-31",
+        "sea-33",
+        "sea-12",
+        "sea-6"
+      ],
+      "adjacentRegionIds": [
+        "west-usa",
+        "middle-usa",
+        "north-samerica"
+      ]
+    },
+    {
+      "id": "sea-35",
+      "label": "35",
+      "position": {
+        "x": 0.82,
+        "y": 0.62
+      },
+      "neighbors": [
+        "sea-26",
+        "sea-28",
+        "sea-29",
+        "sea-32",
+        "sea-36"
+      ],
+      "adjacentRegionIds": [
+        "philippines-usa"
+      ]
+    },
+    {
+      "id": "sea-36",
+      "label": "36",
+      "position": {
+        "x": 0.9195,
+        "y": 0.65
+      },
+      "neighbors": [
+        "sea-27",
+        "sea-26",
+        "sea-35",
+        "sea-33",
+        "sea-12"
+      ],
+      "adjacentRegionIds": []
+    }
+  ]
+}

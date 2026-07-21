@@ -1,0 +1,40 @@
+:host {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.phase-stepper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.phase-stepper__step {
+  padding: 4px 10px;
+  font-size: 11px;
+  white-space: nowrap;
+  color: var(--wwiii-text-dim);
+  background: var(--wwiii-bg);
+  border: 1px solid var(--wwiii-border);
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+
+  &.is-past {
+    color: var(--wwiii-text);
+    opacity: 0.55;
+  }
+
+  &.is-current {
+    color: #0b0e14;
+    background: var(--wwiii-accent);
+    border-color: var(--wwiii-accent);
+    font-weight: 700;
+    box-shadow: 0 0 10px rgba(224, 172, 77, 0.5);
+  }
+}

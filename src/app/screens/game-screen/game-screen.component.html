@@ -1,0 +1,42 @@
+<div class="game-screen">
+  <header class="game-screen__header">
+    <h1>World War III</h1>
+    <wwiii-phase-stepper />
+    <wwiii-citizen-satisfaction-track />
+    <wwiii-hack-level-indicator />
+  </header>
+
+  <div class="game-screen__body">
+    <main class="game-screen__map">
+      @if (store.loadError(); as error) {
+        <div class="game-screen__error">
+          Failed to load game data: {{ error }}
+        </div>
+      } @else if (!store.isLoaded()) {
+        <div class="game-screen__loading">Loading world map…</div>
+      } @else {
+        <wwiii-world-map />
+        @if (store.state()?.phase === 'buyUnits') {
+          <wwiii-economy-panel />
+        }
+      }
+    </main>
+
+    <aside class="game-screen__sidebar">
+      <wwiii-turn-panel />
+      @if (store.state()?.phase; as phase) {
+        @if (phase === 'cyberAttack') {
+          <wwiii-cyber-attack-panel />
+        }
+        @if (phase === 'attackMoves' || phase === 'tacticalMoves' || phase === 'placeNewUnits') {
+          <wwiii-movement-panel />
+        }
+      }
+      <wwiii-advance-phase-bar />
+    </aside>
+  </div>
+
+  <wwiii-region-info-panel />
+  <wwiii-victory-banner />
+  <wwiii-combat-board />
+</div>
