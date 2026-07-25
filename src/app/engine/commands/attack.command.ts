@@ -31,6 +31,14 @@ import { applyForceCaptureSatisfactionPenalty } from './shared/capture-penalties
  * by hasFoughtThisTurn from attacking again the same Attack Phase after a
  * successful capture, so it can chain into a second undefended region —
  * naturally capped at 2 by its movement allowance.
+ *
+ * A Rocket System "attacking" a defended region is a third, separate case
+ * (PROJECT_RULES.md section 15): it never physically enters — it stays put
+ * and only *declares* a supporting missile strike, and only once its own
+ * side is already attacking that region (some other unit of this player's
+ * must already be there). This records the declaration in
+ * GameState.missileDeclarations instead of moving anything; RulesEngine
+ * .hasPendingMissileStrike reads it back when that region's battle opens.
  */
 export class AttackCommand implements Command {
   readonly type = 'Attack';
@@ -72,10 +80,10 @@ export class AttackCommand implements Command {
       return reject('Unknown unit');
     }
     // A unit with no attack value normally can't declare an attack move at
-    // all — except a Rocket System moving into a DEFENDED region, which is
-    // how a missile strike is declared (PROJECT_RULES.md section 15). It
-    // deals no damage itself; the Attack Phase's missile sub-phase is what
-    // actually resolves the strike once this move lands it there.
+    // all — except a Rocket System "attacking" a DEFENDED region, which is
+    // how a supporting missile strike is declared (PROJECT_RULES.md section
+    // 15). It deals no damage itself and never physically enters; see the
+    // isDefendedTargetForMissile branch below.
     const isDefendedTargetForMissile =
       unitDef.canDeclareMissile &&
       state.units.some((candidate) => candidate.regionId === this.targetRegionId && candidate.ownerId !== this.playerId);
@@ -105,6 +113,40 @@ export class AttackCommand implements Command {
     const defenders = state.units.filter(
       (candidate) => candidate.regionId === this.targetRegionId && candidate.ownerId !== this.playerId,
     );
+
+    // Rocket System "attacking" a defended region: declare a supporting
+    // missile strike instead of moving in. Only allowed once this player's
+    // own units are already fighting there — a Rocket System can never open
+    // a battle by itself (PROJECT_RULES.md section 15).
+    if (isDefendedTargetForMissile) {
+      const alreadyAttackingThere = state.units.some(
+        (candidate) => candidate.regionId === this.targetRegionId && candidate.ownerId === this.playerId,
+      );
+      if (!alreadyAttackingThere) {
+        return reject(
+          'A Rocket System can only support an attack your own units have already opened on that region',
+        );
+      }
+      const nextUnits = state.units.map((candidate) =>
+        candidate.id === this.unitInstanceId ? { ...candidate, hasFoughtThisTurn: true } : candidate,
+      );
+      const events: readonly GameEngineEvent[] = [
+        {
+          type: 'MissileStrikeDeclared',
+          playerId: this.playerId,
+          regionId: this.targetRegionId,
+          unitInstanceId: this.unitInstanceId,
+        },
+      ];
+      return {
+        state: {
+          ...state,
+          units: nextUnits,
+          missileDeclarations: { ...state.missileDeclarations, [this.targetRegionId]: this.unitInstanceId },
+        },
+        events,
+      };
+    }
 
     // The attacking unit always moves into the target region (that IS the
     // combat move, PROJECT_RULES.md section 7), is marked as having fought,

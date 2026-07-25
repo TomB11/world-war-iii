@@ -83,4 +83,17 @@ describe('EndTurnCommand', () => {
     expect(result.state.units.some((u) => u.ownerId === 'rebels')).toBe(false);
     expect(result.events.some((e) => e.type === 'RebelArmySpawned')).toBe(false);
   });
+
+  it('clears missile declarations belonging to the player whose turn just ended, leaving other players\' declarations intact', () => {
+    const { result } = run({
+      units: [
+        { id: 'launcher-1', unitId: 'infantry', ownerId: 'p1', regionId: 'home', movesRemaining: 1, transportedBy: null, hasFoughtThisTurn: true },
+        { id: 'launcher-2', unitId: 'infantry', ownerId: 'p2', regionId: 'home2', movesRemaining: 1, transportedBy: null, hasFoughtThisTurn: true },
+      ],
+      missileDeclarations: { front: 'launcher-1', other: 'launcher-2' },
+    });
+
+    expect(result.state.missileDeclarations['front']).toBeUndefined();
+    expect(result.state.missileDeclarations['other']).toBe('launcher-2');
+  });
 });

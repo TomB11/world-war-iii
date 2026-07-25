@@ -10,11 +10,12 @@ const DICE_SIDES = 6;
 const INTERCEPT_THRESHOLD = 2;
 
 /**
- * Fires one missile from Reserve at a region where the attacker declared a
- * strike by moving a Rocket System in (PROJECT_RULES.md section 15).
- * Missiles resolve before any other combat in the Attack Phase — this is
- * always the first thing that can happen in a fresh battle that has one
- * pending (see RulesEngine.hasPendingMissileStrike).
+ * Fires one missile from Reserve at a region where the attacker's Rocket
+ * System declared a supporting strike (PROJECT_RULES.md section 15) — the
+ * launcher itself stays wherever it was; see AttackCommand and
+ * GameState.missileDeclarations. Missiles resolve before any other combat in
+ * the Attack Phase — this is always the first thing that can happen in a
+ * fresh battle that has one pending (see RulesEngine.hasPendingMissileStrike).
  *
  * Resolved in one shot: if the defender has their own Rocket System in the
  * target region or an adjacent one, the active player rolls an interception

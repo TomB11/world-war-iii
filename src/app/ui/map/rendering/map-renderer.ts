@@ -1,6 +1,6 @@
 import { GameConfig } from '../../../config/game.config';
 import { Faction } from '../../../models/faction.model';
-import { Region } from '../../../models/region.model';
+import { Region, RegionPoint } from '../../../models/region.model';
 import { SeaZone } from '../../../models/sea-zone.model';
 import { UnitInstance } from '../../../models/unit-instance.model';
 import { MapGeometry } from '../interaction/map-geometry';
@@ -31,6 +31,8 @@ export interface MapDrawParams {
   readonly movableUnitIds: ReadonlySet<string>;
   /** Regions with an unresolved Attack Phase battle — only these are highlighted/clickable while phase === 'attack' (PROJECT_RULES.md sections 9-14). */
   readonly contestedRegionIds: ReadonlySet<string>;
+  /** Declared-but-unfired Rocket System missile strikes (PROJECT_RULES.md section 15), launcher region -> target region, drawn as a trajectory line. */
+  readonly missileStrikePreviews: readonly { readonly launcherRegionId: string; readonly targetRegionId: string }[];
   readonly getFlagImage: (path: string) => HTMLImageElement;
   readonly getUnitIcon: UnitIconLookup;
 }
@@ -128,6 +130,14 @@ export class MapRenderer {
             params.movableUnitIds,
           );
         }
+      }
+    }
+
+    for (const preview of params.missileStrikePreviews) {
+      const from = params.regionsById[preview.launcherRegionId];
+      const to = params.regionsById[preview.targetRegionId];
+      if (from && to) {
+        this.drawMissileTrajectory(context, from.position, to.position, view.scale);
       }
     }
 
@@ -281,5 +291,58 @@ export class MapRenderer {
     }
 
     drawInfluenceTokens(context, region, left + boxWidth, cy, factions, scale);
+  }
+
+  /**
+   * A dashed orange line + arrowhead from a Rocket System's region to the
+   * region it declared a missile strike on (PROJECT_RULES.md section 15) —
+   * the launcher itself never moves, so this is the only visible sign of
+   * the pending strike until its battle opens in the Attack Phase.
+   */
+  private drawMissileTrajectory(
+    context: CanvasRenderingContext2D,
+    fromPoint: RegionPoint,
+    toPoint: RegionPoint,
+    scale: number,
+  ): void {
+    const w = this.config.mapViewBoxWidth;
+    const h = this.config.mapViewBoxHeight;
+    const fromX = fromPoint.x * w;
+    const fromY = fromPoint.y * h;
+    const toX = toPoint.x * w;
+    const toY = toPoint.y * h;
+    const color = '#e0ac4d';
+
+    context.save();
+    context.setLineDash([8 / scale, 6 / scale]);
+    context.lineWidth = 2 / scale;
+    context.strokeStyle = color;
+    context.beginPath();
+    context.moveTo(fromX, fromY);
+    context.lineTo(toX, toY);
+    context.stroke();
+    context.restore();
+
+    const angle = Math.atan2(toY - fromY, toX - fromX);
+    const arrowLength = 12 / scale;
+    context.save();
+    context.fillStyle = color;
+    context.beginPath();
+    context.moveTo(toX, toY);
+    context.lineTo(
+      toX - arrowLength * Math.cos(angle - Math.PI / 6),
+      toY - arrowLength * Math.sin(angle - Math.PI / 6),
+    );
+    context.lineTo(
+      toX - arrowLength * 0.6 * Math.cos(angle),
+      toY - arrowLength * 0.6 * Math.sin(angle),
+    );
+    context.lineTo(
+      toX - arrowLength * Math.cos(angle + Math.PI / 6),
+      toY - arrowLength * Math.sin(angle + Math.PI / 6),
+    );
+    context.closePath();
+    context.fill();
+    context.restore();
   }
 }

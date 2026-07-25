@@ -92,6 +92,14 @@ export interface RegionContestedEvent {
   readonly regionId: string;
 }
 
+/** A Rocket System declared a supporting missile strike on a region its own side is already attacking (PROJECT_RULES.md section 15) — the launcher stays put. */
+export interface MissileStrikeDeclaredEvent {
+  readonly type: 'MissileStrikeDeclared';
+  readonly playerId: string;
+  readonly regionId: string;
+  readonly unitInstanceId: string;
+}
+
 export interface CitizenSatisfactionChangedEvent {
   readonly type: 'CitizenSatisfactionChanged';
   readonly playerId: string;
@@ -187,6 +195,7 @@ export type GameEngineEvent =
   | MovementRejectedEvent
   | RegionCapturedEvent
   | RegionContestedEvent
+  | MissileStrikeDeclaredEvent
   | CitizenSatisfactionChangedEvent
   | RebelArmySpawnedEvent
   | PublicSpendingRejectedEvent

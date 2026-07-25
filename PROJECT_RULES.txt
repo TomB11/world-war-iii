@@ -366,18 +366,28 @@ If none exists, retreat is impossible.
 
 # 15. MISSILES
 
-A Rocket System moved into a DEFENDED enemy region during Attack Moves
-(section 7) declares a missile strike there instead of a normal attack —
-its own Attack value is 0, so this is the only offensive thing it can do.
-It still physically occupies the region afterward like any other attacking
-unit (co-located with the defenders, "contested").
+A Rocket System "attacks" a DEFENDED enemy region during Attack Moves
+(section 7) to declare a supporting missile strike there instead of a
+normal attack — its own Attack value is 0, so this is the only offensive
+thing it can do. Unlike every other attacking unit, it does NOT physically
+enter the region: it stays exactly where it was. Declaring a strike is only
+allowed once this player's own units are already attacking that region (some
+other unit of theirs is already there) — a Rocket System can never open a
+battle by itself, only support one already underway.
+
+CURRENT IMPLEMENTATION STATUS: the declaration is recorded in
+GameState.missileDeclarations (target regionId -> the declaring Rocket
+System's unit id), not by co-location — see AttackCommand and
+RulesEngine.hasPendingMissileStrike. It's cleared for any units belonging to
+the player whose turn just ended (EndTurnCommand), so an unused declaration
+never carries over to a future battle in the same region.
 
 Missiles resolve FIRST in the Attack Phase, before any other combat
 (section 8). When that region's battle opens, the attacker chooses one
 missile from their Arsenal (Reserve) to fire, if they have any — no missile
 owned means the missile sub-phase is skipped entirely and the battle goes
 straight to normal combat (with the Rocket System itself contributing
-nothing, since its Attack is 0).
+nothing, since its Attack is 0, and it isn't even physically present).
 
 Interception: possible only if the defender has their OWN Rocket System in
 the targeted region or an adjacent one. Roll <= 2 destroys the incoming
@@ -581,9 +591,12 @@ against enemy missile attacks.
 
 Gets +1 Attack when defending against Fighters.
 
-CURRENT IMPLEMENTATION STATUS: not implemented — entirely dependent on the
-missile system (section 15/16), which doesn't exist yet (no
-FireMissileCommand, no missile inventory tracking).
+CURRENT IMPLEMENTATION STATUS: declaring and firing a missile (section 15)
+IS implemented (AttackCommand + FireMissileCommand). The "must hold a
+missile for a full turn before firing" delay and the "+1 Attack defending
+against Fighters" bonus are NOT implemented — a missile in Reserve can be
+fired the same turn it's bought, and roll-combat.command.ts has no
+Fighter-specific defense bonus.
 
 ---
 

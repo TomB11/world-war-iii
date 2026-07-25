@@ -198,10 +198,12 @@ export class RulesEngine {
 
   /**
    * Whether a fresh battle in this region should open with the missile
-   * sub-phase (PROJECT_RULES.md section 15): the attacker has a
-   * missile-declaring unit (Rocket System) physically present here, and
-   * their Reserve actually holds at least one missile to fire. False (skip
-   * straight to normal combat) if either condition doesn't hold.
+   * sub-phase (PROJECT_RULES.md section 15): a Rocket System of the
+   * attacker's declared a supporting strike on this region (recorded in
+   * GameState.missileDeclarations by AttackCommand — the launcher itself
+   * stays wherever it was, it never physically enters), owned by this
+   * player, and their Reserve actually holds at least one missile to fire.
+   * False (skip straight to normal combat) if any condition doesn't hold.
    */
   hasPendingMissileStrike(
     state: GameState,
@@ -209,10 +211,12 @@ export class RulesEngine {
     playerId: string,
     unitCatalog: Readonly<Record<string, UnitDefinition>>,
   ): boolean {
-    const hasLauncher = state.units.some(
-      (unit) => unit.regionId === regionId && unit.ownerId === playerId && unitCatalog[unit.unitId]?.canDeclareMissile,
-    );
-    if (!hasLauncher) {
+    const launcherUnitId = state.missileDeclarations[regionId];
+    if (launcherUnitId === undefined) {
+      return false;
+    }
+    const launcher = this.getUnitInstance(state, launcherUnitId);
+    if (!launcher || launcher.ownerId !== playerId) {
       return false;
     }
     const player = this.getPlayer(state, playerId);

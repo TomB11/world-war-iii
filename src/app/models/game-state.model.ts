@@ -38,4 +38,12 @@ export interface GameState {
   readonly nextUnitInstanceId: number;
   /** In-progress Attack Phase battles, keyed by regionId (PROJECT_RULES.md sections 9-14). */
   readonly combats: Readonly<Record<string, RegionCombat>>;
+  /**
+   * Regions with a Rocket System missile strike declared this turn, keyed by
+   * target regionId -> the declaring UnitInstance id (PROJECT_RULES.md
+   * section 15). The launcher never moves — it stays put and only supports
+   * a battle its own side already opened by physically attacking that
+   * region. Cleared for the ending player's declarations in EndTurnCommand.
+   */
+  readonly missileDeclarations: Readonly<Record<string, string>>;
 }

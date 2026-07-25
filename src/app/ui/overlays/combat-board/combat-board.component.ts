@@ -21,9 +21,10 @@ interface CombatUnit {
  * a simultaneous exchange (section 10): both sides roll before either
  * side's casualties are removed, so a unit due to die this round still
  * shows its own roll first. Always fights to a wipeout — no retreat (future
- * work, see engine/commands/roll-combat.command.ts). If the attacker
- * declared a missile strike (a Rocket System present, section 15), the
- * battle opens with a missile choice before any of that.
+ * work, see engine/commands/roll-combat.command.ts). If the attacker's
+ * Rocket System declared a supporting strike (section 15 — the launcher
+ * itself stays wherever it was), the battle opens with a missile choice
+ * before any of that.
  */
 @Component({
   selector: 'wwiii-combat-board',

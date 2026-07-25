@@ -1,5 +1,5 @@
 import { RulesEngine } from './rules-engine';
-import { region, unitDef, unitInstance, testState } from './test-fixtures';
+import { player, region, unitDef, unitInstance, testState } from './test-fixtures';
 import { UnitDefinition } from '../models/unit.model';
 
 describe('RulesEngine movement/attack reach (computeReach)', () => {
@@ -154,5 +154,45 @@ describe('RulesEngine movement/attack reach (computeReach)', () => {
 
     expect(moves.has('b')).toBe(false);
     expect(attacks.get('b')).toBe(1);
+  });
+});
+
+describe('RulesEngine.hasPendingMissileStrike / createInitialCombat (PROJECT_RULES.md section 15)', () => {
+  const rules = new RulesEngine();
+  const catalog: Readonly<Record<string, UnitDefinition>> = {
+    'missile-a': unitDef({ id: 'missile-a', category: 'missile' }),
+  };
+
+  it('is false with no declaration for the region', () => {
+    const state = testState({ missileDeclarations: {} });
+    expect(rules.hasPendingMissileStrike(state, 'front', 'p1', catalog)).toBe(false);
+  });
+
+  it('is false when declared but the player has no missile in Reserve', () => {
+    const state = testState({
+      missileDeclarations: { front: 'launcher-1' },
+      units: [unitInstance({ id: 'launcher-1', unitId: 'rocket-system', ownerId: 'p1', regionId: 'home' })],
+      players: [player({ id: 'p1' })],
+    });
+    expect(rules.hasPendingMissileStrike(state, 'front', 'p1', catalog)).toBe(false);
+  });
+
+  it('is true once declared by this player and their Reserve holds a missile', () => {
+    const state = testState({
+      missileDeclarations: { front: 'launcher-1' },
+      units: [unitInstance({ id: 'launcher-1', unitId: 'rocket-system', ownerId: 'p1', regionId: 'home' })],
+      players: [player({ id: 'p1', reserve: [{ unitId: 'missile-a', quantity: 1 }] })],
+    });
+    expect(rules.hasPendingMissileStrike(state, 'front', 'p1', catalog)).toBe(true);
+    expect(rules.createInitialCombat(state, 'front', 'p1', catalog).step).toBe('missileChoice');
+  });
+
+  it('is false for a declaration owned by a different player', () => {
+    const state = testState({
+      missileDeclarations: { front: 'launcher-1' },
+      units: [unitInstance({ id: 'launcher-1', unitId: 'rocket-system', ownerId: 'p2', regionId: 'home' })],
+      players: [player({ id: 'p1', reserve: [{ unitId: 'missile-a', quantity: 1 }] })],
+    });
+    expect(rules.hasPendingMissileStrike(state, 'front', 'p1', catalog)).toBe(false);
   });
 });

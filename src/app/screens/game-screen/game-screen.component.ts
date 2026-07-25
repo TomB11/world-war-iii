@@ -11,6 +11,7 @@ import { CyberAttackPanelComponent } from '../../ui/panels/cyber-attack-panel/cy
 import { PhaseStepperComponent } from '../../ui/panels/phase-stepper/phase-stepper.component';
 import { VictoryBannerComponent } from '../../ui/overlays/victory-banner/victory-banner.component';
 import { CombatBoardComponent } from '../../ui/overlays/combat-board/combat-board.component';
+import { ToastHostComponent } from '../../ui/overlays/toast-host/toast-host.component';
 import { GameStore } from '../../state/store';
 
 @Component({
@@ -29,6 +30,7 @@ import { GameStore } from '../../state/store';
     PhaseStepperComponent,
     VictoryBannerComponent,
     CombatBoardComponent,
+    ToastHostComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './game-screen.component.html',

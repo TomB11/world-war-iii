@@ -55,6 +55,7 @@ export class GameStore {
   private readonly _combatOutcomeMessage = signal<string | null>(null);
   private readonly _phaseAdvanceRejectionReason = signal<string | null>(null);
   private readonly _combatRegionId = signal<string | null>(null);
+  private readonly _missileStrikeMessage = signal<string | null>(null);
 
   readonly state = this.gameState.state;
   readonly loadError = this.gameState.loadError;
@@ -73,6 +74,7 @@ export class GameStore {
   readonly combatOutcomeMessage = this._combatOutcomeMessage.asReadonly();
   readonly phaseAdvanceRejectionReason = this._phaseAdvanceRejectionReason.asReadonly();
   readonly combatRegionId = this._combatRegionId.asReadonly();
+  readonly missileStrikeMessage = this._missileStrikeMessage.asReadonly();
 
   readonly selectedRegionId = this.mapUi.selectedRegionId;
   readonly selectedRegion = this.mapUi.selectedRegion;
@@ -170,6 +172,30 @@ export class GameStore {
     }
     return new Set(this.engine.getRules().getContestedRegionIds(state, player.id));
   });
+
+  /**
+   * Declared-but-unfired Rocket System missile strikes (PROJECT_RULES.md
+   * section 15), resolved from GameState.missileDeclarations to the
+   * launcher's current region + its target region, for the map to draw a
+   * trajectory line between them. The launcher itself never moves, so its
+   * region only ever changes if it's later ordered elsewhere.
+   */
+  readonly missileStrikePreviews = computed<readonly { readonly launcherRegionId: string; readonly targetRegionId: string }[]>(
+    () => {
+      const state = this.state();
+      if (!state) {
+        return [];
+      }
+      const previews: { launcherRegionId: string; targetRegionId: string }[] = [];
+      for (const [targetRegionId, launcherUnitId] of Object.entries(state.missileDeclarations)) {
+        const launcher = state.units.find((unit) => unit.id === launcherUnitId);
+        if (launcher) {
+          previews.push({ launcherRegionId: launcher.regionId, targetRegionId });
+        }
+      }
+      return previews;
+    },
+  );
 
   /** The RegionCombat currently open in the combat board modal, or null if none/not started yet. */
   readonly activeCombat = computed<RegionCombat | null>(() => {
@@ -467,6 +493,16 @@ export class GameStore {
     return this.engine.getRules().getLoadableTransportTargets(state, unit, this._units());
   }
 
+  /**
+   * Surfaces a drag-and-drop drop that the map component detected as
+   * illegal (dropTarget isn't in loadTargets/attackTargets/moveDestinations)
+   * before ever reaching a command — there's no engine event to react to,
+   * so this sets the same signal MovementRejected normally would.
+   */
+  reportInvalidDestination(): void {
+    this._movementRejectionReason.set('That is not a legal destination for this unit.');
+  }
+
   private dispatch(command: Command): void {
     const currentState = this.gameState.state();
     if (!currentState) {
@@ -492,6 +528,12 @@ export class GameStore {
           this.mapUi.setSelected(event.regionId);
           this._movementRejectionReason.set(null);
           break;
+        case 'MissileStrikeDeclared': {
+          this._movementRejectionReason.set(null);
+          const regionName = this.regions()[event.regionId]?.name ?? event.regionId;
+          this._missileStrikeMessage.set(`Missile strike declared on ${regionName}.`);
+          break;
+        }
         case 'PurchaseRejected':
           this._purchaseRejectionReason.set(event.reason);
           break;
