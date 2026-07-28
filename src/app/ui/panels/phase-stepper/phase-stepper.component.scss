@@ -6,9 +6,6 @@
 }
 
 .phase-stepper {
-  display: flex;
-  align-items: center;
-  gap: 4px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -35,6 +32,6 @@
     background: var(--wwiii-accent);
     border-color: var(--wwiii-accent);
     font-weight: 700;
-    box-shadow: 0 0 10px rgba(224, 172, 77, 0.5);
+    box-shadow: 0 0 10px rgba(79, 184, 224, 0.5);
   }
 }

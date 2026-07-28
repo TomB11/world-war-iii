@@ -1,6 +1,13 @@
-<span
-  class="unit-icon"
-  [style.background-color]="color()"
-  [style.mask-image]="'url(' + imagePath() + ')'"
-  [style.-webkit-mask-image]="'url(' + imagePath() + ')'"
-></span>
+@if (dedicatedIconPath(); as path) {
+  <img class="unit-icon unit-icon--dedicated" [src]="path" alt="" />
+} @else {
+  <span
+    class="unit-icon"
+    [style.background-color]="color()"
+    [style.mask-image]="'url(' + silhouetteImagePath() + ')'"
+    [style.-webkit-mask-image]="'url(' + silhouetteImagePath() + ')'"
+  ></span>
+}
+@if (isAirborne()) {
+  <span class="unit-icon__badge">A</span>
+}

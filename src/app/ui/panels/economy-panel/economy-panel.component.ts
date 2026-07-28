@@ -30,8 +30,30 @@ export class EconomyPanelComponent {
     return this.store.factions()[player.factionId]?.color ?? '#888888';
   });
 
+  protected readonly activePlayerFactionId = computed(() => this.store.activePlayer()?.factionId ?? null);
+
   protected unitName(unitId: string): string {
     return this.store.units()[unitId]?.name ?? unitId;
+  }
+
+  /** Selecting a different unit resets the quantity stepper back to 1 (re-clicking the already-selected unit leaves it as-is). */
+  protected onSelectUnit(unitId: string): void {
+    if (this.selectedUnitId() !== unitId) {
+      this.selectedUnitId.set(unitId);
+      this.quantity.set(1);
+    }
+  }
+
+  protected setQuantity(value: number): void {
+    this.quantity.set(Math.max(1, Math.floor(value) || 1));
+  }
+
+  protected incrementQuantity(): void {
+    this.quantity.update((q) => q + 1);
+  }
+
+  protected decrementQuantity(): void {
+    this.quantity.update((q) => Math.max(1, q - 1));
   }
 
   protected purchase(playerId: string): void {

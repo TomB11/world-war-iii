@@ -377,7 +377,7 @@ export class WorldMapComponent implements AfterViewInit, OnDestroy {
       contestedRegionIds: this.store.contestedRegionIds(),
       missileStrikePreviews: this.store.missileStrikePreviews(),
       getFlagImage: (path) => this.getFlagImage(path),
-      getUnitIcon: (unitId, color) => this.unitIconImages.getTintedIcon(unitId, color),
+      getUnitIcon: (unitId, ownerId, color) => this.unitIconImages.getTintedIcon(unitId, ownerId, color),
     });
   }
 

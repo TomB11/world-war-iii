@@ -7,6 +7,7 @@ import { player, region, testState, TEST_ECONOMY_CONFIG, unitDef, unitInstance }
 describe('DeployUnitCommand', () => {
   const catalog: Readonly<Record<string, UnitDefinition>> = {
     infantry: unitDef({ id: 'infantry', movement: 1 }),
+    'missile-a': unitDef({ id: 'missile-a', category: 'missile', movement: 0 }),
   };
 
   function baseCombat(overrides: Partial<RegionCombat> = {}): RegionCombat {
@@ -20,6 +21,7 @@ describe('DeployUnitCommand', () => {
       lastDefenderRolls: [],
       attackerCasualties: [],
       defenderCasualties: [],
+      armedMissileUnitId: null,
       missileResult: null,
       ...overrides,
     };
@@ -83,5 +85,28 @@ describe('DeployUnitCommand', () => {
 
     expect(newIds).toContain('unit-4');
     expect(new Set(newIds).size).toBe(newIds.length);
+  });
+
+  it('rejects deploying a missile — it has no physical presence and stays in Reserve until fired (PROJECT_RULES.md section 15)', () => {
+    const state = testState({
+      phase: 'placeNewUnits',
+      activePlayerId: 'p1',
+      regions: { factory: region({ id: 'factory', ownerId: 'p1', factory: 1 }) },
+      players: [player({ id: 'p1', reserve: [{ unitId: 'missile-a', quantity: 1 }] })],
+    });
+
+    const command = new DeployUnitCommand('p1', 'missile-a', 'factory', catalog);
+    const result = command.execute(state);
+
+    expect(result.events).toEqual([
+      {
+        type: 'MovementRejected',
+        playerId: 'p1',
+        reason:
+          'Missiles are never deployed to the map — they stay in Reserve until a Rocket System fires one (PROJECT_RULES.md section 15)',
+      },
+    ]);
+    expect(result.state.units).toEqual([]);
+    expect(result.state.players[0].reserve).toEqual([{ unitId: 'missile-a', quantity: 1 }]);
   });
 });

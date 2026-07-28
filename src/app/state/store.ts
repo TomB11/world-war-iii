@@ -17,6 +17,7 @@ import { HackCommand } from '../engine/commands/hack.command';
 import { PoliticalInfluenceCommand } from '../engine/commands/political-influence.command';
 import { UpgradeHackLevelCommand } from '../engine/commands/upgrade-hack-level.command';
 import { RollCombatCommand } from '../engine/commands/roll-combat.command';
+import { SelectMissileCommand } from '../engine/commands/select-missile.command';
 import { FireMissileCommand } from '../engine/commands/fire-missile.command';
 import { RemoveCasualtyCommand } from '../engine/commands/remove-casualty.command';
 import { GameEngineEvent } from '../interfaces/game-events';
@@ -197,14 +198,27 @@ export class GameStore {
     },
   );
 
-  /** The RegionCombat currently open in the combat board modal, or null if none/not started yet. */
+  /**
+   * The RegionCombat currently open in the combat board modal, or null if
+   * none is open. A battle's first RegionCombat entry isn't written to state
+   * until the player's first action there (RollCombatCommand/SelectMissileCommand
+   * both lazily materialize it via RulesEngine.createInitialCombat) — but the
+   * modal needs to show the correct starting step (missile choice vs. a
+   * normal attacker roll) the instant it opens, before any action has been
+   * taken. So this falls back to the same createInitialCombat query (a
+   * read-only RulesEngine call, safe to use for display) rather than null.
+   */
   readonly activeCombat = computed<RegionCombat | null>(() => {
     const state = this.state();
     const regionId = this._combatRegionId();
-    if (!state || !regionId) {
+    const playerId = this.activePlayer()?.id;
+    if (!state || !regionId || !playerId) {
       return null;
     }
-    return state.combats[regionId] ?? null;
+    return (
+      state.combats[regionId] ??
+      this.engine.getRules().createInitialCombat(state, regionId, playerId, this._units())
+    );
   });
 
   /**
@@ -406,9 +420,14 @@ export class GameStore {
     this.dispatch(new RollCombatCommand(playerId, regionId, this._units(), this.engine.getRules()));
   }
 
-  /** Fires one missile from Reserve at a region where a Rocket System declared a strike (PROJECT_RULES.md section 15). */
-  fireMissile(playerId: string, regionId: string, missileUnitId: string): void {
-    this.dispatch(new FireMissileCommand(playerId, regionId, missileUnitId, this._units(), this.engine.getRules()));
+  /** Arms one Reserve missile for a pending strike (PROJECT_RULES.md section 15) — first of two clicks; see FireMissileCommand for the roll itself. */
+  selectMissile(playerId: string, regionId: string, missileUnitId: string): void {
+    this.dispatch(new SelectMissileCommand(playerId, regionId, missileUnitId, this._units(), this.engine.getRules()));
+  }
+
+  /** Rolls the missile armed via selectMissile() — resolves interception/hit and removes it from Reserve either way (PROJECT_RULES.md section 15). */
+  fireMissile(playerId: string, regionId: string): void {
+    this.dispatch(new FireMissileCommand(playerId, regionId, this._units(), this.engine.getRules()));
   }
 
   /** Removes one unit as a casualty during a region's Attack Phase battle. */

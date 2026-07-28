@@ -118,6 +118,7 @@ export class RollCombatCommand implements Command {
       lastDefenderRolls: isAttackerRoll ? [] : rolls,
       attackerCasualties: combat.attackerCasualties,
       defenderCasualties: combat.defenderCasualties,
+      armedMissileUnitId: combat.armedMissileUnitId,
       missileResult: combat.missileResult,
     };
 

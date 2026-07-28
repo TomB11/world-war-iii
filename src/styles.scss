@@ -1,5 +1,16 @@
 /* World War III - Global Styles */
-/* No Angular Material. No Bootstrap. No jQuery. Hand-rolled game UI only. */
+/* No Angular Material. No jQuery. Hand-rolled game UI, layout only from Bootstrap. */
+
+// Bootstrap: utility classes only (d-flex, gap-*, m-*/p-*, text-*, ...) — no
+// Reboot, no component styles (buttons/forms/cards keep their own hand-rolled
+// dark theme below; importing Bootstrap's component layer would fight it).
+@import 'bootstrap/scss/functions';
+@import 'bootstrap/scss/variables';
+@import 'bootstrap/scss/variables-dark';
+@import 'bootstrap/scss/maps';
+@import 'bootstrap/scss/mixins';
+@import 'bootstrap/scss/utilities';
+@import 'bootstrap/scss/utilities/api';
 
 :root {
   --wwiii-bg: #0b0e14;
@@ -7,8 +18,8 @@
   --wwiii-border: #2a3348;
   --wwiii-text: #e6e9f0;
   --wwiii-text-dim: #8a92a6;
-  --wwiii-accent: #c8963e;
-  --wwiii-accent-hover: #e0ac4d;
+  --wwiii-accent: #4fb8e0;
+  --wwiii-accent-hover: #7ecdec;
   --wwiii-danger: #b8433f;
   --wwiii-success: #4c9a5b;
   --wwiii-font: 'Segoe UI', Roboto, system-ui, sans-serif;
@@ -35,9 +46,82 @@ wwiii-root {
   height: 100%;
 }
 
+/*
+ * Shared base look for the hand-rolled game UI. Every sidebar/overlay panel,
+ * button, form control, hint/rejection/result message in ui/panels and
+ * ui/overlays is built from these — component .scss files should only add
+ * what's actually DIFFERENT for that component (a bigger CTA variant, a
+ * unique layout), never repeat these declarations verbatim.
+ */
+
+h2 {
+  margin: 0 0 12px;
+  color: var(--wwiii-accent);
+  font-size: 18px;
+}
+
+h3 {
+  margin: 16px 0 8px;
+  color: var(--wwiii-text-dim);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.wwiii-panel {
+  background: var(--wwiii-bg-panel);
+  border: 1px solid var(--wwiii-border);
+  border-radius: 6px;
+  padding: 16px;
+}
+
 button {
   font-family: inherit;
   cursor: pointer;
+  padding: 6px 12px;
+  font-size: 12px;
+  color: var(--wwiii-text);
+  background: var(--wwiii-bg);
+  border: 1px solid var(--wwiii-border);
+  border-radius: 4px;
+
+  &:hover:not(:disabled) {
+    border-color: var(--wwiii-accent);
+    color: var(--wwiii-accent);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+select,
+input {
+  background: var(--wwiii-bg);
+  color: var(--wwiii-text);
+  border: 1px solid var(--wwiii-border);
+  border-radius: 4px;
+  padding: 4px 6px;
+  font-size: 12px;
+}
+
+.hint {
+  color: var(--wwiii-text-dim);
+  font-size: 12px;
+  margin: 0;
+}
+
+.rejection {
+  color: var(--wwiii-danger);
+  font-size: 12px;
+  margin: 8px 0 0;
+}
+
+.result {
+  color: var(--wwiii-accent);
+  font-size: 12px;
+  margin: 8px 0 0;
 }
 
 ::-webkit-scrollbar {

@@ -2,76 +2,103 @@
   display: block;
 }
 
-.panel {
-  background: var(--wwiii-bg-panel);
+/* Deploy: unit picker */
+
+.deploy-unit-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 10px;
+}
+
+.deploy-unit-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 6px;
+  background: rgba(255, 255, 255, 0.02);
   border: 1px solid var(--wwiii-border);
   border-radius: 6px;
-  padding: 16px;
-}
-
-h2 {
-  margin: 0 0 12px;
-  color: var(--wwiii-accent);
-  font-size: 18px;
-}
-
-h3 {
-  margin: 16px 0 8px;
-  color: var(--wwiii-text-dim);
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.deploy-form,
-.unit-actions {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-select,
-input {
-  background: var(--wwiii-bg);
   color: var(--wwiii-text);
-  border: 1px solid var(--wwiii-border);
-  border-radius: 4px;
-  padding: 4px 6px;
-  font-size: 12px;
+  transition: border-color 0.15s ease, background 0.15s ease;
+
+  &:hover {
+    border-color: var(--wwiii-accent);
+  }
+
+  &--selected {
+    border-color: var(--wwiii-accent);
+    background: rgba(79, 184, 224, 0.1);
+  }
 }
 
-button {
+.deploy-unit-card__frame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--wwiii-border);
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25);
+}
+
+.deploy-unit-card__name {
+  font-size: 12px;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.deploy-unit-card__qty {
+  font-size: 11px;
+  color: var(--wwiii-text-dim);
+}
+
+/* Deploy: destination + confirm */
+
+.chip {
   padding: 6px 12px;
   font-size: 12px;
   color: var(--wwiii-text);
   background: var(--wwiii-bg);
   border: 1px solid var(--wwiii-border);
-  border-radius: 4px;
-  cursor: pointer;
+  border-radius: 999px;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
 
-  &:hover:not(:disabled) {
+  &:hover {
     border-color: var(--wwiii-accent);
     color: var(--wwiii-accent);
   }
 
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+  &--selected {
+    border-color: var(--wwiii-accent);
+    color: #0b0e14;
+    background: var(--wwiii-accent);
   }
 }
 
-.hint {
-  color: var(--wwiii-text-dim);
-  font-size: 12px;
-  margin: 0;
+.deploy-btn {
+  width: 100%;
+  padding: 9px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0b0e14;
+  background: var(--wwiii-accent);
+  border: 1px solid var(--wwiii-accent);
+  border-radius: 6px;
+
+  &:hover:not(:disabled) {
+    filter: brightness(1.1);
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    filter: none;
+  }
 }
 
-.rejection {
-  color: var(--wwiii-danger);
-  font-size: 12px;
-  margin: 8px 0 0;
-}
+/* Transports (Unload) */
 
 .unit-list {
   list-style: none;
@@ -91,11 +118,6 @@ button {
 
 .unit-summary {
   margin-bottom: 6px;
-}
-
-.embarked-tag {
-  color: var(--wwiii-text-dim);
-  font-style: italic;
 }
 
 .embarked-row {

@@ -149,6 +149,7 @@ export class MapRenderer {
         params.dragPointerPoint.x,
         params.dragPointerPoint.y,
         DRAG_GHOST_ICON_SIZE_PX / view.scale,
+        params.activePlayerId,
         color,
         view.scale,
         params.getUnitIcon,
@@ -183,7 +184,7 @@ export class MapRenderer {
     context.fillStyle = flags.isLoadTarget
       ? 'rgba(74, 200, 220, 0.35)'
       : flags.isSelected
-        ? 'rgba(224, 172, 77, 0.22)'
+        ? 'rgba(79, 184, 224, 0.22)'
         : flags.isLegalDropTarget
           ? 'rgba(92, 184, 92, 0.28)'
           : flags.isHovered
@@ -194,7 +195,7 @@ export class MapRenderer {
     context.strokeStyle = flags.isLoadTarget
       ? '#4ac8dc'
       : flags.isSelected
-        ? '#e0ac4d'
+        ? '#4fb8e0'
         : flags.isLegalDropTarget
           ? '#5cb85c'
           : flags.isHovered
@@ -250,7 +251,7 @@ export class MapRenderer {
 
     context.lineWidth = (flags.isSelected || flags.isLegalDropTarget ? 3 : flags.isNeighbor ? 2 : 1) / scale;
     context.strokeStyle = flags.isSelected
-      ? '#e0ac4d'
+      ? '#4fb8e0'
       : flags.isLegalDropTarget
         ? dropStroke
         : flags.isNeighbor
@@ -311,7 +312,7 @@ export class MapRenderer {
     const fromY = fromPoint.y * h;
     const toX = toPoint.x * w;
     const toY = toPoint.y * h;
-    const color = '#e0ac4d';
+    const color = '#4fb8e0';
 
     context.save();
     context.setLineDash([8 / scale, 6 / scale]);

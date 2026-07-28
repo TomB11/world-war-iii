@@ -36,9 +36,15 @@ import { applyForceCaptureSatisfactionPenalty } from './shared/capture-penalties
  * (PROJECT_RULES.md section 15): it never physically enters — it stays put
  * and only *declares* a supporting missile strike, and only once its own
  * side is already attacking that region (some other unit of this player's
- * must already be there). This records the declaration in
- * GameState.missileDeclarations instead of moving anything; RulesEngine
- * .hasPendingMissileStrike reads it back when that region's battle opens.
+ * must already be there), and only if their Reserve actually holds a
+ * missile to fire (RulesEngine.hasAnyMissileInReserve) — declaring a strike
+ * with nothing to launch would just be a silent no-op once the battle opens.
+ * Its declare-range also isn't the normal movement-based reach (it never
+ * moves): RulesEngine.getMissileStrikeTargets uses the longest range among
+ * missiles in Reserve instead, normally 1 hop but 2 while holding a Missile
+ * B (section 16). This records the declaration in GameState.missileDeclarations
+ * instead of moving anything; RulesEngine.hasPendingMissileStrike reads it
+ * back when that region's battle opens.
  */
 export class AttackCommand implements Command {
   readonly type = 'Attack';
@@ -99,7 +105,13 @@ export class AttackCommand implements Command {
       return reject('This unit has no movement remaining');
     }
 
-    const attackReach = this.rules.getReachableAttacks(state, unit, this.unitCatalog);
+    // A Rocket System's missile range isn't its own movesRemaining (it never
+    // moves) — it's the longest range among the missiles in its owner's
+    // Reserve (PROJECT_RULES.md section 16 — Missile B reaches 2 hops vs.
+    // the usual 1), so it gets its own reach query here.
+    const attackReach = isDefendedTargetForMissile
+      ? this.rules.getMissileStrikeTargets(state, unit, this.unitCatalog)
+      : this.rules.getReachableAttacks(state, unit, this.unitCatalog);
     const cost = attackReach.get(this.targetRegionId);
     if (cost === undefined) {
       return reject(`"${this.targetRegionId}" is not a legal attack target for this unit`);
@@ -126,6 +138,9 @@ export class AttackCommand implements Command {
         return reject(
           'A Rocket System can only support an attack your own units have already opened on that region',
         );
+      }
+      if (!this.rules.hasAnyMissileInReserve(state, this.playerId, this.unitCatalog)) {
+        return reject('You have no missiles in Reserve to fire — purchase one before declaring a strike');
       }
       const nextUnits = state.units.map((candidate) =>
         candidate.id === this.unitInstanceId ? { ...candidate, hasFoughtThisTurn: true } : candidate,

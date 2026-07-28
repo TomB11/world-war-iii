@@ -408,12 +408,21 @@ Missile A
 
 Hits on a roll of <= 2.
 
+Declaring a strike with one in Reserve reaches a defended region up to 1
+region away from the Rocket System (its usual declare range).
+
 Missile B
 
 Hits on a roll of <= 4.
 
-Attack values are loaded from units.json (section 41) — never hardcoded.
-There are no nuclear missiles.
+Longer-ranged: holding one in Reserve lets the Rocket System declare a
+strike up to 2 regions away, not just 1 — the path there follows the same
+rules as any other attack move (through friendly/empty territory, hostile
+only on the final hop). Holding a Missile B extends the declare range even
+if Missile A is what ultimately gets fired.
+
+Attack values and ranges are loaded from units.json (section 41) — never
+hardcoded. There are no nuclear missiles.
 
 ---
 

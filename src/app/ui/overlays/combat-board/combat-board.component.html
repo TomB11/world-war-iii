@@ -18,7 +18,7 @@
             <div class="combat-board__casualties">
               @for (unit of attackerCasualtyColumn(value); track unit.instanceId) {
                 <span class="combat-board__casualty" [title]="unit.unitName + ' (casualty)'">
-                  <wwiii-unit-icon [unitId]="unit.unitId" [color]="unit.color" [size]="20" />
+                  <wwiii-unit-icon [unitId]="unit.unitId" [ownerId]="unit.ownerId" [color]="unit.color" [size]="20" />
                   @if (attackerRollFor(unit.instanceId); as rollInfo) {
                     <span class="combat-board__roll" [class.combat-board__roll--hit]="rollInfo.hit">{{
                       rollInfo.roll
@@ -38,13 +38,18 @@
                   [title]="unit.unitName"
                   (click)="removeCasualty(unit)"
                 >
-                  <wwiii-unit-icon [unitId]="unit.unitId" [color]="unit.color" [size]="28" />
+                  <wwiii-unit-icon [unitId]="unit.unitId" [ownerId]="unit.ownerId" [color]="unit.color" [size]="28" />
                   @if (attackerRollFor(unit.instanceId); as rollInfo) {
                     <span class="combat-board__roll" [class.combat-board__roll--hit]="rollInfo.hit">{{
                       rollInfo.roll
                     }}</span>
                   }
                 </button>
+              }
+              @if (armedMissileFor(value); as missileUnitId) {
+                <span class="combat-board__unit combat-board__unit--armed-missile" [title]="armedMissileName() + ' — armed, awaiting roll'">
+                  <wwiii-unit-icon [unitId]="missileUnitId" [size]="28" />
+                </span>
               }
             </div>
           </div>
@@ -84,11 +89,20 @@
           </p>
           <div class="combat-board__missile-choices">
             @for (missile of reserveMissiles(); track missile.unitId) {
-              <button type="button" class="combat-board__btn" (click)="fireMissile(missile.unitId)">
-                Fire {{ missile.name }} (×{{ missile.quantity }})
+              <button type="button" class="combat-board__btn" (click)="selectMissile(missile.unitId)">
+                {{ missile.name }} (×{{ missile.quantity }})
               </button>
             }
           </div>
+
+          @if (store.combatRejectionReason(); as reason) {
+            <p class="combat-board__rejection">{{ reason }}</p>
+          }
+        } @else if (pendingMissileRoll()) {
+          <p class="combat-board__prompt">
+            {{ armedMissileName() }} is armed — roll the die yourself to see if it hits.
+          </p>
+          <button type="button" class="combat-board__btn" (click)="rollMissile()">Roll Missile Dice</button>
 
           @if (store.combatRejectionReason(); as reason) {
             <p class="combat-board__rejection">{{ reason }}</p>
@@ -152,7 +166,7 @@
                   [title]="unit.unitName"
                   (click)="removeCasualty(unit)"
                 >
-                  <wwiii-unit-icon [unitId]="unit.unitId" [color]="unit.color" [size]="28" />
+                  <wwiii-unit-icon [unitId]="unit.unitId" [ownerId]="unit.ownerId" [color]="unit.color" [size]="28" />
                   @if (defenderRollFor(unit.instanceId); as rollInfo) {
                     <span class="combat-board__roll" [class.combat-board__roll--hit]="rollInfo.hit">{{
                       rollInfo.roll
@@ -165,7 +179,7 @@
             <div class="combat-board__casualties">
               @for (unit of defenderCasualtyColumn(value); track unit.instanceId) {
                 <span class="combat-board__casualty" [title]="unit.unitName + ' (casualty)'">
-                  <wwiii-unit-icon [unitId]="unit.unitId" [color]="unit.color" [size]="20" />
+                  <wwiii-unit-icon [unitId]="unit.unitId" [ownerId]="unit.ownerId" [color]="unit.color" [size]="20" />
                   @if (defenderRollFor(unit.instanceId); as rollInfo) {
                     <span class="combat-board__roll" [class.combat-board__roll--hit]="rollInfo.hit">{{
                       rollInfo.roll

@@ -196,3 +196,55 @@ describe('RulesEngine.hasPendingMissileStrike / createInitialCombat (PROJECT_RUL
     expect(rules.hasPendingMissileStrike(state, 'front', 'p1', catalog)).toBe(false);
   });
 });
+
+describe('RulesEngine.getMissileStrikeTargets / getLegalAttackTargets (PROJECT_RULES.md section 16 — Missile B range)', () => {
+  const rules = new RulesEngine();
+  const catalog: Readonly<Record<string, UnitDefinition>> = {
+    infantry: unitDef({ id: 'infantry', category: 'land', attack: 1 }),
+    'rocket-system': unitDef({ id: 'rocket-system', category: 'support', attack: 0, canDeclareMissile: true }),
+    'missile-a': unitDef({ id: 'missile-a', category: 'missile' }),
+    'missile-b': unitDef({ id: 'missile-b', category: 'missile', missileRange: 2 }),
+  };
+
+  function twoHopState(reserve: readonly { unitId: string; quantity: number }[]) {
+    return testState({
+      players: [player({ id: 'p1', reserve }), player({ id: 'p2' })],
+      regions: {
+        home: region({ id: 'home', ownerId: 'p1', neighbors: ['mid'] }),
+        mid: region({ id: 'mid', ownerId: 'p1', neighbors: ['home', 'far'] }),
+        far: region({ id: 'far', ownerId: 'p2', neighbors: ['mid'] }),
+      },
+      units: [
+        unitInstance({ id: 'launcher-1', unitId: 'rocket-system', ownerId: 'p1', regionId: 'home' }),
+        unitInstance({ id: 'def-1', unitId: 'infantry', ownerId: 'p2', regionId: 'far' }),
+      ],
+    });
+  }
+
+  it('only reaches 1 hop with an empty Reserve', () => {
+    const state = twoHopState([]);
+    const launcher = state.units[0];
+    expect([...rules.getMissileStrikeTargets(state, launcher, catalog).keys()]).toEqual([]);
+    expect(rules.getLegalAttackTargets(state, launcher, catalog)).toEqual([]);
+  });
+
+  it('only reaches 1 hop while holding just a Missile A', () => {
+    const state = twoHopState([{ unitId: 'missile-a', quantity: 1 }]);
+    const launcher = state.units[0];
+    expect([...rules.getMissileStrikeTargets(state, launcher, catalog).keys()]).toEqual([]);
+  });
+
+  it('reaches the 2-hop hostile region while holding a Missile B', () => {
+    const state = twoHopState([{ unitId: 'missile-b', quantity: 1 }]);
+    const launcher = state.units[0];
+    expect([...rules.getMissileStrikeTargets(state, launcher, catalog).keys()]).toEqual(['far']);
+    expect(rules.getLegalAttackTargets(state, launcher, catalog)).toEqual(['far']);
+  });
+
+  it('leaves an ordinary (non-canDeclareMissile) unit on its normal movement-based reach, unaffected by missile logic', () => {
+    const state = twoHopState([]);
+    const infantryAttacker = unitInstance({ id: 'inf-1', unitId: 'infantry', ownerId: 'p1', regionId: 'mid', movesRemaining: 1 });
+    // An ordinary unit at 'mid' (1 hop from 'far') reaches it via normal reach, missile range never enters into it.
+    expect(rules.getLegalAttackTargets(state, infantryAttacker, catalog)).toEqual(['far']);
+  });
+});

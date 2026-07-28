@@ -1,32 +1,58 @@
 @if (hasContent() && store.activePlayer(); as player) {
-  <div class="panel">
+  <div class="wwiii-panel">
     @if (isDeployPhase()) {
       <h2>Deploy Units</h2>
       @if (reserveEntries().length > 0 && (deployableRegions().length > 0 || deployableSeaZones().length > 0)) {
-        <div class="deploy-form">
-          <select [ngModel]="selectedUnitId()" (ngModelChange)="onSelectUnit($event)">
-            <option value="" disabled>Select unit…</option>
-            @for (entry of reserveEntries(); track entry.unitId) {
-              <option [value]="entry.unitId">{{ unitName(entry.unitId) }} (× {{ entry.quantity }})</option>
-            }
-          </select>
-          <select [ngModel]="selectedRegionId()" (ngModelChange)="selectedRegionId.set($event)">
-            @if (isSelectedUnitNaval()) {
-              <option value="" disabled>Select sea zone…</option>
-              @for (zone of deployableSeaZones(); track zone.id) {
-                <option [value]="zone.id">Sea Zone {{ zone.label }}</option>
-              }
-            } @else {
-              <option value="" disabled>Select factory region…</option>
-              @for (region of deployableRegions(); track region.id) {
-                <option [value]="region.id">{{ region.name }}</option>
-              }
-            }
-          </select>
-          <button type="button" [disabled]="!selectedUnitId() || !selectedRegionId()" (click)="deploy(player.id)">
-            Deploy
-          </button>
+        <div class="deploy-unit-grid">
+          @for (entry of reserveEntries(); track entry.unitId) {
+            <button
+              type="button"
+              class="deploy-unit-card"
+              [class.deploy-unit-card--selected]="selectedUnitId() === entry.unitId"
+              (click)="onSelectUnit(entry.unitId)"
+            >
+              <span class="deploy-unit-card__frame">
+                <wwiii-unit-icon [unitId]="entry.unitId" [ownerId]="activePlayerFactionId()" [color]="activePlayerColor()" [size]="48" />
+              </span>
+              <span class="deploy-unit-card__name">{{ unitName(entry.unitId) }}</span>
+              <span class="deploy-unit-card__qty">× {{ entry.quantity }}</span>
+            </button>
+          }
         </div>
+
+        @if (selectedUnitId()) {
+          <div class="deploy-destination">
+            <h3>Deploy To</h3>
+            <div class="d-flex flex-wrap gap-2 mb-3">
+              @if (isSelectedUnitNaval()) {
+                @for (zone of deployableSeaZones(); track zone.id) {
+                  <button
+                    type="button"
+                    class="chip"
+                    [class.chip--selected]="selectedRegionId() === zone.id"
+                    (click)="selectedRegionId.set(zone.id)"
+                  >
+                    Sea Zone {{ zone.label }}
+                  </button>
+                }
+              } @else {
+                @for (region of deployableRegions(); track region.id) {
+                  <button
+                    type="button"
+                    class="chip"
+                    [class.chip--selected]="selectedRegionId() === region.id"
+                    (click)="selectedRegionId.set(region.id)"
+                  >
+                    {{ region.name }}
+                  </button>
+                }
+              }
+            </div>
+            <button type="button" class="deploy-btn" [disabled]="!selectedRegionId()" (click)="deploy(player.id)">
+              Deploy {{ unitName(selectedUnitId()) }}
+            </button>
+          </div>
+        }
       } @else {
         <p class="hint">Need Reserve units and a controlled factory region to deploy.</p>
       }

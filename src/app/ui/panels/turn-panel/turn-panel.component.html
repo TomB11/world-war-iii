@@ -1,6 +1,6 @@
 @if (store.state(); as state) {
-  <div class="panel">
-    <div class="player-header">
+  <div class="wwiii-panel">
+    <div class="d-flex align-items-center gap-3 mb-3">
       <img class="flag" [src]="flagPath()" alt="" />
       <div>
         <h2>Turn {{ state.turnNumber }} — {{ store.activePlayer()?.displayName }}</h2>

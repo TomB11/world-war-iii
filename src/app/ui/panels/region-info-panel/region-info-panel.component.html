@@ -1,91 +1,111 @@
 @if (region(); as r) {
   <div class="panel">
-    <h2>{{ r.name }}</h2>
-    <dl>
-      <dt>Owner</dt>
-      <dd>{{ ownerName() }}</dd>
-
-      <dt>Region Value</dt>
-      <dd>{{ r.value }}</dd>
-
-      <dt>Factory</dt>
-      <dd>{{ r.factory > 0 ? r.factory : 'None' }}</dd>
-
-      @if (contestedView().contested) {
-        <dt class="units-label combat">⚔ Battle</dt>
-        <dd class="units-value">
-          <div class="combat-line">
-            <ul class="unit-list">
-              @for (entry of contestedView().defenders; track entry.ownerName + entry.unitName) {
+    <button type="button" class="panel__close" (click)="close()" aria-label="Close">×</button>
+    <div class="panel__body">
+      <div class="panel__meta">
+        <h2>{{ r.name }}</h2>
+        <div class="meta-row">
+          <span class="meta-label">Owner</span>
+          <span class="meta-value">{{ ownerName() }}</span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-label">Region Value</span>
+          <span class="meta-value">{{ r.value }}</span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-label">Factory</span>
+          <span class="meta-value">{{ r.factory > 0 ? r.factory : 'None' }}</span>
+        </div>
+        @if (influenceTokens().length > 0) {
+          <div class="meta-row">
+            <span class="meta-label">Influence Tokens</span>
+            <ul class="token-list">
+              @for (entry of influenceTokens(); track entry.factionId) {
                 <li>
-                  <wwiii-unit-icon [unitId]="entry.unitId" [color]="entry.color" [size]="18" />
-                  {{ entry.unitName }} × {{ entry.quantity }} ({{ entry.ownerName }})
-                </li>
-              }
-            </ul>
-            <span class="combat-symbol" title="Combat pending">⚔</span>
-            <ul class="unit-list">
-              @for (entry of contestedView().attackers; track entry.ownerName + entry.unitName) {
-                <li>
-                  <wwiii-unit-icon [unitId]="entry.unitId" [color]="entry.color" [size]="18" />
-                  {{ entry.unitName }} × {{ entry.quantity }} ({{ entry.ownerName }})
+                  <span class="token-dot" [style.background]="entry.color"></span>
+                  {{ entry.factionName }}: {{ entry.count }}
                 </li>
               }
             </ul>
           </div>
-        </dd>
-      } @else {
-        <dt class="units-label">Units</dt>
-        <dd class="units-value">
-          @if (unitsHere().length > 0) {
-            <ul class="unit-list">
-              @for (entry of unitsHere(); track entry.ownerName + entry.unitName) {
-                <li>
-                  <wwiii-unit-icon [unitId]="entry.unitId" [color]="entry.color" [size]="18" />
-                  {{ entry.unitName }} × {{ entry.quantity }} ({{ entry.ownerName }})
-                </li>
-              }
-            </ul>
-          } @else {
-            None
-          }
-        </dd>
-      }
+        }
+      </div>
 
-      @if (influenceTokens().length > 0) {
-        <dt>Influence Tokens</dt>
-        <dd>
-          <ul class="token-list">
-            @for (entry of influenceTokens(); track entry.factionId) {
-              <li>
-                <span class="token-dot" [style.background]="entry.color"></span>
-                {{ entry.factionName }}: {{ entry.count }}
-              </li>
+      <div class="panel__divider"></div>
+
+      <div class="panel__units">
+        @if (contestedView().contested) {
+          <h3 class="panel__units-title panel__units-title--combat">⚔ Battle</h3>
+          <div class="unit-row">
+            <div class="unit-group">
+              @for (entry of contestedView().defenders; track entry.ownerName + entry.unitName) {
+                <div class="unit-card" [title]="entry.unitName + ' × ' + entry.quantity + ' (' + entry.ownerName + ')'">
+                  <span class="unit-card__frame">
+                    <wwiii-unit-icon [unitId]="entry.unitId" [ownerId]="entry.ownerId" [color]="entry.color" [size]="84" />
+                  </span>
+                  <span class="unit-card__label">{{ entry.unitName }} × {{ entry.quantity }}</span>
+                </div>
+              }
+            </div>
+            <span class="combat-symbol" title="Combat pending">⚔</span>
+            <div class="unit-group">
+              @for (entry of contestedView().attackers; track entry.ownerName + entry.unitName) {
+                <div class="unit-card" [title]="entry.unitName + ' × ' + entry.quantity + ' (' + entry.ownerName + ')'">
+                  <span class="unit-card__frame">
+                    <wwiii-unit-icon [unitId]="entry.unitId" [ownerId]="entry.ownerId" [color]="entry.color" [size]="84" />
+                  </span>
+                  <span class="unit-card__label">{{ entry.unitName }} × {{ entry.quantity }}</span>
+                </div>
+              }
+            </div>
+          </div>
+        } @else {
+          <h3 class="panel__units-title">Units</h3>
+          <div class="unit-row">
+            @if (unitsHere().length > 0) {
+              @for (entry of unitsHere(); track entry.ownerName + entry.unitName) {
+                <div class="unit-card" [title]="entry.unitName + ' × ' + entry.quantity + ' (' + entry.ownerName + ')'">
+                  <span class="unit-card__frame">
+                    <wwiii-unit-icon [unitId]="entry.unitId" [ownerId]="entry.ownerId" [color]="entry.color" [size]="84" />
+                  </span>
+                  <span class="unit-card__label">{{ entry.unitName }} × {{ entry.quantity }}</span>
+                </div>
+              }
+            } @else {
+              <span class="panel__units-empty">None</span>
             }
-          </ul>
-        </dd>
-      }
-    </dl>
+          </div>
+        }
+      </div>
+    </div>
   </div>
 } @else if (seaZone(); as z) {
   <div class="panel">
-    <h2>Sea Zone {{ z.label }}</h2>
-    <dl>
-      <dt>Units</dt>
-      <dd>
-        @if (unitsHere().length > 0) {
-          <ul class="unit-list">
+    <button type="button" class="panel__close" (click)="close()" aria-label="Close">×</button>
+    <div class="panel__body">
+      <div class="panel__meta">
+        <h2>Sea Zone {{ z.label }}</h2>
+      </div>
+
+      <div class="panel__divider"></div>
+
+      <div class="panel__units">
+        <h3 class="panel__units-title">Units</h3>
+        <div class="unit-row">
+          @if (unitsHere().length > 0) {
             @for (entry of unitsHere(); track entry.ownerName + entry.unitName) {
-              <li>
-                <wwiii-unit-icon [unitId]="entry.unitId" [color]="entry.color" [size]="18" />
-                {{ entry.unitName }} × {{ entry.quantity }} ({{ entry.ownerName }})
-              </li>
+              <div class="unit-card" [title]="entry.unitName + ' × ' + entry.quantity + ' (' + entry.ownerName + ')'">
+                <span class="unit-card__frame">
+                  <wwiii-unit-icon [unitId]="entry.unitId" [ownerId]="entry.ownerId" [color]="entry.color" [size]="84" />
+                </span>
+                <span class="unit-card__label">{{ entry.unitName }} × {{ entry.quantity }}</span>
+              </div>
             }
-          </ul>
-        } @else {
-          None
-        }
-      </dd>
-    </dl>
+          } @else {
+            <span class="panel__units-empty">None</span>
+          }
+        </div>
+      </div>
+    </div>
   </div>
 }

@@ -1,5 +1,5 @@
 @if (store.activePlayer(); as player) {
-  <div class="panel">
+  <div class="wwiii-panel">
     <h2>Cyber Attack</h2>
 
     @if (isCyberAttackPhase() && player.hasUsedCyberAttackThisTurn) {
@@ -9,7 +9,7 @@
 
       <h3>Hacking</h3>
       @if (hackTargets().length > 0) {
-        <div class="cyber-form">
+        <div class="d-flex align-items-center gap-2">
           <select [ngModel]="hackTargetId()" (ngModelChange)="hackTargetId.set($event)">
             <option value="" disabled>Select target…</option>
             @for (target of hackTargets(); track target.id) {
@@ -28,7 +28,7 @@
 
       <h3>Political Influence</h3>
       @if (neutralRegions().length > 0) {
-        <div class="cyber-form">
+        <div class="d-flex align-items-center gap-2">
           <select [ngModel]="influenceTargetId()" (ngModelChange)="influenceTargetId.set($event)">
             <option value="" disabled>Select neutral region…</option>
             @for (region of neutralRegions(); track region.id) {
@@ -47,7 +47,7 @@
       }
 
       <h3>Upgrade Hack Level</h3>
-      <div class="cyber-form">
+      <div class="d-flex align-items-center gap-2">
         <span class="hint">Current: {{ player.hackLevel }} / {{ hackLevelMax() }}</span>
         <button
           type="button"
