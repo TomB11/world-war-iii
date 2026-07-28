@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { FormsModule } from '@angular/forms';
 import { GameStore } from '../../../state/store';
 import { UnitInstance } from '../../../models/unit-instance.model';
+import { UnitIconComponent } from '../../shared/unit-icon/unit-icon.component';
 
 /**
  * Utility panel for the two things drag-and-drop on the map can't do:
@@ -12,7 +13,7 @@ import { UnitInstance } from '../../../models/unit-instance.model';
 @Component({
   selector: 'wwiii-movement-panel',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, UnitIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './movement-panel.component.html',
   styleUrl: './movement-panel.component.scss',
@@ -41,7 +42,28 @@ export class MovementPanelComponent {
     () => this.isDeployPhase() || this.loadedTransports().length > 0,
   );
 
-  protected readonly reserveEntries = computed(() => this.store.activePlayer()?.reserve ?? []);
+  /**
+   * Reserve entries deployable this phase — excludes missiles (PROJECT_RULES.md
+   * section 15): a missile is never placed on the map, it's fired directly
+   * from Reserve by a Rocket System's declared strike (see FireMissileCommand),
+   * so it has no business in this list at all.
+   */
+  protected readonly reserveEntries = computed(() => {
+    const catalog = this.store.units();
+    return (this.store.activePlayer()?.reserve ?? []).filter(
+      (entry) => catalog[entry.unitId]?.category !== 'missile',
+    );
+  });
+
+  protected readonly activePlayerFactionId = computed(() => this.store.activePlayer()?.factionId ?? null);
+
+  protected readonly activePlayerColor = computed(() => {
+    const player = this.store.activePlayer();
+    if (!player) {
+      return '#888888';
+    }
+    return this.store.factions()[player.factionId]?.color ?? '#888888';
+  });
 
   protected readonly deployableRegions = computed(() => {
     const player = this.store.activePlayer();

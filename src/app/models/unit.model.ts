@@ -30,6 +30,8 @@ export interface UnitDefinition {
   readonly canCapture?: boolean;
   /** Whether moving this unit into a defended enemy region declares a missile strike there instead of a normal attack (PROJECT_RULES.md section 15 — Rocket System). Defaults to false when absent. */
   readonly canDeclareMissile?: boolean;
+  /** For a missile (category 'missile') only: how many hops away a Rocket System holding one in Reserve may declare a strike (PROJECT_RULES.md section 16 — Missile B's longer range). Defaults to 1 when absent. */
+  readonly missileRange?: number;
 }
 
 /** One line of a player's Reserve: how many of a given unit type are awaiting deployment. */

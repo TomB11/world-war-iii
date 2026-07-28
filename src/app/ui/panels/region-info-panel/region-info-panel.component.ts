@@ -6,6 +6,7 @@ import { UnitIconComponent } from '../../shared/unit-icon/unit-icon.component';
 interface UnitGroup {
   unitId: string;
   unitName: string;
+  ownerId: string;
   ownerName: string;
   color: string;
   quantity: number;
@@ -24,6 +25,10 @@ export class RegionInfoPanelComponent {
 
   protected readonly region = this.store.selectedRegion;
   protected readonly seaZone = this.store.selectedSeaZone;
+
+  protected close(): void {
+    this.store.clearSelection();
+  }
 
   protected readonly ownerName = computed(() => {
     const region = this.region();
@@ -77,6 +82,7 @@ export class RegionInfoPanelComponent {
         groups.set(key, {
           unitId: unit.unitId,
           unitName: catalog[unit.unitId]?.name ?? unit.unitId,
+          ownerId: unit.ownerId,
           ownerName: factions[unit.ownerId]?.name ?? unit.ownerId,
           color: factions[unit.ownerId]?.color ?? '#888888',
           quantity: 1,

@@ -183,6 +183,7 @@ export class DataLoaderService {
       randomSeed: STARTING_RANDOM_SEED,
       nextUnitInstanceId,
       combats: {},
+      missileDeclarations: {},
     };
 
     // The first active player's turn-1 income is credited immediately at

@@ -10,13 +10,14 @@ const DICE_SIDES = 6;
 const INTERCEPT_THRESHOLD = 2;
 
 /**
- * Fires one missile from Reserve at a region where the attacker declared a
- * strike by moving a Rocket System in (PROJECT_RULES.md section 15).
- * Missiles resolve before any other combat in the Attack Phase — this is
- * always the first thing that can happen in a fresh battle that has one
- * pending (see RulesEngine.hasPendingMissileStrike).
+ * Rolls the missile a player armed via SelectMissileCommand (PROJECT_RULES.md
+ * section 15) — the second of two clicks; the launcher itself never moved,
+ * see AttackCommand and GameState.missileDeclarations. Missiles resolve
+ * before any other combat in the Attack Phase — this is always the first
+ * thing that can happen in a fresh battle that has one pending (see
+ * RulesEngine.hasPendingMissileStrike).
  *
- * Resolved in one shot: if the defender has their own Rocket System in the
+ * Resolved in one click: if the defender has their own Rocket System in the
  * target region or an adjacent one, the active player rolls an interception
  * die for them first (<= 2 destroys the missile, same hot-seat convention
  * used for every other "roll for the other side" step this game). If the
@@ -24,7 +25,8 @@ const INTERCEPT_THRESHOLD = 2;
  * value (Missile A hits on <= 2, Missile B on <= 4, both data-driven from
  * units.json, never hardcoded). A hit leaves exactly one casualty pending
  * for the defender to choose (RemoveCasualtyCommand, step 'missileCasualty');
- * a miss or interception moves straight into normal combat.
+ * a miss or interception moves straight into normal combat. The missile is
+ * removed from Reserve either way, per section 15.
  */
 export class FireMissileCommand implements Command {
   readonly type = 'FireMissile';
@@ -32,7 +34,6 @@ export class FireMissileCommand implements Command {
   constructor(
     private readonly playerId: string,
     private readonly regionId: string,
-    private readonly missileUnitId: string,
     private readonly unitCatalog: Readonly<Record<string, UnitDefinition>>,
     private readonly rules: RulesEngine = new RulesEngine(),
   ) {}
@@ -57,20 +58,19 @@ export class FireMissileCommand implements Command {
       return reject('This region has no pending battle');
     }
 
-    const combat: RegionCombat =
-      state.combats[this.regionId] ??
-      this.rules.createInitialCombat(state, this.regionId, this.playerId, this.unitCatalog);
-    if (combat.step !== 'missileChoice') {
-      return reject('No missile strike is pending in this region');
+    const combat = state.combats[this.regionId];
+    if (!combat || combat.step !== 'missileRoll' || !combat.armedMissileUnitId) {
+      return reject('No armed missile is pending in this region');
     }
+    const missileUnitId = combat.armedMissileUnitId;
 
-    const missileDef = this.unitCatalog[this.missileUnitId];
+    const missileDef = this.unitCatalog[missileUnitId];
     if (!missileDef || missileDef.category !== 'missile') {
-      return reject(`Unknown missile type "${this.missileUnitId}"`);
+      return reject(`Unknown missile type "${missileUnitId}"`);
     }
 
     const player = this.rules.getPlayer(state, this.playerId);
-    const reserveEntry = player?.reserve.find((entry) => entry.unitId === this.missileUnitId);
+    const reserveEntry = player?.reserve.find((entry) => entry.unitId === missileUnitId);
     if (!player || !reserveEntry || reserveEntry.quantity <= 0) {
       return reject(`You have no "${missileDef.name}" in Reserve`);
     }
@@ -80,9 +80,7 @@ export class FireMissileCommand implements Command {
         ? {
             ...candidate,
             reserve: candidate.reserve
-              .map((entry) =>
-                entry.unitId === this.missileUnitId ? { ...entry, quantity: entry.quantity - 1 } : entry,
-              )
+              .map((entry) => (entry.unitId === missileUnitId ? { ...entry, quantity: entry.quantity - 1 } : entry))
               .filter((entry) => entry.quantity > 0),
           }
         : candidate,
@@ -120,11 +118,12 @@ export class FireMissileCommand implements Command {
       outcome = roll.result <= missileDef.attack ? 'hit' : 'miss';
     }
 
-    const missileResult: MissileResult = { missileId: this.missileUnitId, interceptRoll, attackRoll, outcome };
+    const missileResult: MissileResult = { missileId: missileUnitId, interceptRoll, attackRoll, outcome };
     const nextCombat: RegionCombat = {
       ...combat,
       step: outcome === 'hit' ? 'missileCasualty' : 'attackerRoll',
       pendingDefenderCasualties: outcome === 'hit' ? 1 : 0,
+      armedMissileUnitId: null,
       missileResult,
     };
 

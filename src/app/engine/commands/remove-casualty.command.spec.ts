@@ -14,6 +14,7 @@ describe('RemoveCasualtyCommand', () => {
       lastDefenderRolls: [],
       attackerCasualties: [],
       defenderCasualties: [],
+      armedMissileUnitId: null,
       missileResult: null,
       ...overrides,
     };

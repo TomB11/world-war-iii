@@ -7,8 +7,13 @@
  *
  * If the attacker declared a missile strike (a Rocket System present —
  * PROJECT_RULES.md section 15), the battle opens with a missile sub-phase
- * ('missileChoice' -> optionally 'missileCasualty') before any of that —
- * missiles always resolve first.
+ * before any of that — missiles always resolve first. The sub-phase is two
+ * clicks, mirroring the normal attacker/defender roll flow: 'missileChoice'
+ * (pick which missile from Reserve — SelectMissileCommand arms it and moves
+ * to 'missileRoll') then 'missileRoll' (the armed missile sits visibly in
+ * its hit-threshold column same as any other attacking unit; the player
+ * clicks Roll themselves — FireMissileCommand — to resolve interception and
+ * the hit roll, optionally landing on 'missileCasualty').
  *
  * Each round is a simultaneous exchange (PROJECT_RULES.md section 10):
  * attacker rolls, then defender rolls (with its full pre-casualty roster —
@@ -17,6 +22,7 @@
  */
 export type CombatStep =
   | 'missileChoice'
+  | 'missileRoll'
   | 'missileCasualty'
   | 'attackerRoll'
   | 'defenderRoll'
@@ -61,6 +67,8 @@ export interface RegionCombat {
   readonly lastDefenderRolls: readonly CombatDieRoll[];
   readonly attackerCasualties: readonly CombatCasualty[];
   readonly defenderCasualties: readonly CombatCasualty[];
+  /** Set by SelectMissileCommand during 'missileRoll', cleared once FireMissileCommand resolves it. Null the rest of the time. */
+  readonly armedMissileUnitId: string | null;
   /** Null until a missile is fired (or the missile phase is skipped) this battle. */
   readonly missileResult: MissileResult | null;
 }

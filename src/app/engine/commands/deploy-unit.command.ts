@@ -9,7 +9,9 @@ import { RulesEngine } from '../rules-engine';
  * sections 18, 35, 37). Only valid during the Place New Units Phase.
  * Naval units (category 'naval') deploy into a sea zone adjacent to a
  * factory region the player controls — everything else deploys directly at
- * a factory region the player controls.
+ * a factory region the player controls. Missiles (category 'missile') can
+ * never be deployed at all — they have no physical presence on the map and
+ * stay in Reserve until fired by a Rocket System (section 15).
  */
 export class DeployUnitCommand implements Command {
   readonly type = 'DeployUnit';
@@ -44,6 +46,12 @@ export class DeployUnitCommand implements Command {
     const unitDef = this.unitCatalog[this.unitId];
     if (!unitDef) {
       return reject(`Unknown unit "${this.unitId}"`);
+    }
+
+    if (unitDef.category === 'missile') {
+      return reject(
+        'Missiles are never deployed to the map — they stay in Reserve until a Rocket System fires one (PROJECT_RULES.md section 15)',
+      );
     }
 
     if (unitDef.category === 'naval') {

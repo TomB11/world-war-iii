@@ -103,6 +103,7 @@ export function testState(overrides: Partial<GameState> = {}): GameState {
     randomSeed: 1,
     nextUnitInstanceId: 1,
     combats: {},
+    missileDeclarations: {},
     ...overrides,
   };
 }

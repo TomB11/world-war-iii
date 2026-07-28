@@ -79,6 +79,16 @@ export class EndTurnCommand implements Command {
     const justReachedMaxRebellion = previousRebellionLevel < 3 && nextRebellionLevel === 3;
     const spawn = justReachedMaxRebellion ? this.spawnRebelArmy(state, nextPlayer) : null;
 
+    // Missile strikes declared this turn but never fired (PROJECT_RULES.md
+    // section 15) don't carry over — a fresh declaration is required next
+    // time this player attacks that region.
+    const nextMissileDeclarations = Object.fromEntries(
+      Object.entries(state.missileDeclarations).filter(([, launcherUnitId]) => {
+        const launcher = this.rules.getUnitInstance(state, launcherUnitId);
+        return launcher !== null && launcher.ownerId !== this.playerId;
+      }),
+    );
+
     const nextPlayers = state.players.map((candidate) =>
       candidate.id === nextPlayer.id
         ? {
@@ -99,6 +109,7 @@ export class EndTurnCommand implements Command {
       players: nextPlayers,
       units: spawn ? [...state.units, ...spawn.units] : state.units,
       nextUnitInstanceId: spawn ? spawn.nextUnitInstanceId : state.nextUnitInstanceId,
+      missileDeclarations: nextMissileDeclarations,
     };
 
     const events: GameEngineEvent[] = [

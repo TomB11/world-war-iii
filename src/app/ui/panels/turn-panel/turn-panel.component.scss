@@ -2,20 +2,6 @@
   display: block;
 }
 
-.panel {
-  background: var(--wwiii-bg-panel);
-  border: 1px solid var(--wwiii-border);
-  border-radius: 6px;
-  padding: 16px;
-}
-
-.player-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
 .flag {
   width: 36px;
   height: 24px;
@@ -27,8 +13,6 @@
 
 h2 {
   margin: 0 0 4px;
-  color: var(--wwiii-accent);
-  font-size: 18px;
 }
 
 .phase-label {

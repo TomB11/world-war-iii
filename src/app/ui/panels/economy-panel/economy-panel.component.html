@@ -2,100 +2,112 @@
   <div class="panel">
     <h2>Economy — {{ player.displayName }}</h2>
 
-    <dl>
-      <dt>Treasury</dt>
-      <dd>{{ player.treasury }}</dd>
-
-      <dt>Income</dt>
-      <dd>+{{ store.projectedIncome() }} / turn</dd>
-
-      <dt>Citizen Satisfaction</dt>
-      <dd>
-        {{ player.citizenSatisfaction }}
-        (decays {{ decayPerTurn() }}/turn)
-        @if (player.rebellionLevel > 0) {
-          — rebellion level {{ player.rebellionLevel }}/3
-        }
-      </dd>
-    </dl>
-
-    <h3>Public Spending</h3>
-    @if (store.state()?.phase === 'buyUnits') {
-      <div class="purchase-controls">
-        <input
-          type="number"
-          min="1"
-          [ngModel]="spendAmount()"
-          (ngModelChange)="spendAmount.set($event)"
-        />
-        <button type="button" (click)="spendOnSatisfaction(player.id)">
-          Spend to raise Satisfaction
-        </button>
+    <div class="stat-row">
+      <div class="stat">
+        <span class="stat__label">Treasury</span>
+        <span class="stat__value">{{ player.treasury }}</span>
       </div>
-      <p class="hint">
-        1 money = 1 point. Spend {{ decayPerTurn() }} just to offset this turn's decay, more to build a buffer.
-      </p>
-    } @else {
-      <p class="hint">Available during the Buy Units Phase.</p>
-    }
-
-    @if (store.publicSpendingRejectionReason(); as reason) {
-      <p class="rejection">{{ reason }}</p>
-    }
-
-    <h3>Purchase Unit</h3>
-    @if (store.state()?.phase === 'buyUnits') {
-      <div class="purchase-form">
-        <div class="unit-picker">
-          @for (unit of unitList(); track unit.id) {
-            <button
-              type="button"
-              class="unit-picker__option"
-              [class.selected]="selectedUnitId() === unit.id"
-              (click)="selectedUnitId.set(unit.id)"
-            >
-              <wwiii-unit-icon [unitId]="unit.id" [color]="activePlayerColor()" [size]="26" />
-              <span class="unit-picker__name">{{ unit.name }}</span>
-              <span class="unit-picker__cost">{{ unit.cost }}</span>
-            </button>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <span class="stat__label">Income</span>
+        <span class="stat__value">+{{ store.projectedIncome() }}<span class="stat__unit">/turn</span></span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <span class="stat__label">Citizen Satisfaction</span>
+        <span class="stat__value">
+          {{ player.citizenSatisfaction }}
+          @if (player.rebellionLevel > 0) {
+            <span class="stat__warning">⚠ Rebellion {{ player.rebellionLevel }}/3</span>
           }
-        </div>
-        <div class="purchase-controls">
+        </span>
+        <span class="stat__hint">decays {{ decayPerTurn() }}/turn</span>
+      </div>
+    </div>
+
+    <section class="section">
+      <h3 class="section__title">Public Spending</h3>
+      @if (store.state()?.phase === 'buyUnits') {
+        <div class="d-flex align-items-center flex-wrap gap-3">
           <input
             type="number"
             min="1"
-            [ngModel]="quantity()"
-            (ngModelChange)="quantity.set($event)"
+            class="spend-input"
+            [ngModel]="spendAmount()"
+            (ngModelChange)="spendAmount.set($event)"
           />
-          <button
-            type="button"
-            [disabled]="!selectedUnitId()"
-            (click)="purchase(player.id)"
-          >
-            Purchase
+          <button type="button" class="btn btn--accent" (click)="spendOnSatisfaction(player.id)">
+            Raise Satisfaction
           </button>
+          <span class="hint">1 money = 1 point · spend {{ decayPerTurn() }} to offset this turn's decay</span>
         </div>
-      </div>
-    } @else {
-      <p class="hint">Available during the Buy Units Phase.</p>
-    }
+      } @else {
+        <p class="hint">Available during the Buy Units Phase.</p>
+      }
+      @if (store.publicSpendingRejectionReason(); as reason) {
+        <p class="rejection">{{ reason }}</p>
+      }
+    </section>
 
-    @if (store.purchaseRejectionReason(); as reason) {
-      <p class="rejection">{{ reason }}</p>
-    }
+    <section class="section">
+      <h3 class="section__title">Purchase Unit</h3>
+      @if (store.state()?.phase === 'buyUnits') {
+        <div class="unit-grid">
+          @for (unit of unitList(); track unit.id) {
+            <div class="unit-card" [class.unit-card--selected]="selectedUnitId() === unit.id">
+              <button type="button" class="unit-card__select" (click)="onSelectUnit(unit.id)">
+                <span class="unit-card__frame">
+                  <wwiii-unit-icon [unitId]="unit.id" [ownerId]="activePlayerFactionId()" [color]="activePlayerColor()" [size]="72" />
+                </span>
+                <span class="unit-card__name">{{ unit.name }}</span>
+              </button>
+              @if (selectedUnitId() === unit.id) {
+                <div class="unit-card__buy">
+                  <div class="qty-stepper">
+                    <button type="button" class="qty-stepper__btn" (click)="decrementQuantity()" aria-label="Decrease quantity">−</button>
+                    <input
+                      type="number"
+                      min="1"
+                      class="qty-stepper__input"
+                      [ngModel]="quantity()"
+                      (ngModelChange)="setQuantity($event)"
+                    />
+                    <button type="button" class="qty-stepper__btn" (click)="incrementQuantity()" aria-label="Increase quantity">+</button>
+                  </div>
+                  <button type="button" class="unit-card__buy-btn" (click)="purchase(player.id)">
+                    Buy · {{ unit.cost * quantity() }}
+                  </button>
+                </div>
+              } @else {
+                <span class="unit-card__cost">{{ unit.cost }}</span>
+              }
+            </div>
+          }
+        </div>
+      } @else {
+        <p class="hint">Available during the Buy Units Phase.</p>
+      }
+      @if (store.purchaseRejectionReason(); as reason) {
+        <p class="rejection">{{ reason }}</p>
+      }
+    </section>
 
-    <h3>Reserve</h3>
-    @if (player.reserve.length > 0) {
-      <ul class="reserve-list">
-        @for (entry of player.reserve; track entry.unitId) {
-          <li>
-            <wwiii-unit-icon [unitId]="entry.unitId" [color]="activePlayerColor()" [size]="18" />
-            {{ unitName(entry.unitId) }} × {{ entry.quantity }}
-          </li>
-        }
-      </ul>
-    } @else {
-      <p class="reserve-empty">No units in reserve.</p>
-    }
+    <section class="section">
+      <h3 class="section__title">Reserve</h3>
+      @if (player.reserve.length > 0) {
+        <ul class="reserve-list">
+          @for (entry of player.reserve; track entry.unitId) {
+            <li>
+              <span class="reserve-list__frame">
+                <wwiii-unit-icon [unitId]="entry.unitId" [ownerId]="activePlayerFactionId()" [color]="activePlayerColor()" [size]="26" />
+              </span>
+              {{ unitName(entry.unitId) }} × {{ entry.quantity }}
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="reserve-empty">No units in reserve.</p>
+      }
+    </section>
   </div>
 }

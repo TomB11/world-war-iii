@@ -139,7 +139,8 @@
       "attack": 4,
       "defense": 0,
       "movement": 0,
-      "transportCapacity": 0
+      "transportCapacity": 0,
+      "missileRange": 2
     }
   ]
 }

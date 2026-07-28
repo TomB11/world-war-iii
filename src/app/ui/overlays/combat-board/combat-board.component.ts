@@ -10,6 +10,7 @@ interface CombatUnit {
   readonly instanceId: string;
   readonly unitId: string;
   readonly unitName: string;
+  readonly ownerId: string | null;
   readonly color: string;
 }
 
@@ -21,9 +22,10 @@ interface CombatUnit {
  * a simultaneous exchange (section 10): both sides roll before either
  * side's casualties are removed, so a unit due to die this round still
  * shows its own roll first. Always fights to a wipeout — no retreat (future
- * work, see engine/commands/roll-combat.command.ts). If the attacker
- * declared a missile strike (a Rocket System present, section 15), the
- * battle opens with a missile choice before any of that.
+ * work, see engine/commands/roll-combat.command.ts). If the attacker's
+ * Rocket System declared a supporting strike (section 15 — the launcher
+ * itself stays wherever it was), the battle opens with a missile choice
+ * before any of that.
  */
 @Component({
   selector: 'wwiii-combat-board',
@@ -72,7 +74,20 @@ export class CombatBoardComponent {
   protected readonly pendingMissileChoice = computed(() => !this.resolved() && this.step() === 'missileChoice');
   protected readonly missileResult = computed(() => this.combat()?.missileResult ?? null);
 
-  /** The active player's Reserve missiles available to fire, for the "Fire Missile" buttons. */
+  /** Set once a missile is armed (SelectMissileCommand) until it's rolled (FireMissileCommand) — the player picked which missile but hasn't rolled the die yet. */
+  protected readonly pendingMissileRoll = computed(() => !this.resolved() && this.step() === 'missileRoll');
+  protected readonly armedMissileUnitId = computed(() => this.combat()?.armedMissileUnitId ?? null);
+  protected readonly armedMissileName = computed(() => {
+    const unitId = this.armedMissileUnitId();
+    return unitId ? this.missileName(unitId) : '';
+  });
+  /** Which attacker column (its own Attack value — Missile A under 2, Missile B under 4) the armed missile sits in while awaiting its roll. */
+  private readonly armedMissileColumnValue = computed(() => {
+    const unitId = this.armedMissileUnitId();
+    return unitId ? (this.store.units()[unitId]?.attack ?? null) : null;
+  });
+
+  /** The active player's Reserve missiles available to select, for the missile-choice buttons. */
   protected readonly reserveMissiles = computed<readonly { unitId: string; name: string; quantity: number }[]>(() => {
     const player = this.store.activePlayer();
     if (!player) {
@@ -117,6 +132,14 @@ export class CombatBoardComponent {
 
   protected attackerColumn(value: number): readonly CombatUnit[] {
     return this.attackerUnits().filter((unit) => this.attackValue(unit.unitId) === value);
+  }
+
+  /** The armed missile's unitId, only while it sits in this specific column awaiting its roll (see armedMissileColumnValue). */
+  protected armedMissileFor(value: number): string | null {
+    if (!this.pendingMissileRoll() || this.armedMissileColumnValue() !== value) {
+      return null;
+    }
+    return this.armedMissileUnitId();
   }
 
   protected defenderColumn(value: number): readonly CombatUnit[] {
@@ -167,11 +190,19 @@ export class CombatBoardComponent {
     return this.store.units()[unitId]?.name ?? unitId;
   }
 
-  protected fireMissile(missileUnitId: string): void {
+  protected selectMissile(missileUnitId: string): void {
     const playerId = this.attackerId();
     const regionId = this.store.combatRegionId();
     if (playerId && regionId) {
-      this.store.fireMissile(playerId, regionId, missileUnitId);
+      this.store.selectMissile(playerId, regionId, missileUnitId);
+    }
+  }
+
+  protected rollMissile(): void {
+    const playerId = this.attackerId();
+    const regionId = this.store.combatRegionId();
+    if (playerId && regionId) {
+      this.store.fireMissile(playerId, regionId);
     }
   }
 
@@ -200,6 +231,7 @@ export class CombatBoardComponent {
       instanceId: unit.id,
       unitId: unit.unitId,
       unitName: this.store.units()[unit.unitId]?.name ?? unit.unitId,
+      ownerId: unit.ownerId,
       color: this.store.factions()[unit.ownerId]?.color ?? '#888888',
     };
   }
@@ -209,6 +241,7 @@ export class CombatBoardComponent {
       instanceId: casualty.instanceId,
       unitId: casualty.unitId,
       unitName: this.store.units()[casualty.unitId]?.name ?? casualty.unitId,
+      ownerId,
       color: this.store.factions()[ownerId ?? '']?.color ?? '#888888',
     };
   }

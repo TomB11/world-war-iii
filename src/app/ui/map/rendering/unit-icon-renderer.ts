@@ -1,5 +1,6 @@
 import { Faction } from '../../../models/faction.model';
 import { UnitInstance } from '../../../models/unit-instance.model';
+import { AIRBORNE_INFANTRY_UNIT_ID } from '../../shared/unit-faction-icons';
 import { pathRoundedRect } from './canvas-shapes';
 import {
   COUNT_BADGE_FONT_PX,
@@ -13,8 +14,14 @@ import {
   UNIT_ICONS_PER_ROW,
 } from './unit-icon-config';
 
-/** Resolves a unit type + faction color to its tinted icon artwork; null while the source image is still loading. */
-export type UnitIconLookup = (unitId: string, color: string) => HTMLCanvasElement | null;
+/**
+ * Resolves a unit type + owning faction to its icon artwork: a dedicated
+ * per-faction image if one exists (e.g. Infantry), otherwise the shared
+ * silhouette tinted with `color`. `ownerId` is null for the drag-ghost icon
+ * when no unit is actively selected yet. Null return means the source image
+ * is still loading.
+ */
+export type UnitIconLookup = (unitId: string, ownerId: string | null, color: string) => HTMLCanvasElement | null;
 
 export interface IconLayoutEntry {
   readonly unitId: string;
@@ -82,11 +89,12 @@ export function drawUnitIcon(
   cx: number,
   cy: number,
   size: number,
+  ownerId: string | null,
   color: string,
   scale: number,
   getUnitIcon: UnitIconLookup,
 ): void {
-  const icon = getUnitIcon(unitId, color);
+  const icon = getUnitIcon(unitId, ownerId, color);
   if (!icon || icon.width === 0 || icon.height === 0) {
     context.save();
     context.beginPath();
@@ -97,6 +105,9 @@ export function drawUnitIcon(
     context.strokeStyle = '#0b0e14';
     context.stroke();
     context.restore();
+    if (unitId === AIRBORNE_INFANTRY_UNIT_ID) {
+      drawBadge(context, cx - size * 0.42, cy - size * 0.42, 'A', scale, '#4fb8e0');
+    }
     return;
   }
 
@@ -109,6 +120,35 @@ export function drawUnitIcon(
   }
 
   context.drawImage(icon, cx - drawWidth / 2, cy - drawHeight / 2, drawWidth, drawHeight);
+
+  if (unitId === AIRBORNE_INFANTRY_UNIT_ID) {
+    drawBadge(context, cx - size * 0.42, cy - size * 0.42, 'A', scale, '#4fb8e0');
+  }
+}
+
+/** Small circular marker overlaid on a unit icon's corner — used for both the stack count and the Airborne Infantry "A" indicator. */
+function drawBadge(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  text: string,
+  scale: number,
+  fillColor: string,
+): void {
+  const radius = COUNT_BADGE_RADIUS_PX / scale;
+  context.beginPath();
+  context.arc(x, y, radius, 0, Math.PI * 2);
+  context.fillStyle = fillColor;
+  context.fill();
+  context.lineWidth = 1.2 / scale;
+  context.strokeStyle = '#ffffff';
+  context.stroke();
+
+  context.fillStyle = '#ffffff';
+  context.font = `bold ${COUNT_BADGE_FONT_PX / scale}px Segoe UI, Roboto, sans-serif`;
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+  context.fillText(text, x, y + 0.5 / scale);
 }
 
 /** Small numbered marker overlaid on a unit icon's corner when more than one of that type is stacked. */
@@ -119,20 +159,7 @@ export function drawCountBadge(
   count: number,
   scale: number,
 ): void {
-  const radius = COUNT_BADGE_RADIUS_PX / scale;
-  context.beginPath();
-  context.arc(x, y, radius, 0, Math.PI * 2);
-  context.fillStyle = '#c0392b';
-  context.fill();
-  context.lineWidth = 1.2 / scale;
-  context.strokeStyle = '#ffffff';
-  context.stroke();
-
-  context.fillStyle = '#ffffff';
-  context.font = `bold ${COUNT_BADGE_FONT_PX / scale}px Segoe UI, Roboto, sans-serif`;
-  context.textAlign = 'center';
-  context.textBaseline = 'middle';
-  context.fillText(String(count), x, y + 0.5 / scale);
+  drawBadge(context, x, y, String(count), scale, '#c0392b');
 }
 
 /**
@@ -178,14 +205,14 @@ export function drawUnitCluster(
   context.fillStyle = 'rgba(11, 14, 20, 0.72)';
   context.fill();
   context.lineWidth = (hasMovable ? 2 : 1) / scale;
-  context.strokeStyle = hasMovable ? '#e0ac4d' : 'rgba(230, 233, 240, 0.5)';
+  context.strokeStyle = hasMovable ? '#4fb8e0' : 'rgba(230, 233, 240, 0.5)';
   context.stroke();
 
   for (const entry of layout) {
     const group = units.filter((u) => entry.instanceIds.includes(u.id));
-    const ownerId = group[0]?.ownerId;
+    const ownerId = group[0]?.ownerId ?? null;
     const color = (ownerId && factions[ownerId]?.color) || '#888888';
-    drawUnitIcon(context, entry.unitId, entry.x, entry.y, iconSize, color, scale, getUnitIcon);
+    drawUnitIcon(context, entry.unitId, entry.x, entry.y, iconSize, ownerId, color, scale, getUnitIcon);
 
     if (group.length > 1) {
       drawCountBadge(context, entry.x + iconSize * 0.6, entry.y + iconSize * 0.6, group.length, scale);

@@ -198,10 +198,12 @@ export class RulesEngine {
 
   /**
    * Whether a fresh battle in this region should open with the missile
-   * sub-phase (PROJECT_RULES.md section 15): the attacker has a
-   * missile-declaring unit (Rocket System) physically present here, and
-   * their Reserve actually holds at least one missile to fire. False (skip
-   * straight to normal combat) if either condition doesn't hold.
+   * sub-phase (PROJECT_RULES.md section 15): a Rocket System of the
+   * attacker's declared a supporting strike on this region (recorded in
+   * GameState.missileDeclarations by AttackCommand — the launcher itself
+   * stays wherever it was, it never physically enters), owned by this
+   * player, and their Reserve actually holds at least one missile to fire.
+   * False (skip straight to normal combat) if any condition doesn't hold.
    */
   hasPendingMissileStrike(
     state: GameState,
@@ -209,12 +211,23 @@ export class RulesEngine {
     playerId: string,
     unitCatalog: Readonly<Record<string, UnitDefinition>>,
   ): boolean {
-    const hasLauncher = state.units.some(
-      (unit) => unit.regionId === regionId && unit.ownerId === playerId && unitCatalog[unit.unitId]?.canDeclareMissile,
-    );
-    if (!hasLauncher) {
+    const launcherUnitId = state.missileDeclarations[regionId];
+    if (launcherUnitId === undefined) {
       return false;
     }
+    const launcher = this.getUnitInstance(state, launcherUnitId);
+    if (!launcher || launcher.ownerId !== playerId) {
+      return false;
+    }
+    return this.hasAnyMissileInReserve(state, playerId, unitCatalog);
+  }
+
+  /** Whether this player's Reserve holds at least one missile of any type (PROJECT_RULES.md section 15 — a Rocket System can't declare a strike, and a battle can't open one, without a missile to actually fire). */
+  hasAnyMissileInReserve(
+    state: GameState,
+    playerId: string,
+    unitCatalog: Readonly<Record<string, UnitDefinition>>,
+  ): boolean {
     const player = this.getPlayer(state, playerId);
     if (!player) {
       return false;
@@ -241,6 +254,7 @@ export class RulesEngine {
       lastDefenderRolls: [],
       attackerCasualties: [],
       defenderCasualties: [],
+      armedMissileUnitId: null,
       missileResult: null,
     };
   }
@@ -279,6 +293,31 @@ export class RulesEngine {
   }
 
   /**
+   * Regions a Rocket System may declare a missile strike on this turn
+   * (PROJECT_RULES.md section 15/16) — same traversal as any other land
+   * unit's attack reach (through friendly/empty territory, hostile only on
+   * the final hop), but the hop cap isn't the launcher's own movesRemaining
+   * (it never moves) — it's the longest range among missiles currently in
+   * the declaring player's Reserve: 1 hop normally, 2 if they hold a Missile
+   * B (UnitDefinition.missileRange), data-driven rather than hardcoded.
+   */
+  getMissileStrikeTargets(
+    state: GameState,
+    launcher: UnitInstance,
+    unitCatalog: Readonly<Record<string, UnitDefinition>>,
+  ): ReadonlyMap<string, number> {
+    const player = this.getPlayer(state, launcher.ownerId);
+    const range = (player?.reserve ?? []).reduce((best, entry) => {
+      const def = unitCatalog[entry.unitId];
+      if (entry.quantity <= 0 || def?.category !== 'missile') {
+        return best;
+      }
+      return Math.max(best, def.missileRange ?? 1);
+    }, 1);
+    return this.computeReach(state, launcher, unitCatalog, range).attacks;
+  }
+
+  /**
    * Tactical Moves destinations (PROJECT_RULES.md section 17): reachable
    * regions the mover ALREADY owns — no neutral/empty expansion here, that
    * belongs to Attack Moves. Naval units keep full sea-zone mobility.
@@ -296,12 +335,21 @@ export class RulesEngine {
     return [...reachable.keys()].filter((regionId) => state.regions[regionId]?.ownerId === unit.ownerId);
   }
 
-  /** Attack Moves targets (PROJECT_RULES.md sections 7/8): reachable hostile regions. */
+  /**
+   * Attack Moves targets (PROJECT_RULES.md sections 7/8): reachable hostile
+   * regions. A Rocket System (canDeclareMissile) doesn't attack by moving in
+   * — its "attack" is a missile declaration, so its targets come from
+   * getMissileStrikeTargets instead (whatever range its Reserve currently
+   * supports, section 16), not this unit's own movement reach.
+   */
   getLegalAttackTargets(
     state: GameState,
     unit: UnitInstance,
     unitCatalog: Readonly<Record<string, UnitDefinition>>,
   ): readonly string[] {
+    if (unitCatalog[unit.unitId]?.canDeclareMissile) {
+      return [...this.getMissileStrikeTargets(state, unit, unitCatalog).keys()];
+    }
     return [...this.computeReach(state, unit, unitCatalog).attacks.keys()];
   }
 
@@ -401,9 +449,10 @@ export class RulesEngine {
     state: GameState,
     unit: UnitInstance,
     unitCatalog: Readonly<Record<string, UnitDefinition>>,
+    maxMovesOverride?: number,
   ): { moves: Map<string, number>; attacks: Map<string, number> } {
     const category = unitCatalog[unit.unitId]?.category;
-    const maxMoves = unit.movesRemaining;
+    const maxMoves = maxMovesOverride ?? unit.movesRemaining;
     const distance = new Map<string, number>([[unit.regionId, 0]]);
     const moves = new Map<string, number>();
     const attacks = new Map<string, number>();
