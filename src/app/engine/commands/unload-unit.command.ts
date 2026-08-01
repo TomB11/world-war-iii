@@ -13,11 +13,12 @@ import { applyForceCaptureSatisfactionPenalty } from './shared/capture-penalties
  * movement point (the landing IS its move for the turn). Phase-dependent:
  * - Tactical Moves: a peaceful landing onto a friendly or empty coast.
  * - Attack Moves: an amphibious ASSAULT onto a hostile coast (section 7) —
- *   undefended coast is captured, defended coast becomes contested (both
- *   armies co-locate), exactly like a land attack (section 8). A unit that
- *   can't capture alone (Helicopter) can't take an undefended coast by
- *   itself. The valid landing set for each phase comes from
- *   RulesEngine.getUnloadDestinations.
+ *   undefended coast is captured (stamped with capturedOnTurn, same
+ *   held-a-full-round-before-producing rule as any other capture, section
+ *   18), defended coast becomes contested (both armies co-locate), exactly
+ *   like a land attack (section 8). A unit that can't capture alone
+ *   (Helicopter) can't take an undefended coast by itself. The valid landing
+ *   set for each phase comes from RulesEngine.getUnloadDestinations.
  */
 export class UnloadUnitCommand implements Command {
   readonly type = 'UnloadUnit';
@@ -129,7 +130,14 @@ export class UnloadUnitCommand implements Command {
     return {
       state: {
         ...state,
-        regions: { ...state.regions, [this.destinationRegionId]: { ...targetRegion, ownerId: this.playerId } },
+        regions: {
+          ...state.regions,
+          [this.destinationRegionId]: {
+            ...targetRegion,
+            ownerId: this.playerId,
+            capturedOnTurn: state.turnNumber,
+          },
+        },
         units: state.units.map(disembark),
         players: nextPlayers,
       },

@@ -104,6 +104,7 @@ export function testState(overrides: Partial<GameState> = {}): GameState {
     nextUnitInstanceId: 1,
     combats: {},
     missileDeclarations: {},
+    unitsDeployedThisTurn: {},
     ...overrides,
   };
 }

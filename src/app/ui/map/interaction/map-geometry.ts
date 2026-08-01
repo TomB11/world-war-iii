@@ -5,9 +5,7 @@ import { UnitInstance } from '../../../models/unit-instance.model';
 import { MapPoint, ViewTransform } from '../../../interfaces/map-types';
 import { IconLayoutEntry, layoutUnitIcons } from '../rendering/unit-icon-renderer';
 import { UNIT_ICON_SIZE_PX } from '../rendering/unit-icon-config';
-
-const SEA_ZONE_ICON_CLEARANCE_PX = 3;
-const UNIT_ICON_HIT_RADIUS_FACTOR = 0.7;
+import { SEA_ZONE_ICON_CLEARANCE_PX, UNIT_ICON_HIT_RADIUS_FACTOR } from './map-geometry.constants';
 
 /**
  * All map coordinate conversion and click/hover hit-testing in one place:

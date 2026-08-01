@@ -1,0 +1,87 @@
+<div class="main-menu">
+  <wwiii-background-carousel [images]="backgroundImages" />
+  <div class="main-menu__scrim"></div>
+
+  <div class="main-menu__content">
+    <h1 class="main-menu__title">WORLD WAR <span class="main-menu__title-accent">III</span><small>2100</small></h1>
+
+    <nav class="main-menu__actions">
+      <button type="button" class="main-menu__btn main-menu__btn--primary" (click)="startGame()">
+        Začať hru
+      </button>
+      <button type="button" class="main-menu__btn" (click)="openPrologue()">Prológ</button>
+      <button type="button" class="main-menu__btn" (click)="openManual()">Manuál</button>
+      <button type="button" class="main-menu__btn main-menu__btn--danger" (click)="exit()">Ukončiť</button>
+    </nav>
+  </div>
+
+  @if (showPrologue()) {
+    <div class="main-menu__overlay" (click)="closePrologue()">
+      <div class="main-menu__modal" (click)="$event.stopPropagation()">
+        <button type="button" class="main-menu__modal-close" (click)="closePrologue()">✕</button>
+        <h2>Prológ</h2>
+        <p class="main-menu__soon">Čoskoro...</p>
+      </div>
+    </div>
+  }
+
+  @if (showManual()) {
+    <div class="main-menu__overlay" (click)="closeManual()">
+      <div class="main-menu__modal main-menu__modal--manual" (click)="$event.stopPropagation()">
+        <button type="button" class="main-menu__modal-close" (click)="closeManual()">✕</button>
+        <div class="main-menu__manual-page-frame">
+          <img class="main-menu__manual-page" [src]="manualPages[manualPageIndex()]" alt="Manuál strana {{ manualPageIndex() + 1 }}" />
+          <button
+            type="button"
+            class="main-menu__manual-zoom-btn"
+            title="Zväčšiť stranu"
+            (click)="openManualZoom()"
+          >
+            🔍
+          </button>
+        </div>
+        <div class="main-menu__manual-nav">
+          <button
+            type="button"
+            class="main-menu__btn"
+            [disabled]="manualPageIndex() === 0"
+            (click)="prevManualPage()"
+          >
+            ← Predošlá
+          </button>
+          <span class="main-menu__manual-count">{{ manualPageIndex() + 1 }} / {{ manualPages.length }}</span>
+          <button
+            type="button"
+            class="main-menu__btn"
+            [disabled]="manualPageIndex() === manualPages.length - 1"
+            (click)="nextManualPage()"
+          >
+            Ďalšia →
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (manualZoomed()) {
+    <div class="main-menu__zoom-overlay" (click)="closeManualZoom()">
+      <button type="button" class="main-menu__modal-close" (click)="closeManualZoom()">✕</button>
+      <img
+        class="main-menu__zoom-image"
+        [src]="manualPages[manualPageIndex()]"
+        alt="Manuál strana {{ manualPageIndex() + 1 }} — zväčšené"
+        (click)="$event.stopPropagation()"
+      />
+    </div>
+  }
+
+  @if (showExitMessage()) {
+    <div class="main-menu__overlay" (click)="dismissExitMessage()">
+      <div class="main-menu__modal" (click)="$event.stopPropagation()">
+        <button type="button" class="main-menu__modal-close" (click)="dismissExitMessage()">✕</button>
+        <h2>Ukončiť</h2>
+        <p>Prehliadač nedovolil zatvoriť kartu automaticky. Môžeš ju zavrieť sám.</p>
+      </div>
+    </div>
+  }
+</div>

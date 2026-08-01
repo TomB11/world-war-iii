@@ -196,7 +196,10 @@ export class RemoveCasualtyCommand implements Command {
     const targetRegion = state.regions[this.regionId];
     const previousOwnerId = targetRegion?.ownerId ?? null;
     const nextRegions = targetRegion
-      ? { ...state.regions, [this.regionId]: { ...targetRegion, ownerId: this.playerId } }
+      ? {
+          ...state.regions,
+          [this.regionId]: { ...targetRegion, ownerId: this.playerId, capturedOnTurn: state.turnNumber },
+        }
       : state.regions;
 
     const nextPlayers = applyForceCaptureSatisfactionPenalty(

@@ -55,10 +55,43 @@
   color: var(--wwiii-text-dim);
 }
 
-/* Deploy: destination + confirm */
+/* Pending click-to-place action (deploy or unload) */
 
-.chip {
-  padding: 6px 12px;
+.pending-action-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 8px 10px;
+  background: rgba(79, 184, 224, 0.08);
+  border: 1px solid var(--wwiii-accent);
+  border-radius: 6px;
+
+  .hint {
+    margin: 0;
+  }
+}
+
+.cancel-btn {
+  flex-shrink: 0;
+  padding: 5px 10px;
+  font-size: 12px;
+  color: var(--wwiii-text);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--wwiii-border);
+  border-radius: 6px;
+
+  &:hover {
+    border-color: var(--wwiii-danger);
+    color: var(--wwiii-danger);
+  }
+}
+
+/* Transports (Unload) */
+
+.unload-btn {
+  padding: 4px 10px;
   font-size: 12px;
   color: var(--wwiii-text);
   background: var(--wwiii-bg);
@@ -71,34 +104,12 @@
     color: var(--wwiii-accent);
   }
 
-  &--selected {
+  &--armed {
     border-color: var(--wwiii-accent);
     color: #0b0e14;
     background: var(--wwiii-accent);
   }
 }
-
-.deploy-btn {
-  width: 100%;
-  padding: 9px 12px;
-  font-size: 13px;
-  font-weight: 700;
-  color: #0b0e14;
-  background: var(--wwiii-accent);
-  border: 1px solid var(--wwiii-accent);
-  border-radius: 6px;
-
-  &:hover:not(:disabled) {
-    filter: brightness(1.1);
-  }
-
-  &:disabled {
-    opacity: 0.4;
-    filter: none;
-  }
-}
-
-/* Transports (Unload) */
 
 .unit-list {
   list-style: none;

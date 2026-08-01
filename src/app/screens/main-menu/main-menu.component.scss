@@ -1,0 +1,244 @@
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.main-menu {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--wwiii-font);
+}
+
+.main-menu__scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(11, 14, 20, 0.55) 0%, rgba(11, 14, 20, 0.75) 100%);
+}
+
+.main-menu__content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 40px;
+  padding: 48px;
+}
+
+.main-menu__title {
+  margin: 0;
+  text-align: center;
+  color: var(--wwiii-text);
+  font-size: 56px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.85), 0 0 40px rgba(0, 0, 0, 0.6);
+
+  small {
+    display: block;
+    margin-top: 6px;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 0.4em;
+    color: var(--wwiii-text-dim);
+  }
+}
+
+.main-menu__title-accent {
+  color: var(--wwiii-accent);
+}
+
+.main-menu__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 14px;
+  width: 280px;
+}
+
+.main-menu__btn {
+  padding: 14px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--wwiii-text);
+  background: rgba(19, 24, 38, 0.85);
+  border: 1px solid var(--wwiii-border);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s, transform 0.1s;
+
+  &:hover {
+    background: rgba(79, 184, 224, 0.15);
+    border-color: var(--wwiii-accent);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+}
+
+.main-menu__btn--primary {
+  color: #0b0e14;
+  background: var(--wwiii-accent);
+  border-color: var(--wwiii-accent);
+
+  &:hover {
+    background: var(--wwiii-accent-hover);
+    border-color: var(--wwiii-accent-hover);
+  }
+}
+
+.main-menu__btn--danger {
+  &:hover {
+    background: rgba(184, 67, 63, 0.2);
+    border-color: var(--wwiii-danger);
+  }
+}
+
+.main-menu__overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 10;
+}
+
+.main-menu__modal {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+  padding: 32px;
+  background: var(--wwiii-bg-panel);
+  border: 1px solid var(--wwiii-border);
+  border-radius: 6px;
+  text-align: center;
+  color: var(--wwiii-text);
+
+  h2 {
+    margin: 0 0 12px;
+    color: var(--wwiii-accent);
+  }
+}
+
+.main-menu__modal-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--wwiii-text-dim);
+  background: transparent;
+  border: 1px solid var(--wwiii-border);
+  border-radius: 4px;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--wwiii-text);
+    border-color: var(--wwiii-accent);
+  }
+}
+
+.main-menu__soon {
+  color: var(--wwiii-text-dim);
+  font-size: 18px;
+}
+
+.main-menu__modal--manual {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.main-menu__manual-page-frame {
+  position: relative;
+  display: inline-flex;
+}
+
+.main-menu__manual-page {
+  display: block;
+  max-width: 70vw;
+  max-height: 78vh;
+  border: 1px solid var(--wwiii-border);
+  border-radius: 4px;
+}
+
+.main-menu__manual-zoom-btn {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--wwiii-text);
+  background: rgba(11, 14, 20, 0.75);
+  border: 1px solid var(--wwiii-border);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
+
+  &:hover {
+    background: rgba(79, 184, 224, 0.25);
+    border-color: var(--wwiii-accent);
+  }
+}
+
+.main-menu__manual-nav {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.main-menu__manual-count {
+  color: var(--wwiii-text-dim);
+  font-size: 13px;
+  min-width: 48px;
+}
+
+.main-menu__zoom-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.9);
+  cursor: zoom-out;
+
+  .main-menu__modal-close {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+  }
+}
+
+.main-menu__zoom-image {
+  max-width: 95vw;
+  max-height: 95vh;
+  cursor: default;
+  border: 1px solid var(--wwiii-border);
+  border-radius: 4px;
+}

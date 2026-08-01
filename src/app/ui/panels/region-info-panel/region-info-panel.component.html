@@ -39,23 +39,31 @@
           <div class="unit-row">
             <div class="unit-group">
               @for (entry of contestedView().defenders; track entry.ownerName + entry.unitName) {
-                <div class="unit-card" [title]="entry.unitName + ' × ' + entry.quantity + ' (' + entry.ownerName + ')'">
-                  <span class="unit-card__frame">
-                    <wwiii-unit-icon [unitId]="entry.unitId" [ownerId]="entry.ownerId" [color]="entry.color" [size]="84" />
-                  </span>
-                  <span class="unit-card__label">{{ entry.unitName }} × {{ entry.quantity }}</span>
-                </div>
+                <wwiii-unit-card
+                  [unitId]="entry.unitId"
+                  [unitName]="entry.unitName"
+                  [ownerId]="entry.ownerId"
+                  [ownerName]="entry.ownerName"
+                  [color]="entry.color"
+                  [quantity]="entry.quantity"
+                  [draggable]="entry.ownerId === activePlayerId()"
+                  (dragStart)="startDrag(entry, $event)"
+                />
               }
             </div>
             <span class="combat-symbol" title="Combat pending">⚔</span>
             <div class="unit-group">
               @for (entry of contestedView().attackers; track entry.ownerName + entry.unitName) {
-                <div class="unit-card" [title]="entry.unitName + ' × ' + entry.quantity + ' (' + entry.ownerName + ')'">
-                  <span class="unit-card__frame">
-                    <wwiii-unit-icon [unitId]="entry.unitId" [ownerId]="entry.ownerId" [color]="entry.color" [size]="84" />
-                  </span>
-                  <span class="unit-card__label">{{ entry.unitName }} × {{ entry.quantity }}</span>
-                </div>
+                <wwiii-unit-card
+                  [unitId]="entry.unitId"
+                  [unitName]="entry.unitName"
+                  [ownerId]="entry.ownerId"
+                  [ownerName]="entry.ownerName"
+                  [color]="entry.color"
+                  [quantity]="entry.quantity"
+                  [draggable]="entry.ownerId === activePlayerId()"
+                  (dragStart)="startDrag(entry, $event)"
+                />
               }
             </div>
           </div>
@@ -64,12 +72,16 @@
           <div class="unit-row">
             @if (unitsHere().length > 0) {
               @for (entry of unitsHere(); track entry.ownerName + entry.unitName) {
-                <div class="unit-card" [title]="entry.unitName + ' × ' + entry.quantity + ' (' + entry.ownerName + ')'">
-                  <span class="unit-card__frame">
-                    <wwiii-unit-icon [unitId]="entry.unitId" [ownerId]="entry.ownerId" [color]="entry.color" [size]="84" />
-                  </span>
-                  <span class="unit-card__label">{{ entry.unitName }} × {{ entry.quantity }}</span>
-                </div>
+                <wwiii-unit-card
+                  [unitId]="entry.unitId"
+                  [unitName]="entry.unitName"
+                  [ownerId]="entry.ownerId"
+                  [ownerName]="entry.ownerName"
+                  [color]="entry.color"
+                  [quantity]="entry.quantity"
+                  [draggable]="entry.ownerId === activePlayerId()"
+                  (dragStart)="startDrag(entry, $event)"
+                />
               }
             } @else {
               <span class="panel__units-empty">None</span>
@@ -94,12 +106,16 @@
         <div class="unit-row">
           @if (unitsHere().length > 0) {
             @for (entry of unitsHere(); track entry.ownerName + entry.unitName) {
-              <div class="unit-card" [title]="entry.unitName + ' × ' + entry.quantity + ' (' + entry.ownerName + ')'">
-                <span class="unit-card__frame">
-                  <wwiii-unit-icon [unitId]="entry.unitId" [ownerId]="entry.ownerId" [color]="entry.color" [size]="84" />
-                </span>
-                <span class="unit-card__label">{{ entry.unitName }} × {{ entry.quantity }}</span>
-              </div>
+              <wwiii-unit-card
+                [unitId]="entry.unitId"
+                [unitName]="entry.unitName"
+                [ownerId]="entry.ownerId"
+                [ownerName]="entry.ownerName"
+                [color]="entry.color"
+                [quantity]="entry.quantity"
+                [draggable]="entry.ownerId === activePlayerId()"
+                (dragStart)="startDrag(entry, $event)"
+              />
             }
           } @else {
             <span class="panel__units-empty">None</span>

@@ -1,0 +1,36 @@
+<div class="choose-side">
+  <img class="choose-side__bg" [src]="backgroundImage" alt="" />
+  <div class="choose-side__scrim"></div>
+
+  <div class="choose-side__halves">
+    <button
+      type="button"
+      class="choose-side__half choose-side__half--west"
+      [class.choose-side__half--selected]="selectedSide() === 'west'"
+      [class.choose-side__half--dimmed]="selectedSide() === 'east'"
+      (click)="selectSide('west')"
+    >
+      <span class="choose-side__label">
+        <span class="choose-side__name">Západní spojenci</span>
+        <span class="choose-side__members">EUTO · USA · SEATO</span>
+      </span>
+    </button>
+
+    <button
+      type="button"
+      class="choose-side__half choose-side__half--east"
+      [class.choose-side__half--selected]="selectedSide() === 'east'"
+      [class.choose-side__half--dimmed]="selectedSide() === 'west'"
+      (click)="selectSide('east')"
+    >
+      <span class="choose-side__label">
+        <span class="choose-side__name">Eurázijský pakt</span>
+        <span class="choose-side__members">Rusko · Čína · Arabská liga</span>
+      </span>
+    </button>
+  </div>
+
+  @if (selectedSide()) {
+    <button type="button" class="choose-side__continue" (click)="continue()">Pokračovať</button>
+  }
+</div>

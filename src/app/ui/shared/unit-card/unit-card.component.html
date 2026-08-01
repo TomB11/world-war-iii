@@ -1,0 +1,11 @@
+<div
+  class="unit-card"
+  [class.unit-card--draggable]="draggable()"
+  [title]="unitName() + ' × ' + quantity() + ' (' + ownerName() + ')'"
+  (pointerdown)="dragStart.emit($event)"
+>
+  <span class="unit-card__frame">
+    <wwiii-unit-icon [unitId]="unitId()" [ownerId]="ownerId()" [color]="color()" [size]="iconSize()" />
+  </span>
+  <span class="unit-card__label">{{ unitName() }} × {{ quantity() }}</span>
+</div>

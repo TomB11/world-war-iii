@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, Signal, effect, inject, signal } from '@angular/core';
 import { GameStore } from '../../../state/store';
+import { TOAST_DURATION_MS } from './toast-host.constants';
 
 type ToastTone = 'error' | 'info';
 
@@ -8,8 +9,6 @@ interface ToastEntry {
   readonly text: string;
   readonly tone: ToastTone;
 }
-
-const TOAST_DURATION_MS = 4000;
 
 /**
  * Global, transient feedback for command rejections and one-shot result

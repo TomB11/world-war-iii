@@ -16,7 +16,9 @@ import { RulesEngine } from '../rules-engine';
  * clears hasFoughtThisTurn, so last turn's combat doesn't block this
  * turn's Tactical Moves. Entering the Cyber Attack Phase clears
  * hasUsedCyberAttackThisTurn, so last round's Hack/Political Influence
- * doesn't block this round's (PROJECT_RULES.md section 6).
+ * doesn't block this round's (PROJECT_RULES.md section 6). Entering the
+ * Place New Units Phase clears unitsDeployedThisTurn, so last turn's
+ * factory usage doesn't carry over (PROJECT_RULES.md section 18).
  */
 export class AdvancePhaseCommand implements Command {
   readonly type = 'AdvancePhase';
@@ -70,8 +72,18 @@ export class AdvancePhaseCommand implements Command {
             player.id === this.playerId ? { ...player, hasUsedCyberAttackThisTurn: false } : player,
           )
         : state.players;
+    const nextUnitsDeployedThisTurn = nextPhase === 'placeNewUnits' ? {} : state.unitsDeployedThisTurn;
 
     const events: readonly GameEngineEvent[] = [{ type: 'PhaseAdvanced', phase: nextPhase }];
-    return { state: { ...state, phase: nextPhase, units: nextUnits, players: nextPlayers }, events };
+    return {
+      state: {
+        ...state,
+        phase: nextPhase,
+        units: nextUnits,
+        players: nextPlayers,
+        unitsDeployedThisTurn: nextUnitsDeployedThisTurn,
+      },
+      events,
+    };
   }
 }

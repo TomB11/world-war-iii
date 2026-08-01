@@ -1,0 +1,26 @@
+@if (interactive()) {
+  <button
+    type="button"
+    class="combat-board__unit"
+    [class.combat-board__unit--clickable]="clickable()"
+    [disabled]="!clickable()"
+    [title]="unitName()"
+    (click)="unitClick.emit()"
+  >
+    <wwiii-unit-icon [unitId]="unitId()" [ownerId]="ownerId()" [color]="color()" [size]="size()" />
+    @if (rollInfo(); as roll) {
+      <span class="combat-board__roll" [class.combat-board__roll--hit]="roll.hit">{{ roll.roll }}</span>
+    }
+  </button>
+} @else if (armed()) {
+  <span class="combat-board__unit combat-board__unit--armed-missile" [title]="unitName()">
+    <wwiii-unit-icon [unitId]="unitId()" [ownerId]="ownerId()" [color]="color()" [size]="size()" />
+  </span>
+} @else {
+  <span class="combat-board__casualty" [title]="unitName() + ' (casualty)'">
+    <wwiii-unit-icon [unitId]="unitId()" [ownerId]="ownerId()" [color]="color()" [size]="size()" />
+    @if (rollInfo(); as roll) {
+      <span class="combat-board__roll" [class.combat-board__roll--hit]="roll.hit">{{ roll.roll }}</span>
+    }
+  </span>
+}

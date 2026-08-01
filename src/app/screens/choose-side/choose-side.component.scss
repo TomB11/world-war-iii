@@ -1,0 +1,128 @@
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.choose-side {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--wwiii-font);
+}
+
+.choose-side__bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.choose-side__scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(11, 14, 20, 0.2) 0%, rgba(11, 14, 20, 0.55) 100%);
+}
+
+.choose-side__halves {
+  position: absolute;
+  inset: 0;
+  display: flex;
+}
+
+.choose-side__half {
+  position: relative;
+  flex: 1 1 50%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0 0 72px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+.choose-side__half--west {
+  border-right: 1px solid rgba(255, 255, 255, 0.15);
+
+  &:hover,
+  &.choose-side__half--selected {
+    background: color-mix(in srgb, var(--wwiii-accent) 22%, transparent);
+  }
+
+  &.choose-side__half--selected {
+    box-shadow: inset 0 0 0 3px var(--wwiii-accent);
+  }
+}
+
+.choose-side__half--east {
+  &:hover,
+  &.choose-side__half--selected {
+    background: color-mix(in srgb, var(--wwiii-danger) 22%, transparent);
+  }
+
+  &.choose-side__half--selected {
+    box-shadow: inset 0 0 0 3px var(--wwiii-danger);
+  }
+}
+
+.choose-side__half--dimmed {
+  opacity: 0.5;
+}
+
+.choose-side__label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 16px 28px;
+  background: rgba(11, 14, 20, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 6px;
+}
+
+.choose-side__name {
+  color: var(--wwiii-text);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+}
+
+.choose-side__members {
+  color: var(--wwiii-text-dim);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+}
+
+.choose-side__continue {
+  position: absolute;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 14px 40px;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #0b0e14;
+  background: var(--wwiii-accent);
+  border: 1px solid var(--wwiii-accent);
+  border-radius: 4px;
+  cursor: pointer;
+  box-shadow: 0 4px 24px color-mix(in srgb, var(--wwiii-accent) 40%, transparent);
+  transition: background-color 0.15s, transform 0.1s;
+
+  &:hover {
+    background: var(--wwiii-accent-hover);
+  }
+
+  &:active {
+    transform: translateX(-50%) scale(0.98);
+  }
+}

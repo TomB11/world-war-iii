@@ -1,15 +1,15 @@
-@if (hasContent() && store.activePlayer(); as player) {
+@if (hasContent() && store.activePlayer()) {
   <div class="wwiii-panel">
     @if (isDeployPhase()) {
       <h2>Deploy Units</h2>
-      @if (reserveEntries().length > 0 && (deployableRegions().length > 0 || deployableSeaZones().length > 0)) {
+      @if (reserveEntries().length > 0) {
         <div class="deploy-unit-grid">
           @for (entry of reserveEntries(); track entry.unitId) {
             <button
               type="button"
               class="deploy-unit-card"
-              [class.deploy-unit-card--selected]="selectedUnitId() === entry.unitId"
-              (click)="onSelectUnit(entry.unitId)"
+              [class.deploy-unit-card--selected]="isArmedForDeploy(entry.unitId)"
+              (click)="armDeploy(entry.unitId)"
             >
               <span class="deploy-unit-card__frame">
                 <wwiii-unit-icon [unitId]="entry.unitId" [ownerId]="activePlayerFactionId()" [color]="activePlayerColor()" [size]="48" />
@@ -19,42 +19,8 @@
             </button>
           }
         </div>
-
-        @if (selectedUnitId()) {
-          <div class="deploy-destination">
-            <h3>Deploy To</h3>
-            <div class="d-flex flex-wrap gap-2 mb-3">
-              @if (isSelectedUnitNaval()) {
-                @for (zone of deployableSeaZones(); track zone.id) {
-                  <button
-                    type="button"
-                    class="chip"
-                    [class.chip--selected]="selectedRegionId() === zone.id"
-                    (click)="selectedRegionId.set(zone.id)"
-                  >
-                    Sea Zone {{ zone.label }}
-                  </button>
-                }
-              } @else {
-                @for (region of deployableRegions(); track region.id) {
-                  <button
-                    type="button"
-                    class="chip"
-                    [class.chip--selected]="selectedRegionId() === region.id"
-                    (click)="selectedRegionId.set(region.id)"
-                  >
-                    {{ region.name }}
-                  </button>
-                }
-              }
-            </div>
-            <button type="button" class="deploy-btn" [disabled]="!selectedRegionId()" (click)="deploy(player.id)">
-              Deploy {{ unitName(selectedUnitId()) }}
-            </button>
-          </div>
-        }
       } @else {
-        <p class="hint">Need Reserve units and a controlled factory region to deploy.</p>
+        <p class="hint">Need Reserve units to deploy.</p>
       }
     } @else {
       <h2>Transports</h2>
@@ -66,12 +32,14 @@
               <div class="embarked-row">
                 {{ unitName(embarked.unitId) }}
                 @if (unloadDestinations(embarked.id).length > 0) {
-                  <select #dest>
-                    @for (regionId of unloadDestinations(embarked.id); track regionId) {
-                      <option [value]="regionId">{{ regionName(regionId) }}</option>
-                    }
-                  </select>
-                  <button type="button" (click)="unload(player.id, embarked.id, dest.value)">Unload</button>
+                  <button
+                    type="button"
+                    class="unload-btn"
+                    [class.unload-btn--armed]="isArmedForUnload(embarked.id)"
+                    (click)="armUnload(embarked.id)"
+                  >
+                    {{ isArmedForUnload(embarked.id) ? 'Click map…' : 'Unload' }}
+                  </button>
                 } @else {
                   <span class="hint">no adjacent coast</span>
                 }
@@ -80,6 +48,13 @@
           </li>
         }
       </ul>
+    }
+
+    @if (pendingActionHint(); as hint) {
+      <div class="pending-action-banner">
+        <span class="hint">{{ hint }}</span>
+        <button type="button" class="cancel-btn" (click)="cancelPendingAction()">Cancel</button>
+      </div>
     }
 
     @if (store.movementRejectionReason(); as reason) {

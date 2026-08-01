@@ -4,8 +4,7 @@ import { GameEngineEvent } from '../../interfaces/game-events';
 import { EconomyConfig } from '../../models/economy-config.model';
 import { RulesEngine } from '../rules-engine';
 import { rollDie } from '../random';
-
-const DICE_SIDES = 6;
+import { DICE_SIDES } from '../constants/dice.constants';
 
 /**
  * Hacking (PROJECT_RULES.md section 6): during the Cyber Attack Phase,

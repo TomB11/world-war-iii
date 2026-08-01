@@ -2,16 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { GameStore } from '../../../state/store';
 import { GamePhase } from '../../../models/game-state.model';
 import { TURN_PHASE_ORDER } from '../../../core/constants/game.constants';
-
-const PHASE_LABELS: Readonly<Record<GamePhase, string>> = {
-  buyUnits: 'Buy Units',
-  cyberAttack: 'Cyber Attack',
-  attackMoves: 'Attack Moves',
-  attack: 'Attack',
-  tacticalMoves: 'Tactical Moves',
-  placeNewUnits: 'Place Units',
-  collectIncome: 'Collect Income',
-};
+import { PHASE_LABELS } from '../../../core/constants/phase-labels.constants';
 
 interface PhaseStep {
   readonly phase: GamePhase;

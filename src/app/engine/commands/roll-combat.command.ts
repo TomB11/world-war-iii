@@ -5,8 +5,7 @@ import { UnitDefinition } from '../../models/unit.model';
 import { CombatDieRoll, RegionCombat } from '../../models/region-combat.model';
 import { RulesEngine } from '../rules-engine';
 import { rollDie } from '../random';
-
-const DICE_SIDES = 6;
+import { DICE_SIDES } from '../constants/dice.constants';
 
 /**
  * Rolls one round's dice for whichever side is up next in a region's Attack

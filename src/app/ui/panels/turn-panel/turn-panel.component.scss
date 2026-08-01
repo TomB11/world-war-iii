@@ -2,21 +2,27 @@
   display: block;
 }
 
-.flag {
-  width: 36px;
-  height: 24px;
-  object-fit: cover;
-  border: 1px solid var(--wwiii-border);
-  border-radius: 3px;
-  flex-shrink: 0;
+.turn-panel__capital {
+  position: relative;
+  margin: -16px -16px 12px;
+  overflow: hidden;
+  border-radius: 6px 6px 0 0;
 }
 
-h2 {
-  margin: 0 0 4px;
+.turn-panel__capital-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 6 / 5;
+  object-fit: cover;
+}
+
+.turn-panel__name {
+  margin: 0 0 2px;
 }
 
 .phase-label {
-  margin: 0;
+  margin: 0 0 12px;
   color: var(--wwiii-text-dim);
   font-size: 12px;
   text-transform: uppercase;
@@ -28,6 +34,8 @@ dl {
   grid-template-columns: auto 1fr;
   gap: 6px 12px;
   margin: 0;
+  border-top: 1px solid var(--wwiii-text-dim);
+  padding-top: 5px;
 }
 
 dt {

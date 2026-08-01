@@ -1,16 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { GameStore } from '../../../state/store';
-import { GamePhase } from '../../../models/game-state.model';
-
-const PHASE_LABELS: Readonly<Record<GamePhase, string>> = {
-  buyUnits: 'Buy Units Phase',
-  cyberAttack: 'Cyber Attack Phase',
-  attackMoves: 'Attack Moves Phase',
-  attack: 'Attack Phase',
-  tacticalMoves: 'Tactical Moves Phase',
-  placeNewUnits: 'Place New Units Phase',
-  collectIncome: 'Collect Income Phase',
-};
+import { PHASE_LABELS } from '../../../core/constants/phase-labels.constants';
+import { CAPITAL_IMAGE_IDS } from './turn-panel.constants';
 
 @Component({
   selector: 'wwiii-turn-panel',
@@ -24,12 +15,16 @@ export class TurnPanelComponent {
 
   protected readonly phaseLabel = computed(() => {
     const phase = this.store.state()?.phase;
-    return phase ? PHASE_LABELS[phase] : '';
+    return phase ? `${PHASE_LABELS[phase]} Phase` : '';
   });
 
-  protected readonly flagPath = computed(() => {
-    const player = this.store.activePlayer();
-    return player ? `assets/flags/${player.factionId}.png` : 'assets/flags/neutral.png';
+  protected readonly capitalImagePath = computed(() => {
+    const factionId = this.store.activePlayer()?.factionId;
+    if (!factionId) {
+      return null;
+    }
+    const imageId = CAPITAL_IMAGE_IDS[factionId] ?? factionId;
+    return `assets/capitals/${imageId}.jpg`;
   });
 
   protected readonly reserveCount = computed(() => {

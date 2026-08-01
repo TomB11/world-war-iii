@@ -17,8 +17,7 @@ import { MapRenderer } from '../rendering/map-renderer';
 import { UnitIconImageCache } from '../rendering/unit-icon-images';
 import { MapPoint, UnitDragState, ViewTransform } from '../../../interfaces/map-types';
 import { clamp } from '../../../core/utils/math.util';
-
-const CLICK_DRAG_THRESHOLD_PX = 4;
+import { CLICK_DRAG_THRESHOLD_PX } from './world-map.constants';
 
 /**
  * Pure rendering + input component. It never mutates game state itself —
@@ -67,6 +66,10 @@ export class WorldMapComponent implements AfterViewInit, OnDestroy {
   private draggingUnit: UnitDragState | null = null;
   /** Current pointer position (map-unit space) while dragging a unit, for the ghost icon. */
   private dragPointerPoint: MapPoint | null = null;
+  /** Ghost position (map-unit space) for a drag that started outside the canvas, or null while the pointer is off-canvas. */
+  private externalDragPointerPoint: MapPoint | null = null;
+  private windowPointerMoveHandler: ((event: PointerEvent) => void) | null = null;
+  private windowPointerUpHandler: ((event: PointerEvent) => void) | null = null;
 
   constructor() {
     // Redraw whenever any signal this reads changes: regions, flags,
@@ -83,7 +86,21 @@ export class WorldMapComponent implements AfterViewInit, OnDestroy {
       this.store.movableUnitIds();
       this.store.contestedRegionIds();
       this.store.missileStrikePreviews();
+      this.store.externalDrag();
+      this.store.pendingAction();
       this.redrawCurrentState();
+    });
+
+    // A drag that started in another component (e.g. a unit card in
+    // RegionInfoPanelComponent) has no canvas pointer capture to keep
+    // delivering move/up events, so this component takes over tracking at
+    // the window level for as long as GameStore reports one in progress.
+    effect(() => {
+      if (this.store.externalDrag()) {
+        this.attachExternalDragListeners();
+      } else {
+        this.detachExternalDragListeners();
+      }
     });
   }
 
@@ -97,6 +114,7 @@ export class WorldMapComponent implements AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.resizeObserver?.disconnect();
+    this.detachExternalDragListeners();
   }
 
   protected resetView(): void {
@@ -109,6 +127,16 @@ export class WorldMapComponent implements AfterViewInit, OnDestroy {
       this.suppressNextClick = false;
       return;
     }
+
+    // An armed deploy/unload (GameStore.armDeployUnit/armUnloadUnit) takes
+    // over the very next canvas click, wherever it lands — a hit on one of
+    // its highlighted destinations commits the action, anything else just
+    // cancels it quietly (see resolvePendingActionAt).
+    if (this.store.pendingAction()) {
+      this.store.resolvePendingActionAt(this.hitTestAt(event.clientX, event.clientY));
+      return;
+    }
+
     const point = this.toWorldPoint(event.clientX, event.clientY);
     const region = this.geometry.hitTestRegion(Object.values(this.store.regions()), point);
 
@@ -315,6 +343,64 @@ export class WorldMapComponent implements AfterViewInit, OnDestroy {
     };
   }
 
+  /** Whether a client-space point currently falls within the canvas's on-screen bounds. */
+  private isPointWithinCanvas(clientX: number, clientY: number): boolean {
+    const rect = this.canvasRef().nativeElement.getBoundingClientRect();
+    return clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom;
+  }
+
+  /** Resolves a client-space point to whichever region or sea zone (if any) is under it. */
+  private hitTestAt(clientX: number, clientY: number): string | null {
+    const point = this.toWorldPoint(clientX, clientY);
+    const region = this.geometry.hitTestRegion(Object.values(this.store.regions()), point);
+    if (region) {
+      return region.id;
+    }
+    const seaZone = this.geometry.hitTestSeaZone(Object.values(this.store.seaZones()), point, this.view.scale);
+    return seaZone?.id ?? null;
+  }
+
+  private attachExternalDragListeners(): void {
+    if (this.windowPointerMoveHandler) {
+      return;
+    }
+    this.windowPointerMoveHandler = (event: PointerEvent): void => {
+      if (this.isPointWithinCanvas(event.clientX, event.clientY)) {
+        const point = this.toWorldPoint(event.clientX, event.clientY);
+        this.externalDragPointerPoint = {
+          x: point.x * this.config.mapViewBoxWidth,
+          y: point.y * this.config.mapViewBoxHeight,
+        };
+        this.store.setHoveredRegion(this.hitTestAt(event.clientX, event.clientY));
+      } else {
+        this.externalDragPointerPoint = null;
+        this.store.setHoveredRegion(null);
+      }
+      this.redrawCurrentState();
+    };
+    this.windowPointerUpHandler = (event: PointerEvent): void => {
+      const dropTarget = this.isPointWithinCanvas(event.clientX, event.clientY)
+        ? this.hitTestAt(event.clientX, event.clientY)
+        : null;
+      this.store.resolveExternalDrop(dropTarget);
+      this.store.setHoveredRegion(null);
+    };
+    window.addEventListener('pointermove', this.windowPointerMoveHandler);
+    window.addEventListener('pointerup', this.windowPointerUpHandler);
+  }
+
+  private detachExternalDragListeners(): void {
+    if (this.windowPointerMoveHandler) {
+      window.removeEventListener('pointermove', this.windowPointerMoveHandler);
+      this.windowPointerMoveHandler = null;
+    }
+    if (this.windowPointerUpHandler) {
+      window.removeEventListener('pointerup', this.windowPointerUpHandler);
+      this.windowPointerUpHandler = null;
+    }
+    this.externalDragPointerPoint = null;
+  }
+
   /** setPointerCapture can throw NotFoundError if the pointer session is already gone; that's never fatal here. */
   private setPointerCaptureSafely(pointerId: number): void {
     try {
@@ -355,6 +441,8 @@ export class WorldMapComponent implements AfterViewInit, OnDestroy {
     }
     const regionsById = this.store.regions();
     const seaZonesById = this.store.seaZones();
+    const draggingUnit = this.draggingUnit ?? this.store.externalDrag();
+    const dragPointerPoint = this.draggingUnit ? this.dragPointerPoint : this.externalDragPointerPoint;
     this.renderer.draw({
       context,
       view: this.view,
@@ -370,8 +458,9 @@ export class WorldMapComponent implements AfterViewInit, OnDestroy {
       seaZonesById,
       unitsByRegion: this.store.unitsByRegion(),
       factions: this.store.factions(),
-      draggingUnit: this.draggingUnit,
-      dragPointerPoint: this.dragPointerPoint,
+      draggingUnit,
+      dragPointerPoint,
+      pendingActionTargets: this.store.pendingAction()?.destinations ?? [],
       activePlayerId: this.store.activePlayer()?.id ?? null,
       movableUnitIds: this.store.movableUnitIds(),
       contestedRegionIds: this.store.contestedRegionIds(),

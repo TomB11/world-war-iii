@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { GameStore } from '../../../state/store';
 import { UnitInstance } from '../../../models/unit-instance.model';
-import { UnitIconComponent } from '../../shared/unit-icon/unit-icon.component';
+import { UnitCardComponent } from '../../shared/unit-card/unit-card.component';
+import { MOVEMENT_PHASES } from '../../../core/constants/game.constants';
 
 interface UnitGroup {
   unitId: string;
@@ -15,7 +16,7 @@ interface UnitGroup {
 @Component({
   selector: 'wwiii-region-info-panel',
   standalone: true,
-  imports: [UnitIconComponent],
+  imports: [UnitCardComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './region-info-panel.component.html',
   styleUrl: './region-info-panel.component.scss',
@@ -28,6 +29,30 @@ export class RegionInfoPanelComponent {
 
   protected close(): void {
     this.store.clearSelection();
+  }
+
+  protected readonly activePlayerId = computed(() => this.store.state()?.activePlayerId ?? null);
+
+  /**
+   * Lets a unit shown here be picked up the same way its map icon would be
+   * (WorldMapComponent.tryPickUpUnit / GameStore.startExternalUnitDrag) — a
+   * no-op for anything that isn't the active player's own movable unit, so
+   * it's safe to wire on every unit-card unconditionally.
+   */
+  protected startDrag(entry: UnitGroup, event: PointerEvent): void {
+    const state = this.store.state();
+    const regionId = this.store.selectedRegionId();
+    if (!state || !regionId || entry.ownerId !== state.activePlayerId || !MOVEMENT_PHASES.includes(state.phase)) {
+      return;
+    }
+    const candidate = (this.store.unitsByRegion()[regionId] ?? []).find(
+      (u) => u.unitId === entry.unitId && u.ownerId === entry.ownerId && u.transportedBy === null && u.movesRemaining > 0,
+    );
+    if (!candidate) {
+      return;
+    }
+    event.preventDefault();
+    this.store.startExternalUnitDrag(candidate.id);
   }
 
   protected readonly ownerName = computed(() => {

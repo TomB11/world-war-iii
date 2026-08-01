@@ -46,4 +46,12 @@ export interface GameState {
    * region. Cleared for the ending player's declarations in EndTurnCommand.
    */
   readonly missileDeclarations: Readonly<Record<string, string>>;
+  /**
+   * Units deployed so far this Place New Units phase, keyed by the factory
+   * regionId that produced them (for naval units this is the adjacent
+   * factory region, not the sea zone they landed in) — caps deploys against
+   * `Region.factory` (PROJECT_RULES.md section 18). Reset to `{}` whenever
+   * the active player enters the Place New Units phase (AdvancePhaseCommand).
+   */
+  readonly unitsDeployedThisTurn: Readonly<Record<string, number>>;
 }

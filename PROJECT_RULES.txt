@@ -647,14 +647,17 @@ rule is still future work (needs the combat/hit-point system, section 12).
 
 Transports (Land Transport Carrier, Aircraft Carrier, Stealth Boat) are
 naval vessels that sit in sea zones and move up to their Movement value in
-sea zones (the Land Transport moves 2). To LOAD, the transport must be in a
-sea zone that borders (SeaZone.adjacentRegionIds) the region holding the
-land/air unit — the passenger boards from the coast and then rides in the
-transport's sea zone, MOVING WITH IT when the transport sails (embarked
-units follow the transport's location and don't spend their own movement
-while carried). Loading is done by DRAGGING a unit onto the transport's sea
-zone on the map; there is no movement panel, only a small utility panel for
-Deploy (Place New Units) and Unload.
+sea zones (the Land Transport moves 2) — in EITHER Attack Moves or Tactical
+Moves (section 7 explicitly lists naval sea-zone movement among Attack
+Moves' pathing rules; section 17 confirms they're unrestricted between sea
+zones in both). To LOAD, the transport must be in a sea zone that borders
+(SeaZone.adjacentRegionIds) the region holding the land/air unit — the
+passenger boards from the coast and then rides in the transport's sea zone,
+MOVING WITH IT when the transport sails (embarked units follow the
+transport's location and don't spend their own movement while carried).
+Loading is done by DRAGGING a unit onto the transport's sea zone on the map;
+there is no movement panel, only a small utility panel for Deploy (Place
+New Units) and Unload.
 
 UNLOADING is phase-dependent and always costs the unit one movement point
 (the landing is its move for the turn):
@@ -662,12 +665,15 @@ UNLOADING is phase-dependent and always costs the unit one movement point
   bordering the transport's sea zone.
 - During ATTACK MOVES: an amphibious ASSAULT onto a HOSTILE coast — the
   disembark IS the attack. An undefended coast is captured (with the
-  section-5 by-force Citizen penalties); a defended coast becomes contested
-  (both armies co-locate, ownership unchanged), exactly like a land attack
+  section-5 by-force Citizen penalties, and the section-18 capturedOnTurn
+  hold-a-full-round-first rule); a defended coast becomes contested (both
+  armies co-locate, ownership unchanged), exactly like a land attack
   (section 8). A Helicopter still can't take an undefended coast on its own
-  (section 22). So the typical flow is "load + sail this turn, then next
-  turn disembark as the unit's move — peacefully in Tactical Moves, or as an
-  amphibious assault in Attack Moves."
+  (section 22). Because sailing is allowed during Attack Moves too, the
+  whole "load, sail into position, amphibious assault" sequence can happen
+  in a single Attack Moves phase (movement allowing) — or spread across
+  turns ("load + sail this turn, disembark next turn"), whichever the
+  transport's movement allowance supports.
 
 Transported units:
 
@@ -681,13 +687,13 @@ If the transport is destroyed, all transported units are destroyed.
 CURRENT IMPLEMENTATION STATUS: loading (from an adjacent coast, typed
 land/air capacity, Fighters carriers-only), boarding, sea movement carrying
 cargo (embarked units' regionId follows the transport, their own movement
-untouched), peaceful unloading (Tactical Moves) and amphibious-assault
-unloading (Attack Moves — capture or contest) are all implemented
-(LoadUnitCommand / MoveUnitCommand / UnloadUnitCommand). "Cannot attack
-while embarked" holds (embarked units aren't pickable). "Destroyed
-transport destroys its cargo" is not implemented — there's no
-unit-destruction path yet, since dice-based combat resolution doesn't exist
-(section 8).
+untouched, and allowed during Attack Moves as well as Tactical Moves),
+peaceful unloading (Tactical Moves) and amphibious-assault unloading
+(Attack Moves — capture or contest) are all implemented (LoadUnitCommand /
+MoveUnitCommand / UnloadUnitCommand). "Cannot attack while embarked" holds
+(embarked units aren't pickable). "Destroyed transport destroys its cargo"
+is not implemented — there's no unit-destruction path yet, since
+dice-based combat resolution doesn't exist (section 8).
 
 ---
 
