@@ -2,9 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { GameStore } from '../../../state/store';
 import { UnitInstance } from '../../../models/unit-instance.model';
 import { CombatCasualty, CombatDieRoll, CombatStep } from '../../../models/region-combat.model';
-import { UnitIconComponent } from '../../shared/unit-icon/unit-icon.component';
-
-const COMBAT_COLUMNS: readonly number[] = [1, 2, 3, 4, 5];
+import { CombatUnitSlotComponent } from './combat-unit-slot/combat-unit-slot.component';
+import { COMBAT_COLUMNS } from './combat-board.constants';
 
 interface CombatUnit {
   readonly instanceId: string;
@@ -30,7 +29,7 @@ interface CombatUnit {
 @Component({
   selector: 'wwiii-combat-board',
   standalone: true,
-  imports: [UnitIconComponent],
+  imports: [CombatUnitSlotComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './combat-board.component.html',
   styleUrl: './combat-board.component.scss',
@@ -50,6 +49,14 @@ export class CombatBoardComponent {
     const defender = this.defenderUnits()[0];
     return defender ? (this.store.factions()[this.defenderOwnerId() ?? '']?.name ?? 'Defender') : 'Defender';
   });
+
+  /** Faction colors driving the board's per-side accents (columns, badges, glow) — falls back to the generic theme colors if a side has no units yet. */
+  protected readonly attackerColor = computed(
+    () => this.store.factions()[this.attackerId() ?? '']?.color ?? '#4fb8e0',
+  );
+  protected readonly defenderColor = computed(
+    () => this.store.factions()[this.defenderOwnerId() ?? '']?.color ?? '#b8433f',
+  );
 
   private readonly combat = this.store.activeCombat;
   protected readonly resolved = computed(() => this.store.combatOutcomeMessage() !== null);

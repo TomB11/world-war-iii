@@ -24,6 +24,7 @@ describe('RemoveCasualtyCommand', () => {
     const state = testState({
       phase: 'attack',
       activePlayerId: 'attacker',
+      turnNumber: 4,
       regions: { battleground: region({ id: 'battleground', ownerId: 'defender' }) },
       players: [player({ id: 'attacker', citizenSatisfaction: 50 }), player({ id: 'defender', citizenSatisfaction: 50 })],
       units: [
@@ -37,6 +38,8 @@ describe('RemoveCasualtyCommand', () => {
     const result = command.execute(state);
 
     expect(result.state.regions['battleground'].ownerId).toBe('attacker');
+    // Stamped so a factory here can't produce until held a full round (PROJECT_RULES.md section 18).
+    expect(result.state.regions['battleground'].capturedOnTurn).toBe(4);
     expect(result.state.combats['battleground']).toBeUndefined();
     expect(result.state.units.some((u) => u.id === 'def-1')).toBe(false);
 

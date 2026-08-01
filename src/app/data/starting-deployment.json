@@ -8,6 +8,11 @@
       },
       {
         "unitId": "infantry",
+        "regionId": "balkan-europe",
+        "quantity": 1
+      },
+      {
+        "unitId": "infantry",
         "regionId": "c-west-europe",
         "quantity": 1
       },
@@ -19,6 +24,11 @@
       {
         "unitId": "tank",
         "regionId": "norway-sweden",
+        "quantity": 1
+      },
+      {
+        "unitId": "tank",
+        "regionId": "turkey-europe",
         "quantity": 1
       },
       {
@@ -429,6 +439,26 @@
       {
         "unitId": "rocket-system",
         "regionId": "south-arabia",
+        "quantity": 1
+      },
+      {
+        "unitId": "infantry",
+        "regionId": "north-arabia",
+        "quantity": 1
+      },
+      {
+        "unitId": "tank",
+        "regionId": "center-arabia",
+        "quantity": 1
+      },
+      {
+        "unitId": "stealth-boat",
+        "regionId": "sea-16",
+        "quantity": 1
+      },
+      {
+        "unitId": "destroyer",
+        "regionId": "sea-21",
         "quantity": 1
       }
     ]

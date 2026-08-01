@@ -248,3 +248,56 @@ describe('RulesEngine.getMissileStrikeTargets / getLegalAttackTargets (PROJECT_R
     expect(rules.getLegalAttackTargets(state, infantryAttacker, catalog)).toEqual(['far']);
   });
 });
+
+describe('RulesEngine deploy destinations (PROJECT_RULES.md section 18)', () => {
+  const rules = new RulesEngine();
+  const catalog: Readonly<Record<string, UnitDefinition>> = {
+    infantry: unitDef({ id: 'infantry', category: 'land' }),
+    destroyer: unitDef({ id: 'destroyer', category: 'naval' }),
+    'missile-a': unitDef({ id: 'missile-a', category: 'missile' }),
+  };
+
+  it('excludes a factory region the player does not own, has no factory, or captured this very turn', () => {
+    const state = testState({
+      turnNumber: 3,
+      regions: {
+        owned: region({ id: 'owned', ownerId: 'p1', factory: 2 }),
+        enemy: region({ id: 'enemy', ownerId: 'p2', factory: 2 }),
+        'no-factory': region({ id: 'no-factory', ownerId: 'p1', factory: 0 }),
+        'just-captured': region({ id: 'just-captured', ownerId: 'p1', factory: 2, capturedOnTurn: 3 }),
+      },
+    });
+
+    expect(rules.getDeployDestinations(state, 'p1', 'infantry', catalog)).toEqual(['owned']);
+  });
+
+  it('excludes a region once its factory capacity is used up this turn', () => {
+    const state = testState({
+      regions: { owned: region({ id: 'owned', ownerId: 'p1', factory: 1 }) },
+      unitsDeployedThisTurn: { owned: 1 },
+    });
+
+    expect(rules.getDeployDestinations(state, 'p1', 'infantry', catalog)).toEqual([]);
+  });
+
+  it('returns adjacent sea zones (not the region itself) for a naval unit', () => {
+    const state = testState({
+      regions: { coast: region({ id: 'coast', ownerId: 'p1', factory: 1, neighbors: [] }) },
+      seaZones: {
+        'sea-1': { id: 'sea-1', label: '1', position: { x: 0, y: 0 }, neighbors: [], adjacentRegionIds: ['coast'] },
+      },
+    });
+
+    expect(rules.getDeployDestinations(state, 'p1', 'destroyer', catalog)).toEqual(['sea-1']);
+    // A land unit deploys directly at the region itself, not the sea zone.
+    expect(rules.getDeployDestinations(state, 'p1', 'infantry', catalog)).toEqual(['coast']);
+  });
+
+  it('is always empty for a missile — it never has a physical presence on the map (PROJECT_RULES.md section 15)', () => {
+    const state = testState({
+      regions: { owned: region({ id: 'owned', ownerId: 'p1', factory: 2 }) },
+    });
+
+    expect(rules.getDeployDestinations(state, 'p1', 'missile-a', catalog)).toEqual([]);
+  });
+});

@@ -1,0 +1,10 @@
+@for (src of images(); track src; let i = $index) {
+  <img
+    class="bg-carousel__img"
+    [src]="src"
+    alt=""
+    [style.animation-name]="animationName"
+    [style.animation-duration.s]="totalDuration"
+    [style.animation-delay.s]="animationDelay(i)"
+  />
+}

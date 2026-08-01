@@ -26,6 +26,8 @@ export interface MapDrawParams {
   readonly factions: Readonly<Record<string, Faction>>;
   readonly draggingUnit: UnitDragState | null;
   readonly dragPointerPoint: MapPoint | null;
+  /** Legal destinations for an armed click-to-place deploy/unload (GameStore.pendingAction) — highlighted the same as a drag's legal drop targets. */
+  readonly pendingActionTargets: readonly string[];
   readonly activePlayerId: string | null;
   /** Instance ids of the active player's units that can act this movement phase (PROJECT_RULES.md sections 7/17). */
   readonly movableUnitIds: ReadonlySet<string>;
@@ -74,7 +76,8 @@ export class MapRenderer {
       const isNeighbor = params.neighborIds.includes(region.id);
       const isHovered = region.id === params.hoveredId;
       const isAttackDropTarget = attackTargets.includes(region.id);
-      const isLegalDropTarget = isAttackDropTarget || moveTargets.includes(region.id);
+      const isLegalDropTarget =
+        isAttackDropTarget || moveTargets.includes(region.id) || params.pendingActionTargets.includes(region.id);
       const isContested = params.contestedRegionIds.has(region.id);
       const flagPath = params.flagPaths[region.id] ?? 'assets/flags/neutral.png';
       this.drawHotspot(context, region, params.getFlagImage(flagPath), params.factions, view.scale, {
@@ -107,7 +110,8 @@ export class MapRenderer {
     const loadTargets = params.draggingUnit?.loadTargets;
     for (const seaZone of params.seaZones) {
       const isLoadTarget = loadTargets?.has(seaZone.id) ?? false;
-      const isLegalDropTarget = isLoadTarget || moveTargets.includes(seaZone.id);
+      const isLegalDropTarget =
+        isLoadTarget || moveTargets.includes(seaZone.id) || params.pendingActionTargets.includes(seaZone.id);
       this.drawSeaZoneMarker(context, seaZone, view.scale, {
         isSelected: seaZone.id === params.selectedId,
         isHovered: seaZone.id === params.hoveredId,

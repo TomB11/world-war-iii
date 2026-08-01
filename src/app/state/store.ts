@@ -28,6 +28,7 @@ import { EconomyConfig } from '../models/economy-config.model';
 import { RegionCombat } from '../models/region-combat.model';
 import { GameStateSignal } from './game.state';
 import { MapUiState } from './map.state';
+import { MOVEMENT_PHASES } from '../core/constants/game.constants';
 
 /**
  * Public facade for the whole state layer. Components only ever call
@@ -82,6 +83,8 @@ export class GameStore {
   readonly selectedSeaZone = this.mapUi.selectedSeaZone;
   readonly neighborIds = this.mapUi.neighborIds;
   readonly hoveredRegionId = this.mapUi.hoveredRegionId;
+  readonly externalDrag = this.mapUi.externalDrag;
+  readonly pendingAction = this.mapUi.pendingAction;
 
   readonly activePlayer = computed(() => {
     const state = this.state();
@@ -393,6 +396,61 @@ export class GameStore {
     return this.engine.getRules().getUnloadDestinations(state, unit);
   }
 
+  /** Regions (or, for naval units, sea zones) a Reserve unit could be deployed to right now (PROJECT_RULES.md section 18). */
+  deployDestinations(unitId: string): readonly string[] {
+    const state = this.state();
+    if (!state) {
+      return [];
+    }
+    return this.engine.getRules().getDeployDestinations(state, state.activePlayerId, unitId, this._units());
+  }
+
+  /**
+   * Arms a click-to-place deploy: the map highlights every legal destination
+   * for this Reserve unit, and the next canvas click on one of them deploys
+   * it there (see resolvePendingActionAt, called from WorldMapComponent).
+   */
+  armDeployUnit(unitId: string): void {
+    this.mapUi.armPendingAction({ kind: 'deploy', subjectId: unitId, destinations: this.deployDestinations(unitId) });
+  }
+
+  /** Arms a click-to-place unload: same flow as armDeployUnit, but for an embarked unit's disembark destinations. */
+  armUnloadUnit(unitInstanceId: string): void {
+    this.mapUi.armPendingAction({
+      kind: 'unload',
+      subjectId: unitInstanceId,
+      destinations: this.unloadDestinations(unitInstanceId),
+    });
+  }
+
+  cancelPendingAction(): void {
+    this.mapUi.clearPendingAction();
+  }
+
+  /**
+   * Resolves an armed deploy/unload against a clicked region or sea-zone id
+   * (or null, e.g. empty ocean) — a click outside the highlighted
+   * destinations just cancels quietly, same as clicking away from a
+   * selection elsewhere in this app. Returns whether an action was armed,
+   * so WorldMapComponent knows to skip its normal click handling either way.
+   */
+  resolvePendingActionAt(targetId: string | null): boolean {
+    const action = this.mapUi.pendingAction();
+    if (!action) {
+      return false;
+    }
+    const playerId = this.state()?.activePlayerId;
+    if (playerId && targetId && action.destinations.includes(targetId)) {
+      if (action.kind === 'deploy') {
+        this.deployUnit(playerId, action.subjectId, targetId);
+      } else {
+        this.unloadUnit(playerId, action.subjectId, targetId);
+      }
+    }
+    this.mapUi.clearPendingAction();
+    return true;
+  }
+
   attackRegion(playerId: string, unitInstanceId: string, targetRegionId: string): void {
     const economyConfig = this._economyConfig();
     if (!economyConfig) {
@@ -479,14 +537,21 @@ export class GameStore {
 
   /**
    * Read-only preview of a unit's legal plain-move destinations. Plain
-   * moves only happen during Tactical Moves (friendly territory only);
-   * Attack Moves is attack-only (see MoveUnitCommand / legalAttackTargets),
-   * so this returns [] outside Tactical Moves.
+   * moves only happen during Tactical Moves (friendly territory only) — with
+   * one exception (PROJECT_RULES.md section 7): naval units may also
+   * reposition through sea zones during Attack Moves, so a transport can
+   * load, sail, and amphibious-assault-unload its cargo all in one phase
+   * (see MoveUnitCommand). Everything else returns [] outside Tactical
+   * Moves — Attack Moves is otherwise attack-only (see legalAttackTargets).
    */
   legalMoveDestinations(unitInstanceId: string): readonly string[] {
     const state = this.state();
     const unit = state ? this.engine.getRules().getUnitInstance(state, unitInstanceId) : null;
-    if (!state || !unit || state.phase !== 'tacticalMoves') {
+    if (!state || !unit) {
+      return [];
+    }
+    const isNavalRepositioning = state.phase === 'attackMoves' && this._units()[unit.unitId]?.category === 'naval';
+    if (state.phase !== 'tacticalMoves' && !isNavalRepositioning) {
       return [];
     }
     return this.engine.getRules().getTacticalMoveDestinations(state, unit, this._units());
@@ -520,6 +585,63 @@ export class GameStore {
    */
   reportInvalidDestination(): void {
     this._movementRejectionReason.set('That is not a legal destination for this unit.');
+  }
+
+  /**
+   * Starts a unit drag that originates outside the map canvas (e.g. a unit
+   * card in RegionInfoPanelComponent) so it can be dropped onto a region the
+   * same way a canvas-originated drag is — see WorldMapComponent, which owns
+   * the actual region hit-testing once this is armed. No-op for a unit that
+   * isn't the active player's, is embarked, has no moves left, or if it's
+   * not currently a movement phase (mirrors WorldMapComponent.tryPickUpUnit).
+   */
+  startExternalUnitDrag(unitInstanceId: string): void {
+    const state = this.state();
+    if (!state || !MOVEMENT_PHASES.includes(state.phase)) {
+      return;
+    }
+    const unit = this.engine.getRules().getUnitInstance(state, unitInstanceId);
+    if (
+      !unit ||
+      unit.ownerId !== state.activePlayerId ||
+      unit.transportedBy !== null ||
+      unit.movesRemaining <= 0
+    ) {
+      return;
+    }
+    const moveDestinations = this.legalMoveDestinations(unitInstanceId);
+    const attackTargets = state.phase === 'attackMoves' ? this.legalAttackTargets(unitInstanceId) : [];
+    const loadTargets = new Map<string, string>();
+    for (const target of this.loadableTransportTargets(unitInstanceId)) {
+      loadTargets.set(target.seaZoneId, target.transportId);
+    }
+    this.mapUi.startExternalDrag({
+      unitInstanceId,
+      unitId: unit.unitId,
+      originId: unit.regionId,
+      moveDestinations,
+      attackTargets,
+      loadTargets,
+    });
+  }
+
+  /** Resolves an in-progress external unit drag against a drop target (a region or sea-zone id, or null if dropped off-map), then clears the drag. */
+  resolveExternalDrop(dropTargetId: string | null): void {
+    const drag = this.mapUi.externalDrag();
+    const activePlayerId = this.state()?.activePlayerId;
+    if (drag && dropTargetId && activePlayerId) {
+      const loadTransportId = drag.loadTargets.get(dropTargetId);
+      if (loadTransportId) {
+        this.loadUnit(activePlayerId, drag.unitInstanceId, loadTransportId);
+      } else if (drag.attackTargets.includes(dropTargetId)) {
+        this.attackRegion(activePlayerId, drag.unitInstanceId, dropTargetId);
+      } else if (drag.moveDestinations.includes(dropTargetId)) {
+        this.moveUnit(activePlayerId, drag.unitInstanceId, dropTargetId);
+      } else {
+        this.reportInvalidDestination();
+      }
+    }
+    this.mapUi.endExternalDrag();
   }
 
   private dispatch(command: Command): void {
@@ -602,6 +724,16 @@ export class GameStore {
           this._combatOutcomeMessage.set(
             event.captured ? 'Region captured!' : 'Attack failed — the region stays with its current owner.',
           );
+          break;
+        case 'PhaseAdvanced':
+        case 'TurnEnded':
+          this.mapUi.clearPendingAction();
+          this._purchaseRejectionReason.set(null);
+          this._movementRejectionReason.set(null);
+          this._publicSpendingRejectionReason.set(null);
+          this._cyberAttackRejectionReason.set(null);
+          this._combatRejectionReason.set(null);
+          this._phaseAdvanceRejectionReason.set(null);
           break;
         default:
           this._purchaseRejectionReason.set(null);

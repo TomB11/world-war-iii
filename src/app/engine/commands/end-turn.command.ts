@@ -8,9 +8,7 @@ import { EconomyConfig, CitizenSatisfactionZone } from '../../models/economy-con
 import { GameEngineEvent } from '../../interfaces/game-events';
 import { RulesEngine } from '../rules-engine';
 import { clamp } from '../../core/utils/math.util';
-
-/** Owner id used for rebel units spawned by a rebellion (PROJECT_RULES.md section 5) — deliberately not a real faction/player. */
-const REBEL_OWNER_ID = 'rebels';
+import { REBEL_OWNER_ID } from '../../core/constants/synthetic-owner-ids.constants';
 
 /**
  * Ends the active player's turn: only valid once 'collectIncome' (the last

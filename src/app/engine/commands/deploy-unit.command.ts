@@ -1,5 +1,6 @@
 import { Command, CommandResult } from '../../interfaces/command';
 import { GameState } from '../../models/game-state.model';
+import { Region } from '../../models/region.model';
 import { GameEngineEvent } from '../../interfaces/game-events';
 import { UnitDefinition } from '../../models/unit.model';
 import { RulesEngine } from '../rules-engine';
@@ -12,6 +13,14 @@ import { RulesEngine } from '../rules-engine';
  * a factory region the player controls. Missiles (category 'missile') can
  * never be deployed at all — they have no physical presence on the map and
  * stay in Reserve until fired by a Rocket System (section 15).
+ *
+ * Two additional per-region limits (PROJECT_RULES.md section 18): a region
+ * captured this very turn can't produce yet — it needs to be held through a
+ * full round first (RulesEngine.isFriendlyFactoryRegion) — and a region's
+ * factory can only produce up to `factory` units per Place New Units phase
+ * (RulesEngine.getRemainingFactoryCapacity), tracked via
+ * GameState.unitsDeployedThisTurn and reset on entering the phase
+ * (AdvancePhaseCommand).
  */
 export class DeployUnitCommand implements Command {
   readonly type = 'DeployUnit';
@@ -54,23 +63,39 @@ export class DeployUnitCommand implements Command {
       );
     }
 
+    let sourceFactoryRegionId: string;
     if (unitDef.category === 'naval') {
       const seaZone = state.seaZones[this.regionId];
       if (!seaZone) {
         return reject('Naval units may only be deployed to a sea zone');
       }
-      const hasFriendlyFactory = seaZone.adjacentRegionIds.some((id) => {
-        const adjacent = state.regions[id];
-        return adjacent !== undefined && adjacent.ownerId === this.playerId && adjacent.factory > 0;
-      });
-      if (!hasFriendlyFactory) {
-        return reject('You may only deploy naval units to a sea zone adjacent to a factory region you control');
+      const friendlyFactoryRegions = seaZone.adjacentRegionIds
+        .map((id) => state.regions[id])
+        .filter((candidate): candidate is Region => this.rules.isFriendlyFactoryRegion(state, this.playerId, candidate));
+      if (friendlyFactoryRegions.length === 0) {
+        return reject(
+          'You may only deploy naval units to a sea zone adjacent to a factory region you control that you have held since before this turn',
+        );
       }
+      const sourceRegion = friendlyFactoryRegions.find(
+        (candidate) => this.rules.getRemainingFactoryCapacity(state, candidate) > 0,
+      );
+      if (!sourceRegion) {
+        return reject('No adjacent factory has any production capacity left this turn');
+      }
+      sourceFactoryRegionId = sourceRegion.id;
     } else {
       const region = this.rules.getRegion(state, this.regionId);
       if (!region || region.ownerId !== this.playerId || region.factory <= 0) {
         return reject('You may only deploy at a factory region you control');
       }
+      if (region.capturedOnTurn === state.turnNumber) {
+        return reject(`${region.name} was just captured — it must be held for a full turn before it can produce units`);
+      }
+      if (this.rules.getRemainingFactoryCapacity(state, region) <= 0) {
+        return reject(`${region.name}'s factory can only produce ${region.factory} unit(s) per turn`);
+      }
+      sourceFactoryRegionId = region.id;
     }
 
     const reserveEntry = player.reserve.find((entry) => entry.unitId === this.unitId);
@@ -120,6 +145,10 @@ export class DeployUnitCommand implements Command {
         players: nextPlayers,
         units: nextUnits,
         nextUnitInstanceId: state.nextUnitInstanceId + 1,
+        unitsDeployedThisTurn: {
+          ...state.unitsDeployedThisTurn,
+          [sourceFactoryRegionId]: (state.unitsDeployedThisTurn[sourceFactoryRegionId] ?? 0) + 1,
+        },
       },
       events,
     };

@@ -36,6 +36,14 @@ export interface Region {
    * regions never accumulate tokens.
    */
   readonly influenceTokens?: Readonly<Record<string, number>>;
+  /**
+   * Turn number (GameState.turnNumber) on which this region last changed
+   * hands by force or Political Influence. Absent for a region that has
+   * never been captured (its starting owner, or still neutral). A region
+   * needs to be held through a full round before its factory can produce
+   * (PROJECT_RULES.md section 18) — see RulesEngine.isFriendlyFactoryRegion.
+   */
+  readonly capturedOnTurn?: number;
 }
 
 export interface RegionPoint {

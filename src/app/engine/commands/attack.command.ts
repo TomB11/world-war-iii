@@ -205,7 +205,7 @@ export class AttackCommand implements Command {
     const previousOwnerId = targetRegion.ownerId;
     const nextRegions = {
       ...state.regions,
-      [this.targetRegionId]: { ...targetRegion, ownerId: this.playerId },
+      [this.targetRegionId]: { ...targetRegion, ownerId: this.playerId, capturedOnTurn: state.turnNumber },
     };
     const nextUnits = state.units.map(movedAttacker);
 

@@ -11,6 +11,8 @@ import {
   UNITS_DATA_FILE,
 } from '../core/constants/game.constants';
 import { DATA_BASE_PATH_TOKEN } from '../core/di/data-base-path.token';
+import { NEUTRAL_ARMY_OWNER_ID } from '../core/constants/synthetic-owner-ids.constants';
+import { STARTING_RANDOM_SEED } from './data-loader.constants';
 import { Faction } from '../models/faction.model';
 import { GameState } from '../models/game-state.model';
 import { PlayerState } from '../models/player.model';
@@ -64,11 +66,6 @@ export interface InitialGameData {
   readonly units: Readonly<Record<string, UnitDefinition>>;
   readonly economyConfig: EconomyConfig;
 }
-
-const STARTING_RANDOM_SEED = 1;
-
-/** Owner id used for the standing garrison spawned in every neutral region — deliberately not a real faction/player. */
-const NEUTRAL_ARMY_OWNER_ID = 'neutral';
 
 /**
  * Loads all static gameplay data from JSON (never hardcoded, per
@@ -184,6 +181,7 @@ export class DataLoaderService {
       nextUnitInstanceId,
       combats: {},
       missileDeclarations: {},
+      unitsDeployedThisTurn: {},
     };
 
     // The first active player's turn-1 income is credited immediately at

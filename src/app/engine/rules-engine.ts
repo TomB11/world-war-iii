@@ -176,6 +176,57 @@ export class RulesEngine {
     return total;
   }
 
+  /**
+   * Whether `region` is currently a usable factory anchor for `playerId`:
+   * owned, has production capacity, and hasn't changed hands to them this
+   * very turn — a region needs to be held through a full round before its
+   * factory can produce (PROJECT_RULES.md section 18). Doesn't check
+   * remaining per-turn deploy capacity — see getRemainingFactoryCapacity.
+   */
+  isFriendlyFactoryRegion(state: GameState, playerId: string, region: Region | undefined): region is Region {
+    return (
+      region !== undefined &&
+      region.ownerId === playerId &&
+      region.factory > 0 &&
+      region.capturedOnTurn !== state.turnNumber
+    );
+  }
+
+  /** How many more units `region`'s factory can produce this Place New Units phase before hitting its capacity (region.factory, PROJECT_RULES.md section 18). */
+  getRemainingFactoryCapacity(state: GameState, region: Region): number {
+    return Math.max(0, region.factory - (state.unitsDeployedThisTurn[region.id] ?? 0));
+  }
+
+  /**
+   * Regions (or, for naval units, sea zones adjacent to a qualifying region)
+   * where `unitId` could be deployed right now (PROJECT_RULES.md section
+   * 18) — used both to validate DeployUnitCommand and to highlight legal
+   * drop targets on the map. Always empty for missiles (never deployed to
+   * the map, PROJECT_RULES.md section 15).
+   */
+  getDeployDestinations(
+    state: GameState,
+    playerId: string,
+    unitId: string,
+    unitCatalog: Readonly<Record<string, UnitDefinition>>,
+  ): readonly string[] {
+    const unitDef = unitCatalog[unitId];
+    if (!unitDef || unitDef.category === 'missile') {
+      return [];
+    }
+    const hasCapacity = (region: Region): boolean =>
+      this.isFriendlyFactoryRegion(state, playerId, region) && this.getRemainingFactoryCapacity(state, region) > 0;
+
+    if (unitDef.category === 'naval') {
+      return Object.values(state.seaZones)
+        .filter((zone) => zone.adjacentRegionIds.some((id) => hasCapacity(state.regions[id])))
+        .map((zone) => zone.id);
+    }
+    return Object.values(state.regions)
+      .filter((region) => hasCapacity(region))
+      .map((region) => region.id);
+  }
+
   /** Regions where playerId's units co-locate with at least one hostile owner's units — an unresolved Attack Phase battle (PROJECT_RULES.md sections 7/8/31). */
   getContestedRegionIds(state: GameState, playerId: string): readonly string[] {
     const ownersByRegion = new Map<string, Set<string>>();
@@ -318,9 +369,12 @@ export class RulesEngine {
   }
 
   /**
-   * Tactical Moves destinations (PROJECT_RULES.md section 17): reachable
+   * Plain-move destinations (PROJECT_RULES.md section 17): reachable
    * regions the mover ALREADY owns — no neutral/empty expansion here, that
-   * belongs to Attack Moves. Naval units keep full sea-zone mobility.
+   * belongs to Attack Moves. Naval units keep full sea-zone mobility
+   * (sea zones have no owner), which is also how MoveUnitCommand lets a
+   * transport reposition during Attack Moves (section 7) — this query
+   * itself has no phase concept, callers gate which phases it applies to.
    */
   getTacticalMoveDestinations(
     state: GameState,

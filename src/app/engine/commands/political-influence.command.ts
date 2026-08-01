@@ -4,8 +4,7 @@ import { GameEngineEvent } from '../../interfaces/game-events';
 import { EconomyConfig } from '../../models/economy-config.model';
 import { RulesEngine } from '../rules-engine';
 import { rollDie } from '../random';
-
-const DICE_SIDES = 6;
+import { DICE_SIDES } from '../constants/dice.constants';
 
 /**
  * Political Influence (PROJECT_RULES.md section 6): during the Cyber
@@ -91,6 +90,7 @@ export class PoliticalInfluenceCommand implements Command {
           ...region,
           influenceTokens: updatedTokens,
           ownerId: capturedRegion ? this.playerId : region.ownerId,
+          capturedOnTurn: capturedRegion ? state.turnNumber : region.capturedOnTurn,
         },
       };
 

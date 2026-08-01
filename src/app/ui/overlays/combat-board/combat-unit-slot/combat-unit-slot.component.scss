@@ -1,0 +1,95 @@
+:host {
+  display: contents;
+}
+
+/** The missile a player selected but hasn't rolled yet — sits in its hit-threshold column looking distinct from ordinary units until it's fired. */
+.combat-board__unit--armed-missile {
+  border-color: var(--wwiii-accent);
+  box-shadow: 0 0 8px rgba(79, 184, 224, 0.5);
+  animation: combat-board-armed-missile-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes combat-board-armed-missile-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 6px rgba(79, 184, 224, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 12px rgba(79, 184, 224, 0.8);
+  }
+}
+
+.combat-board__unit {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--wwiii-border);
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.3);
+  cursor: default;
+  transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+
+  &:disabled {
+    opacity: 0.95;
+  }
+}
+
+.combat-board__unit--clickable {
+  cursor: pointer;
+  border-color: var(--wwiii-danger);
+  box-shadow:
+    0 0 0 1px var(--wwiii-danger),
+    0 2px 8px rgba(184, 67, 63, 0.35);
+
+  &:hover {
+    background: rgba(184, 67, 63, 0.28);
+    transform: translateY(-3px) scale(1.06);
+    box-shadow:
+      0 0 0 1px var(--wwiii-danger),
+      0 6px 14px rgba(184, 67, 63, 0.5);
+  }
+}
+
+.combat-board__casualty {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.3);
+  opacity: 0.6;
+  filter: grayscale(85%);
+}
+
+/** Which number a unit rolled, pinned to the corner of its own icon — hit (green) vs miss (dim), so it's obvious at a glance without a separate unlabeled list. */
+.combat-board__roll {
+  position: absolute;
+  bottom: -6px;
+  right: -6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--wwiii-bg);
+  border: 1px solid var(--wwiii-border);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+  color: var(--wwiii-text-dim);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.combat-board__roll--hit {
+  background: var(--wwiii-success);
+  border-color: var(--wwiii-success);
+  color: var(--wwiii-bg);
+}

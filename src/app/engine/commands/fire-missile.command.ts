@@ -5,9 +5,8 @@ import { UnitDefinition } from '../../models/unit.model';
 import { MissileOutcome, MissileResult, RegionCombat } from '../../models/region-combat.model';
 import { RulesEngine } from '../rules-engine';
 import { rollDie } from '../random';
-
-const DICE_SIDES = 6;
-const INTERCEPT_THRESHOLD = 2;
+import { DICE_SIDES } from '../constants/dice.constants';
+import { INTERCEPT_THRESHOLD } from './fire-missile.constants';
 
 /**
  * Rolls the missile a player armed via SelectMissileCommand (PROJECT_RULES.md

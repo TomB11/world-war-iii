@@ -7,8 +7,13 @@ import { RulesEngine } from '../rules-engine';
 /**
  * Moves one unit into friendly territory during the Tactical Moves phase —
  * the "non-combat move" (PROJECT_RULES.md section 17). Attack Moves is
- * attack-only (section 7): you never make a plain move into your own
- * territory then, so this command is valid ONLY during Tactical Moves.
+ * attack-only for land/air (section 7): you never make a plain move into
+ * your own territory then. Naval units are the one exception — section 7
+ * explicitly lists "naval units move through sea zones" among Attack Moves'
+ * pathing rules, and section 17 confirms they're "unrestricted between sea
+ * zones" in both phases — so a transport can load, sail into position, AND
+ * amphibious-assault-unload its cargo all within the same Attack Moves
+ * phase, not just reposition during Tactical Moves and unload next turn.
  * A unit may reach any standable region within its movement allowance
  * (multi-hop — a Fighter can travel up to 4 regions), and the move consumes
  * that many movement points. Units that fought this turn cannot Tactical
@@ -32,10 +37,6 @@ export class MoveUnitCommand implements Command {
       events: [{ type: 'MovementRejected', playerId: this.playerId, reason }],
     });
 
-    if (state.phase !== 'tacticalMoves') {
-      return reject('Plain moves are only allowed during the Tactical Moves phase');
-    }
-
     if (state.activePlayerId !== this.playerId) {
       return reject('It is not your turn');
     }
@@ -43,6 +44,11 @@ export class MoveUnitCommand implements Command {
     const unit = this.rules.getUnitInstance(state, this.unitInstanceId);
     if (!unit || unit.ownerId !== this.playerId) {
       return reject(`Unknown unit "${this.unitInstanceId}"`);
+    }
+
+    const isNavalRepositioning = state.phase === 'attackMoves' && this.unitCatalog[unit.unitId]?.category === 'naval';
+    if (state.phase !== 'tacticalMoves' && !isNavalRepositioning) {
+      return reject('Plain moves are only allowed during the Tactical Moves phase (naval units may also reposition through sea zones during Attack Moves)');
     }
 
     if (unit.transportedBy !== null) {
@@ -54,7 +60,7 @@ export class MoveUnitCommand implements Command {
     }
 
     if (unit.hasFoughtThisTurn) {
-      return reject('Units that attacked this turn cannot make Tactical Moves');
+      return reject('Units that already fought this turn cannot move again');
     }
 
     const reachable = this.rules.getReachableMoves(state, unit, this.unitCatalog);

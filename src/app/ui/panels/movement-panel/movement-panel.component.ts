@@ -1,5 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { GameStore } from '../../../state/store';
 import { UnitInstance } from '../../../models/unit-instance.model';
 import { UnitIconComponent } from '../../shared/unit-icon/unit-icon.component';
@@ -9,20 +8,23 @@ import { UnitIconComponent } from '../../shared/unit-icon/unit-icon.component';
  * deploying reserve units (Place New Units phase) and unloading cargo from
  * transports (movement phases). All ordinary movement, attacking and loading
  * happen by dragging units on the map, so there is no move/attack list here.
+ *
+ * Both deploy and unload are "arm, then click a highlighted region on the
+ * map" flows (GameStore.armDeployUnit/armUnloadUnit + pendingAction) rather
+ * than a region selector — clicking a Reserve unit or an "Unload" button
+ * arms the action, and WorldMapComponent highlights every legal destination
+ * and resolves the next canvas click against it.
  */
 @Component({
   selector: 'wwiii-movement-panel',
   standalone: true,
-  imports: [FormsModule, UnitIconComponent],
+  imports: [UnitIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './movement-panel.component.html',
   styleUrl: './movement-panel.component.scss',
 })
 export class MovementPanelComponent {
   protected readonly store = inject(GameStore);
-
-  protected readonly selectedUnitId = signal<string>('');
-  protected readonly selectedRegionId = signal<string>('');
 
   protected readonly isDeployPhase = computed(() => this.store.state()?.phase === 'placeNewUnits');
 
@@ -65,38 +67,42 @@ export class MovementPanelComponent {
     return this.store.factions()[player.factionId]?.color ?? '#888888';
   });
 
-  protected readonly deployableRegions = computed(() => {
-    const player = this.store.activePlayer();
-    if (!player) {
-      return [];
+  /** Hint shown while a deploy/unload is armed — what to do next, or why nothing is highlighted. */
+  protected readonly pendingActionHint = computed<string | null>(() => {
+    const pending = this.store.pendingAction();
+    if (!pending) {
+      return null;
     }
-    return Object.values(this.store.regions()).filter(
-      (region) => region.ownerId === player.id && region.factory > 0,
-    );
+    if (pending.kind === 'deploy') {
+      return pending.destinations.length > 0
+        ? `Click a highlighted region on the map to deploy ${this.unitName(pending.subjectId)}.`
+        : `No eligible factory region to deploy ${this.unitName(pending.subjectId)} right now.`;
+    }
+    return pending.destinations.length > 0
+      ? 'Click a highlighted region on the map to unload.'
+      : 'No adjacent coast to unload onto right now.';
   });
 
-  /** Sea zones adjacent to at least one factory region the active player controls. */
-  protected readonly deployableSeaZones = computed(() => {
-    const player = this.store.activePlayer();
-    if (!player) {
-      return [];
-    }
-    const regions = this.store.regions();
-    return Object.values(this.store.seaZones()).filter((zone) =>
-      zone.adjacentRegionIds.some((id) => {
-        const region = regions[id];
-        return region !== undefined && region.ownerId === player.id && region.factory > 0;
-      }),
-    );
-  });
-
-  protected isSelectedUnitNaval(): boolean {
-    return this.store.units()[this.selectedUnitId()]?.category === 'naval';
+  protected isArmedForDeploy(unitId: string): boolean {
+    const pending = this.store.pendingAction();
+    return pending !== null && pending.kind === 'deploy' && pending.subjectId === unitId;
   }
 
-  protected onSelectUnit(unitId: string): void {
-    this.selectedUnitId.set(unitId);
-    this.selectedRegionId.set('');
+  protected isArmedForUnload(unitInstanceId: string): boolean {
+    const pending = this.store.pendingAction();
+    return pending !== null && pending.kind === 'unload' && pending.subjectId === unitInstanceId;
+  }
+
+  protected armDeploy(unitId: string): void {
+    this.store.armDeployUnit(unitId);
+  }
+
+  protected armUnload(unitInstanceId: string): void {
+    this.store.armUnloadUnit(unitInstanceId);
+  }
+
+  protected cancelPendingAction(): void {
+    this.store.cancelPendingAction();
   }
 
   protected unitName(unitId: string): string {
@@ -121,21 +127,5 @@ export class MovementPanelComponent {
 
   protected unloadDestinations(unitInstanceId: string): readonly string[] {
     return this.store.unloadDestinations(unitInstanceId);
-  }
-
-  protected deploy(playerId: string): void {
-    const unitId = this.selectedUnitId();
-    const regionId = this.selectedRegionId();
-    if (!unitId || !regionId) {
-      return;
-    }
-    this.store.deployUnit(playerId, unitId, regionId);
-  }
-
-  protected unload(playerId: string, unitInstanceId: string, destinationRegionId: string): void {
-    if (!destinationRegionId) {
-      return;
-    }
-    this.store.unloadUnit(playerId, unitInstanceId, destinationRegionId);
   }
 }

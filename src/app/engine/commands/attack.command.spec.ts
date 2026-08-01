@@ -190,3 +190,30 @@ describe('AttackCommand — Rocket System missile declaration (PROJECT_RULES.md 
     ]);
   });
 });
+
+describe('AttackCommand — undefended capture stamps capturedOnTurn (PROJECT_RULES.md section 18)', () => {
+  const catalog: Readonly<Record<string, UnitDefinition>> = {
+    tank: unitDef({ id: 'tank', category: 'land', attack: 3, movement: 2 }),
+  };
+
+  it('stamps the captured region with the current turn number, so it cannot produce units until held a full round', () => {
+    const state = testState({
+      phase: 'attackMoves',
+      activePlayerId: 'attacker',
+      turnNumber: 5,
+      players: [player({ id: 'attacker' }), player({ id: 'defender' })],
+      regions: {
+        home: region({ id: 'home', ownerId: 'attacker', neighbors: ['front'] }),
+        // Owned by an enemy but currently empty (its defenders already fell) — an undefended capture (attack.command.ts's own doc comment).
+        front: region({ id: 'front', ownerId: 'defender', neighbors: ['home'] }),
+      },
+      units: [unitInstance({ id: 'atk-1', unitId: 'tank', ownerId: 'attacker', regionId: 'home' })],
+    });
+
+    const result = new AttackCommand('attacker', 'atk-1', 'front', catalog, TEST_ECONOMY_CONFIG).execute(state);
+
+    const capturedFront = result.state.regions['front'];
+    expect(capturedFront.ownerId).toBe('attacker');
+    expect(capturedFront.capturedOnTurn).toBe(5);
+  });
+});

@@ -1,55 +1,52 @@
 @if (store.combatRegionId()) {
   <div class="combat-board">
-    <div class="combat-board__card">
+    <div class="combat-board__card" [style.--attacker-color]="attackerColor()" [style.--defender-color]="defenderColor()">
       <button type="button" class="combat-board__close" title="Close and return to the map" (click)="close()">
         ✕
       </button>
 
-      <p class="combat-board__region">{{ region()?.name }}</p>
+      <p class="combat-board__region">⚔ {{ region()?.name }} ⚔</p>
 
       <header class="combat-board__side combat-board__side--attacker">
         <h1>Attacker</h1>
         <p class="combat-board__side-name">{{ attackerName() }}</p>
       </header>
 
-      <div class="combat-board__columns">
+      <div class="combat-board__columns combat-board__columns--attacker">
         @for (value of columns; track value) {
           <div class="combat-board__column">
             <div class="combat-board__casualties">
               @for (unit of attackerCasualtyColumn(value); track unit.instanceId) {
-                <span class="combat-board__casualty" [title]="unit.unitName + ' (casualty)'">
-                  <wwiii-unit-icon [unitId]="unit.unitId" [ownerId]="unit.ownerId" [color]="unit.color" [size]="20" />
-                  @if (attackerRollFor(unit.instanceId); as rollInfo) {
-                    <span class="combat-board__roll" [class.combat-board__roll--hit]="rollInfo.hit">{{
-                      rollInfo.roll
-                    }}</span>
-                  }
-                </span>
+                <wwiii-combat-unit-slot
+                  [unitId]="unit.unitId"
+                  [unitName]="unit.unitName"
+                  [ownerId]="unit.ownerId"
+                  [color]="unit.color"
+                  [size]="22"
+                  [rollInfo]="attackerRollFor(unit.instanceId)"
+                />
               }
             </div>
             <div class="combat-board__badge">{{ value }}</div>
             <div class="combat-board__units">
               @for (unit of attackerColumn(value); track unit.instanceId) {
-                <button
-                  type="button"
-                  class="combat-board__unit"
-                  [class.combat-board__unit--clickable]="attackerClickable()"
-                  [disabled]="!attackerClickable()"
-                  [title]="unit.unitName"
-                  (click)="removeCasualty(unit)"
-                >
-                  <wwiii-unit-icon [unitId]="unit.unitId" [ownerId]="unit.ownerId" [color]="unit.color" [size]="28" />
-                  @if (attackerRollFor(unit.instanceId); as rollInfo) {
-                    <span class="combat-board__roll" [class.combat-board__roll--hit]="rollInfo.hit">{{
-                      rollInfo.roll
-                    }}</span>
-                  }
-                </button>
+                <wwiii-combat-unit-slot
+                  [unitId]="unit.unitId"
+                  [unitName]="unit.unitName"
+                  [ownerId]="unit.ownerId"
+                  [color]="unit.color"
+                  [rollInfo]="attackerRollFor(unit.instanceId)"
+                  [interactive]="true"
+                  [clickable]="attackerClickable()"
+                  (unitClick)="removeCasualty(unit)"
+                />
               }
               @if (armedMissileFor(value); as missileUnitId) {
-                <span class="combat-board__unit combat-board__unit--armed-missile" [title]="armedMissileName() + ' — armed, awaiting roll'">
-                  <wwiii-unit-icon [unitId]="missileUnitId" [size]="28" />
-                </span>
+                <wwiii-combat-unit-slot
+                  [unitId]="missileUnitId"
+                  [unitName]="armedMissileName() + ' — armed, awaiting roll'"
+                  [armed]="true"
+                />
               }
             </div>
           </div>
@@ -153,39 +150,34 @@
         </p>
       }
 
-      <div class="combat-board__columns">
+      <div class="combat-board__columns combat-board__columns--defender">
         @for (value of columns; track value) {
           <div class="combat-board__column">
             <div class="combat-board__units">
               @for (unit of defenderColumn(value); track unit.instanceId) {
-                <button
-                  type="button"
-                  class="combat-board__unit"
-                  [class.combat-board__unit--clickable]="defenderClickable()"
-                  [disabled]="!defenderClickable()"
-                  [title]="unit.unitName"
-                  (click)="removeCasualty(unit)"
-                >
-                  <wwiii-unit-icon [unitId]="unit.unitId" [ownerId]="unit.ownerId" [color]="unit.color" [size]="28" />
-                  @if (defenderRollFor(unit.instanceId); as rollInfo) {
-                    <span class="combat-board__roll" [class.combat-board__roll--hit]="rollInfo.hit">{{
-                      rollInfo.roll
-                    }}</span>
-                  }
-                </button>
+                <wwiii-combat-unit-slot
+                  [unitId]="unit.unitId"
+                  [unitName]="unit.unitName"
+                  [ownerId]="unit.ownerId"
+                  [color]="unit.color"
+                  [rollInfo]="defenderRollFor(unit.instanceId)"
+                  [interactive]="true"
+                  [clickable]="defenderClickable()"
+                  (unitClick)="removeCasualty(unit)"
+                />
               }
             </div>
             <div class="combat-board__badge">{{ value }}</div>
             <div class="combat-board__casualties">
               @for (unit of defenderCasualtyColumn(value); track unit.instanceId) {
-                <span class="combat-board__casualty" [title]="unit.unitName + ' (casualty)'">
-                  <wwiii-unit-icon [unitId]="unit.unitId" [ownerId]="unit.ownerId" [color]="unit.color" [size]="20" />
-                  @if (defenderRollFor(unit.instanceId); as rollInfo) {
-                    <span class="combat-board__roll" [class.combat-board__roll--hit]="rollInfo.hit">{{
-                      rollInfo.roll
-                    }}</span>
-                  }
-                </span>
+                <wwiii-combat-unit-slot
+                  [unitId]="unit.unitId"
+                  [unitName]="unit.unitName"
+                  [ownerId]="unit.ownerId"
+                  [color]="unit.color"
+                  [size]="22"
+                  [rollInfo]="defenderRollFor(unit.instanceId)"
+                />
               }
             </div>
           </div>
