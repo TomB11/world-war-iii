@@ -1,4 +1,9 @@
 import { GamePhase } from '../models/game-state.model';
+import { AiOrderAction } from '../models/ai-order.model';
+import { AiCyberAction } from '../models/ai-cyber-action.model';
+import { ThreatThreshold } from '../models/ai-threat-track.model';
+import { AiSabotageEffect } from '../models/ai-sabotage.model';
+import { MissileOutcome } from '../models/region-combat.model';
 
 /**
  * Events emitted by the Game Engine. The UI subscribes to these but never
@@ -160,6 +165,13 @@ export interface CombatRoundRolledEvent {
   readonly regionId: string;
 }
 
+/** A previously-declared missile strike was fired (FireMissileCommand) — carries the launcher's region alongside the battle's, purely so the map can animate a projectile traveling between them (CombatRoundRolled alone doesn't distinguish "this round was a missile" from an ordinary die roll). */
+export interface MissileFiredEvent {
+  readonly type: 'MissileFired';
+  readonly regionId: string;
+  readonly launcherRegionId: string;
+}
+
 export interface CasualtyRemovedEvent {
   readonly type: 'CasualtyRemoved';
   readonly regionId: string;
@@ -178,6 +190,84 @@ export interface RegionCombatResolvedEvent {
   readonly regionId: string;
   readonly attackerId: string;
   readonly captured: boolean;
+}
+
+/** Solo Command Mode: the AI rolled its Purchase Chart for this Buy Units phase (see engine/commands/roll-ai-purchase-chart.command.ts). */
+export interface AiPurchaseChartRolledEvent {
+  readonly type: 'AiPurchaseChartRolled';
+  readonly playerId: string;
+  readonly roll: number;
+  readonly specialRoll: number | null;
+  readonly unitIds: readonly string[];
+}
+
+/** Solo Command Mode: the AI rolled its "Determine AI Order" die for this turn (see engine/commands/roll-ai-order.command.ts). */
+export interface AiOrderRolledEvent {
+  readonly type: 'AiOrderRolled';
+  readonly playerId: string;
+  readonly roll: number;
+  readonly action: AiOrderAction;
+}
+
+/** Solo Command Mode: the AI rolled its Cyber & Political Action for this Cyber Attack Phase (see engine/commands/roll-ai-cyber-action.command.ts). */
+export interface AiCyberActionRolledEvent {
+  readonly type: 'AiCyberActionRolled';
+  readonly playerId: string;
+  readonly roll: number;
+  readonly action: AiCyberAction;
+}
+
+/** Solo Command Mode: the shared AI Threat Track increased by 1 (see engine/commands/increment-threat.command.ts). */
+export interface ThreatIncreasedEvent {
+  readonly type: 'ThreatIncreased';
+  readonly playerId: string;
+  readonly newLevel: number;
+  readonly crossedThreshold: ThreatThreshold | null;
+}
+
+/** Solo Command Mode: a one-time bonus (or difficulty preset) credited treasury with no cost (see engine/commands/grant-free-treasury.command.ts). */
+export interface TreasuryGrantedEvent {
+  readonly type: 'TreasuryGranted';
+  readonly playerId: string;
+  readonly amount: number;
+  readonly reason: string;
+}
+
+/** Solo Command Mode: units were added to Reserve with no cost (see engine/commands/grant-free-units.command.ts). */
+export interface FreeUnitsGrantedEvent {
+  readonly type: 'FreeUnitsGranted';
+  readonly playerId: string;
+  readonly unitId: string;
+  readonly quantity: number;
+}
+
+/** Solo Command Mode: a Threat Track / Nightmare-difficulty bonus hack resolved outside the normal Cyber Attack cost/slot (see engine/commands/ai-free-cyber-attack.command.ts). */
+export interface AiFreeCyberAttackResolvedEvent {
+  readonly type: 'AiFreeCyberAttackResolved';
+  readonly playerId: string;
+  readonly targetPlayerId: string;
+  readonly attackRoll: number;
+  readonly succeeded: boolean;
+  readonly moneyStolen: number;
+}
+
+/** Solo Command Mode: a Sabotage action resolved against the richest enemy region's owner (see engine/commands/ai-sabotage.command.ts). */
+export interface AiSabotageResolvedEvent {
+  readonly type: 'AiSabotageResolved';
+  readonly playerId: string;
+  readonly targetPlayerId: string;
+  readonly targetRegionId: string;
+  readonly effect: AiSabotageEffect;
+}
+
+/** Solo Command Mode: the Threat Track's free missile strike bonus resolved as a stand-alone bombardment (see engine/commands/apply-free-missile-strike.command.ts). */
+export interface FreeMissileStrikeResolvedEvent {
+  readonly type: 'FreeMissileStrikeResolved';
+  readonly playerId: string;
+  readonly targetRegionId: string;
+  readonly missileId: string;
+  readonly outcome: MissileOutcome;
+  readonly destroyedUnitInstanceId: string | null;
 }
 
 export type GameEngineEvent =
@@ -205,6 +295,16 @@ export type GameEngineEvent =
   | HackLevelUpgradedEvent
   | CombatRejectedEvent
   | CombatRoundRolledEvent
+  | MissileFiredEvent
   | CasualtyRemovedEvent
   | PhaseAdvanceRejectedEvent
-  | RegionCombatResolvedEvent;
+  | RegionCombatResolvedEvent
+  | AiPurchaseChartRolledEvent
+  | AiOrderRolledEvent
+  | AiCyberActionRolledEvent
+  | ThreatIncreasedEvent
+  | TreasuryGrantedEvent
+  | FreeUnitsGrantedEvent
+  | AiFreeCyberAttackResolvedEvent
+  | AiSabotageResolvedEvent
+  | FreeMissileStrikeResolvedEvent;

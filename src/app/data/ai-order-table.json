@@ -1,0 +1,10 @@
+{
+  "table": {
+    "1": "attackNearest",
+    "2": "attackRichestAdjacent",
+    "3": "attackWeakestAdjacent",
+    "4": "reinforceThreatened",
+    "5": "pressureNeutral",
+    "6": "doctrineSpecial"
+  }
+}

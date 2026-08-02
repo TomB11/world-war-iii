@@ -20,7 +20,11 @@ import { DICE_SIDES } from '../constants/dice.constants';
  * attacker rolls first, then the defender rolls too — using its full,
  * not-yet-reduced roster, so a unit the attacker just hit still gets its
  * own roll before anyone is actually removed. Casualties for both sides are
- * only assigned (RemoveCasualtyCommand) after both rolls are in.
+ * only assigned (RemoveCasualtyCommand) after both rolls are in. Works
+ * identically for a naval battle in a sea zone (section 30 extension) —
+ * `this.regionId` is just a sea zone id there — except embarked land/support
+ * cargo never rolls (RulesEngine.isCombatParticipant): only ships and
+ * embarked air units count as "living units on that side."
  */
 export class RollCombatCommand implements Command {
   readonly type = 'RollCombat';
@@ -45,7 +49,13 @@ export class RollCombatCommand implements Command {
       return reject('It is not your turn');
     }
 
-    const regionUnits = state.units.filter((unit) => unit.regionId === this.regionId);
+    // Embarked land/support cargo rides along but never fights (embarked air
+    // units — a carried Fighter/Helicopter — still do); only relevant in
+    // practice for a naval battle in a sea zone, since embarked units can
+    // never share a land region's regionId (RulesEngine.isCombatParticipant).
+    const regionUnits = state.units.filter(
+      (unit) => unit.regionId === this.regionId && this.rules.isCombatParticipant(unit, this.unitCatalog),
+    );
     const attackers = regionUnits.filter((unit) => unit.ownerId === this.playerId);
     const defenders = regionUnits.filter((unit) => unit.ownerId !== this.playerId);
     if (attackers.length === 0 || defenders.length === 0) {

@@ -1,0 +1,12 @@
+{
+  "effects": {
+    "1": "moneyLoss",
+    "2": "moneyLoss",
+    "3": "spawnBlock",
+    "4": "spawnBlock",
+    "5": "satisfactionDrop",
+    "6": "satisfactionDrop"
+  },
+  "moneyLossAmount": 3,
+  "satisfactionDropAmount": 1
+}

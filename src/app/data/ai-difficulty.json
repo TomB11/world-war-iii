@@ -1,0 +1,8 @@
+{
+  "presets": {
+    "easy": { "startingTreasuryDelta": -5, "treasuryPerTurn": 0, "freeCyberAttackEveryNTurns": 0 },
+    "normal": { "startingTreasuryDelta": 0, "treasuryPerTurn": 0, "freeCyberAttackEveryNTurns": 0 },
+    "hard": { "startingTreasuryDelta": 0, "treasuryPerTurn": 3, "freeCyberAttackEveryNTurns": 0 },
+    "nightmare": { "startingTreasuryDelta": 0, "treasuryPerTurn": 5, "freeCyberAttackEveryNTurns": 2 }
+  }
+}

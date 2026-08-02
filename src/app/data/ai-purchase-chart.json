@@ -1,0 +1,10 @@
+{
+  "chart": {
+    "1": ["infantry", "infantry"],
+    "2": ["infantry", "tank"],
+    "3": ["tank", "helicopter"],
+    "4": ["rocket-system", "infantry"],
+    "5": ["fighter"]
+  },
+  "specialUnitOptions": ["destroyer", "submarine", "missile-a"]
+}

@@ -15,6 +15,10 @@ import { MOVEMENT_PHASES } from '../../../core/constants/game.constants';
 import { MapGeometry } from '../interaction/map-geometry';
 import { MapRenderer } from '../rendering/map-renderer';
 import { UnitIconImageCache } from '../rendering/unit-icon-images';
+import { ActiveMapEffect, createMapEffect, mapEffectDurationMs } from '../rendering/effects-renderer';
+import { ActiveProjectile, PROJECTILE_DURATION_MS } from '../rendering/projectile-renderer';
+import { ActiveUnitMove, UNIT_MOVE_DURATION_MS } from '../rendering/unit-move-renderer';
+import { ActiveFlagTransition, FLAG_TRANSITION_DURATION_MS } from '../rendering/flag-transition';
 import { MapPoint, UnitDragState, ViewTransform } from '../../../interfaces/map-types';
 import { clamp } from '../../../core/utils/math.util';
 import { CLICK_DRAG_THRESHOLD_PX } from './world-map.constants';
@@ -71,6 +75,22 @@ export class WorldMapComponent implements AfterViewInit, OnDestroy {
   private windowPointerMoveHandler: ((event: PointerEvent) => void) | null = null;
   private windowPointerUpHandler: ((event: PointerEvent) => void) | null = null;
 
+  /** Currently-animating attack/casualty/cyber/deploy bursts (see ui/map/rendering/effects-renderer.ts); pruned as each one's duration elapses. */
+  private activeEffects: ActiveMapEffect[] = [];
+  /** Highest GameStore.mapEffectEvents() id already turned into a local effect — everything at or below this id has already been spawned. */
+  private lastConsumedMapEffectId = 0;
+  /** Units currently sliding between regions (see ui/map/rendering/unit-move-renderer.ts). */
+  private activeUnitMoves: ActiveUnitMove[] = [];
+  private lastConsumedUnitMoveId = 0;
+  /** Missiles currently in flight (see ui/map/rendering/projectile-renderer.ts). */
+  private activeProjectiles: ActiveProjectile[] = [];
+  private lastConsumedMissileFiredId = 0;
+  /** Regions currently crossfading their flag (see ui/map/rendering/flag-transition.ts) — keyed by regionId since only the latest transition for a given region ever matters. */
+  private activeFlagTransitions: Record<string, ActiveFlagTransition> = {};
+  private lastConsumedFlagTransitionId = 0;
+  /** Non-null while any animation above is running, or a contested region needs its marching-ants border kept moving: nothing else changes state frame-to-frame during those windows, so this drives its own continuous repaint loop. */
+  private animationRafHandle: number | null = null;
+
   constructor() {
     // Redraw whenever any signal this reads changes: regions, flags,
     // selection, hover. This is the only place engine state becomes pixels.
@@ -89,6 +109,107 @@ export class WorldMapComponent implements AfterViewInit, OnDestroy {
       this.store.externalDrag();
       this.store.pendingAction();
       this.redrawCurrentState();
+      // A contested region's border animates continuously (marching ants) —
+      // keep the loop alive for as long as any exist, independent of the
+      // one-shot effect/move/projectile/flag queues below.
+      if (this.store.contestedRegionIds().size > 0) {
+        this.ensureAnimationLoopRunning();
+      }
+    });
+
+    // New attack/casualty/cyber/deploy moments queued by GameStore — spawn a
+    // local, continuously-animating burst for each one this component hasn't
+    // already consumed (ids only ever grow), and make sure the repaint loop
+    // is running for as long as any of them is still live.
+    effect(() => {
+      const events = this.store.mapEffectEvents();
+      let spawnedAny = false;
+      for (const mapEvent of events) {
+        if (mapEvent.id <= this.lastConsumedMapEffectId) {
+          continue;
+        }
+        this.activeEffects.push(createMapEffect(mapEvent.id, mapEvent.regionId, mapEvent.kind, performance.now()));
+        this.lastConsumedMapEffectId = mapEvent.id;
+        spawnedAny = true;
+      }
+      if (spawnedAny) {
+        this.ensureAnimationLoopRunning();
+      }
+    });
+
+    // New unit moves queued by GameStore — slide each one from its previous
+    // location to its new one instead of popping instantly.
+    effect(() => {
+      const events = this.store.unitMoveEvents();
+      let spawnedAny = false;
+      for (const moveEvent of events) {
+        if (moveEvent.id <= this.lastConsumedUnitMoveId) {
+          continue;
+        }
+        this.activeUnitMoves.push({
+          id: moveEvent.id,
+          unitInstanceId: moveEvent.unitInstanceId,
+          fromRegionId: moveEvent.fromRegionId,
+          toRegionId: moveEvent.toRegionId,
+          startedAt: performance.now(),
+        });
+        this.lastConsumedUnitMoveId = moveEvent.id;
+        spawnedAny = true;
+      }
+      if (spawnedAny) {
+        this.ensureAnimationLoopRunning();
+      }
+    });
+
+    // New missile fires queued by GameStore — animate a projectile from the
+    // launcher to the battle region, timed to land with the matching
+    // explosion effect RollCombatCommand/FireMissileCommand's events already
+    // queued separately above.
+    effect(() => {
+      const events = this.store.missileFiredEvents();
+      let spawnedAny = false;
+      for (const missileEvent of events) {
+        if (missileEvent.id <= this.lastConsumedMissileFiredId) {
+          continue;
+        }
+        this.activeProjectiles.push({
+          id: missileEvent.id,
+          launcherRegionId: missileEvent.launcherRegionId,
+          targetRegionId: missileEvent.regionId,
+          startedAt: performance.now(),
+        });
+        this.lastConsumedMissileFiredId = missileEvent.id;
+        spawnedAny = true;
+      }
+      if (spawnedAny) {
+        this.ensureAnimationLoopRunning();
+      }
+    });
+
+    // New region captures queued by GameStore — crossfade that region's flag
+    // instead of swapping it instantly.
+    effect(() => {
+      const events = this.store.flagTransitionEvents();
+      let spawnedAny = false;
+      for (const flagEvent of events) {
+        if (flagEvent.id <= this.lastConsumedFlagTransitionId) {
+          continue;
+        }
+        this.activeFlagTransitions = {
+          ...this.activeFlagTransitions,
+          [flagEvent.regionId]: {
+            id: flagEvent.id,
+            regionId: flagEvent.regionId,
+            previousOwnerId: flagEvent.previousOwnerId,
+            startedAt: performance.now(),
+          },
+        };
+        this.lastConsumedFlagTransitionId = flagEvent.id;
+        spawnedAny = true;
+      }
+      if (spawnedAny) {
+        this.ensureAnimationLoopRunning();
+      }
     });
 
     // A drag that started in another component (e.g. a unit card in
@@ -115,6 +236,9 @@ export class WorldMapComponent implements AfterViewInit, OnDestroy {
   ngOnDestroy(): void {
     this.resizeObserver?.disconnect();
     this.detachExternalDragListeners();
+    if (this.animationRafHandle !== null) {
+      cancelAnimationFrame(this.animationRafHandle);
+    }
   }
 
   protected resetView(): void {
@@ -140,13 +264,22 @@ export class WorldMapComponent implements AfterViewInit, OnDestroy {
     const point = this.toWorldPoint(event.clientX, event.clientY);
     const region = this.geometry.hitTestRegion(Object.values(this.store.regions()), point);
 
-    // During the Attack Phase, only regions with a pending battle respond to
-    // clicks — clicking one opens the combat board; everything else on the
-    // map (other regions, sea zones, empty space) is a no-op, since there's
-    // nothing to select or move (PROJECT_RULES.md sections 9-14).
+    // During the Attack Phase, only regions/sea zones with a pending battle
+    // respond to clicks — clicking one opens the combat board; everything
+    // else on the map (other regions, sea zones, empty space) is a no-op,
+    // since there's nothing to select or move (PROJECT_RULES.md sections 9-14).
     if (this.store.state()?.phase === 'attack') {
       if (region && this.store.contestedRegionIds().has(region.id)) {
         this.store.openCombat(region.id);
+        return;
+      }
+      const contestedSeaZone = this.geometry.hitTestSeaZone(
+        Object.values(this.store.seaZones()),
+        point,
+        this.view.scale,
+      );
+      if (contestedSeaZone && this.store.contestedRegionIds().has(contestedSeaZone.id)) {
+        this.store.openCombat(contestedSeaZone.id);
       }
       return;
     }
@@ -434,6 +567,38 @@ export class WorldMapComponent implements AfterViewInit, OnDestroy {
     this.mapImage = image;
   }
 
+  /**
+   * Keeps repainting every frame while any of the animations above is still
+   * live, or a contested region's border still needs to "march" — nothing
+   * else drives a redraw during that window, since the underlying game
+   * state isn't changing frame-to-frame. Stops itself once every animation
+   * queue is empty AND no contested region remains (checked each tick, since
+   * a battle can resolve or a new one can open while this loop is running).
+   */
+  private ensureAnimationLoopRunning(): void {
+    if (this.animationRafHandle !== null) {
+      return;
+    }
+    const tick = (): void => {
+      const now = performance.now();
+      this.activeEffects = this.activeEffects.filter((effect) => now - effect.startedAt <= mapEffectDurationMs(effect.kind));
+      this.activeUnitMoves = this.activeUnitMoves.filter((move) => now - move.startedAt <= UNIT_MOVE_DURATION_MS);
+      this.activeProjectiles = this.activeProjectiles.filter((p) => now - p.startedAt <= PROJECTILE_DURATION_MS);
+      this.activeFlagTransitions = Object.fromEntries(
+        Object.entries(this.activeFlagTransitions).filter(([, t]) => now - t.startedAt <= FLAG_TRANSITION_DURATION_MS),
+      );
+      this.redrawCurrentState();
+      const stillAnimating =
+        this.activeEffects.length > 0 ||
+        this.activeUnitMoves.length > 0 ||
+        this.activeProjectiles.length > 0 ||
+        Object.keys(this.activeFlagTransitions).length > 0 ||
+        this.store.contestedRegionIds().size > 0;
+      this.animationRafHandle = stillAnimating ? requestAnimationFrame(tick) : null;
+    };
+    this.animationRafHandle = requestAnimationFrame(tick);
+  }
+
   private redrawCurrentState(): void {
     const context = this.context;
     if (!context) {
@@ -465,6 +630,11 @@ export class WorldMapComponent implements AfterViewInit, OnDestroy {
       movableUnitIds: this.store.movableUnitIds(),
       contestedRegionIds: this.store.contestedRegionIds(),
       missileStrikePreviews: this.store.missileStrikePreviews(),
+      activeEffects: this.activeEffects,
+      activeProjectiles: this.activeProjectiles,
+      activeUnitMoves: this.activeUnitMoves,
+      activeFlagTransitions: this.activeFlagTransitions,
+      now: performance.now(),
       getFlagImage: (path) => this.getFlagImage(path),
       getUnitIcon: (unitId, ownerId, color) => this.unitIconImages.getTintedIcon(unitId, ownerId, color),
     });

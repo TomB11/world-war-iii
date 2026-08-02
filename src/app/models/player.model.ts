@@ -46,4 +46,11 @@ export interface PlayerState {
    * their Cyber Attack Phase begins (AdvancePhaseCommand).
    */
   readonly hasUsedCyberAttackThisTurn: boolean;
+  /**
+   * Solo Command Mode only: increments once per completed AI turn for this
+   * faction. turnNumber increments once per full round (not per player-turn),
+   * so Nightmare difficulty's "free cyber attack every 2nd turn" needs this
+   * separate per-faction counter instead.
+   */
+  readonly aiTurnCounter?: number;
 }

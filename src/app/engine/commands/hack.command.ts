@@ -3,8 +3,7 @@ import { GameState } from '../../models/game-state.model';
 import { GameEngineEvent } from '../../interfaces/game-events';
 import { EconomyConfig } from '../../models/economy-config.model';
 import { RulesEngine } from '../rules-engine';
-import { rollDie } from '../random';
-import { DICE_SIDES } from '../constants/dice.constants';
+import { resolveHack } from './shared/hack-resolution';
 
 /**
  * Hacking (PROJECT_RULES.md section 6): during the Cyber Attack Phase,
@@ -55,28 +54,19 @@ export class HackCommand implements Command {
       return reject(`Not enough treasury (have ${attacker.treasury}, need ${this.economyConfig.cyberAttackCost})`);
     }
 
-    const attackRoll = rollDie(state.randomSeed, DICE_SIDES);
-    const succeeded = attackRoll.result <= target.hackLevel;
-
-    let moneyStolen = 0;
-    let nextSeed = attackRoll.nextSeed;
-    if (succeeded) {
-      const defenseRoll = rollDie(nextSeed, DICE_SIDES);
-      nextSeed = defenseRoll.nextSeed;
-      moneyStolen = Math.min(defenseRoll.result, target.treasury);
-    }
+    const resolution = resolveHack(state.randomSeed, target.hackLevel, target.treasury);
 
     const cost = this.economyConfig.cyberAttackCost;
     const nextPlayers = state.players.map((candidate) => {
       if (candidate.id === this.playerId) {
         return {
           ...candidate,
-          treasury: candidate.treasury - cost + moneyStolen,
+          treasury: candidate.treasury - cost + resolution.moneyStolen,
           hasUsedCyberAttackThisTurn: true,
         };
       }
       if (candidate.id === this.targetPlayerId) {
-        return { ...candidate, treasury: candidate.treasury - moneyStolen };
+        return { ...candidate, treasury: candidate.treasury - resolution.moneyStolen };
       }
       return candidate;
     });
@@ -86,11 +76,11 @@ export class HackCommand implements Command {
         type: 'HackResolved',
         playerId: this.playerId,
         targetPlayerId: this.targetPlayerId,
-        attackRoll: attackRoll.result,
-        succeeded,
-        moneyStolen,
+        attackRoll: resolution.attackRoll,
+        succeeded: resolution.succeeded,
+        moneyStolen: resolution.moneyStolen,
       },
     ];
-    return { state: { ...state, players: nextPlayers, randomSeed: nextSeed }, events };
+    return { state: { ...state, players: nextPlayers, randomSeed: resolution.nextSeed }, events };
   }
 }

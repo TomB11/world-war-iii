@@ -1,8 +1,9 @@
 import { Command, CommandResult } from '../../interfaces/command';
 import { GameState } from '../../models/game-state.model';
 import { GameEngineEvent } from '../../interfaces/game-events';
-import { ReserveEntry, UnitDefinition } from '../../models/unit.model';
+import { UnitDefinition } from '../../models/unit.model';
 import { RulesEngine } from '../rules-engine';
+import { mergeReserve } from './shared/reserve.util';
 
 /**
  * Spends treasury on units, which enter the player's Reserve
@@ -69,18 +70,4 @@ export class PurchaseUnitCommand implements Command {
     ];
     return { state: { ...state, players: nextPlayers }, events };
   }
-}
-
-function mergeReserve(
-  reserve: readonly ReserveEntry[],
-  unitId: string,
-  quantity: number,
-): readonly ReserveEntry[] {
-  const existing = reserve.find((entry) => entry.unitId === unitId);
-  if (!existing) {
-    return [...reserve, { unitId, quantity }];
-  }
-  return reserve.map((entry) =>
-    entry.unitId === unitId ? { ...entry, quantity: entry.quantity + quantity } : entry,
-  );
 }

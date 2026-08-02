@@ -45,6 +45,15 @@ import { applyForceCaptureSatisfactionPenalty } from './shared/capture-penalties
  * B (section 16). This records the declaration in GameState.missileDeclarations
  * instead of moving anything; RulesEngine.hasPendingMissileStrike reads it
  * back when that region's battle opens.
+ *
+ * A NAVAL unit's "attack" targets a sea zone, not a Region, and always
+ * resolves through its own short branch below: sea zones have no owner, so
+ * there is never a capture, only a contest (co-locate) against whatever
+ * hostile ships are there — resolved by the exact same Attack Phase combat
+ * machinery as a land battle (RollCombatCommand/RemoveCasualtyCommand), just
+ * restricted to units RulesEngine.isCombatParticipant() counts as fighting
+ * (embarked land/support cargo rides along without joining the battle;
+ * embarked air units do).
  */
 export class AttackCommand implements Command {
   readonly type = 'Attack';
@@ -117,6 +126,47 @@ export class AttackCommand implements Command {
       return reject(`"${this.targetRegionId}" is not a legal attack target for this unit`);
     }
 
+    // The attacking unit always moves into the target (that IS the combat
+    // move, PROJECT_RULES.md section 7), is marked as having fought, and
+    // pays its path cost in movement points. Shared by both the naval and
+    // land/air branches below.
+    const movedAttacker = (candidate: UnitInstance): UnitInstance =>
+      candidate.id === this.unitInstanceId
+        ? {
+            ...candidate,
+            regionId: this.targetRegionId,
+            movesRemaining: candidate.movesRemaining - cost,
+            hasFoughtThisTurn: true,
+          }
+        : candidate;
+
+    if (unitDef.category === 'naval') {
+      if (!state.seaZones[this.targetRegionId]) {
+        return reject(`Unknown sea zone "${this.targetRegionId}"`);
+      }
+      const seaDefenders = state.units.filter(
+        (candidate) => candidate.regionId === this.targetRegionId && candidate.ownerId !== this.playerId,
+      );
+      const movedUnitEvent: GameEngineEvent = {
+        type: 'UnitMoved',
+        unitInstanceId: this.unitInstanceId,
+        fromRegionId: unit.regionId,
+        toRegionId: this.targetRegionId,
+      };
+      // DEFENDED: co-locate with the hostile ship(s) — sea zones have no
+      // owner, so there is never a capture, only a contest, resolved by the
+      // same Attack Phase combat machinery as a land battle.
+      if (seaDefenders.length > 0) {
+        return {
+          state: { ...state, units: state.units.map(movedAttacker) },
+          events: [{ type: 'RegionContested', playerId: this.playerId, regionId: this.targetRegionId }, movedUnitEvent],
+        };
+      }
+      // The hostile ship(s) must have moved on since this reach was
+      // computed — nothing to fight, just sail into the now-empty sea zone.
+      return { state: { ...state, units: state.units.map(movedAttacker) }, events: [movedUnitEvent] };
+    }
+
     const targetRegion = state.regions[this.targetRegionId];
     if (!targetRegion) {
       return reject(`Unknown region "${this.targetRegionId}"`);
@@ -162,19 +212,6 @@ export class AttackCommand implements Command {
         events,
       };
     }
-
-    // The attacking unit always moves into the target region (that IS the
-    // combat move, PROJECT_RULES.md section 7), is marked as having fought,
-    // and pays its path cost in movement points.
-    const movedAttacker = (candidate: UnitInstance): UnitInstance =>
-      candidate.id === this.unitInstanceId
-        ? {
-            ...candidate,
-            regionId: this.targetRegionId,
-            movesRemaining: candidate.movesRemaining - cost,
-            hasFoughtThisTurn: true,
-          }
-        : candidate;
 
     // DEFENDED: co-locate with the defenders (the region becomes contested).
     // Ownership does NOT change and no Citizen penalty applies yet — that

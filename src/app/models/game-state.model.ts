@@ -1,3 +1,4 @@
+import { AiConfig } from './ai-config.model';
 import { PlayerState } from './player.model';
 import { Region } from './region.model';
 import { RegionCombat } from './region-combat.model';
@@ -54,4 +55,13 @@ export interface GameState {
    * the active player enters the Place New Units phase (AdvancePhaseCommand).
    */
   readonly unitsDeployedThisTurn: Readonly<Record<string, number>>;
+  /** Solo Command Mode setup, or null for today's full hotseat play (see models/ai-config.model.ts). */
+  readonly aiConfig: AiConfig | null;
+  /**
+   * Regions currently blocked from producing this turn by an AI Sabotage
+   * action (Solo Command Mode). Only cleared for the affected owner's own
+   * placeNewUnits phase (AdvancePhaseCommand) — must survive until the
+   * victim's own turn, not be blanket-cleared like unitsDeployedThisTurn.
+   */
+  readonly sabotagedRegionIds: readonly string[];
 }

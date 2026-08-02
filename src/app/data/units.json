@@ -29,7 +29,8 @@
       "defense": 3,
       "movement": 2,
       "transportCapacity": 0,
-      "captureThrough": true
+      "captureThrough": true,
+      "aiAttackSupport": true
     },
     {
       "id": "helicopter",
@@ -83,7 +84,8 @@
       "defense": 4,
       "movement": 4,
       "transportCapacity": 0,
-      "requiresCarrier": true
+      "requiresCarrier": true,
+      "aiAttackSupport": true
     },
     {
       "id": "rocket-system",

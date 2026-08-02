@@ -18,7 +18,10 @@ import { RulesEngine } from '../rules-engine';
  * hasUsedCyberAttackThisTurn, so last round's Hack/Political Influence
  * doesn't block this round's (PROJECT_RULES.md section 6). Entering the
  * Place New Units Phase clears unitsDeployedThisTurn, so last turn's
- * factory usage doesn't carry over (PROJECT_RULES.md section 18).
+ * factory usage doesn't carry over (PROJECT_RULES.md section 18). Leaving
+ * Place New Units (into Collect Income) clears any Solo Command Mode
+ * Sabotage "spawn block" on regions this player owns — see
+ * GameState.sabotagedRegionIds.
  */
 export class AdvancePhaseCommand implements Command {
   readonly type = 'AdvancePhase';
@@ -73,6 +76,15 @@ export class AdvancePhaseCommand implements Command {
           )
         : state.players;
     const nextUnitsDeployedThisTurn = nextPhase === 'placeNewUnits' ? {} : state.unitsDeployedThisTurn;
+    // Solo Command Mode: a Sabotage "spawn block" only lasts until the
+    // victim's own next Place New Units phase ends — clear entries for
+    // regions THIS departing player owns (regardless of who sabotaged them),
+    // not a blanket clear, since other players' still-active blocks must
+    // survive until their own placeNewUnits phase comes around.
+    const nextSabotagedRegionIds =
+      nextPhase === 'collectIncome'
+        ? state.sabotagedRegionIds.filter((regionId) => state.regions[regionId]?.ownerId !== this.playerId)
+        : state.sabotagedRegionIds;
 
     const events: readonly GameEngineEvent[] = [{ type: 'PhaseAdvanced', phase: nextPhase }];
     return {
@@ -82,6 +94,7 @@ export class AdvancePhaseCommand implements Command {
         units: nextUnits,
         players: nextPlayers,
         unitsDeployedThisTurn: nextUnitsDeployedThisTurn,
+        sabotagedRegionIds: nextSabotagedRegionIds,
       },
       events,
     };

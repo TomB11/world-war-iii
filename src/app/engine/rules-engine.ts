@@ -4,6 +4,7 @@ import { Region } from '../models/region.model';
 import { UnitDefinition } from '../models/unit.model';
 import { UnitInstance } from '../models/unit-instance.model';
 import { RegionCombat } from '../models/region-combat.model';
+import { Faction } from '../models/faction.model';
 
 /**
  * Read-only gameplay rule queries. The Rules Engine never mutates state;
@@ -32,6 +33,24 @@ export class RulesEngine {
 
   getPlayer(state: GameState, playerId: string): PlayerState | null {
     return state.players.find((player) => player.id === playerId) ?? null;
+  }
+
+  /**
+   * Whether this player is driven by the AI (Solo Command Mode) rather than
+   * a human. Derived from GameState.aiConfig.aiTeamId against the player's
+   * Faction.teamId rather than a stored flag on PlayerState, so there is
+   * only one source of truth for "who is AI" per game.
+   */
+  isAiControlled(state: GameState, playerId: string, factions: Readonly<Record<string, Faction>>): boolean {
+    const aiTeamId = state.aiConfig?.aiTeamId;
+    if (!aiTeamId) {
+      return false;
+    }
+    const player = this.getPlayer(state, playerId);
+    if (!player) {
+      return false;
+    }
+    return factions[player.factionId]?.teamId === aiTeamId;
   }
 
   /** Sum of region.value across every region currently owned by the given player (PROJECT_RULES.md section 4). */
@@ -328,12 +347,15 @@ export class RulesEngine {
   }
 
   /**
-   * Regions holding hostile units (enemy-owned, or a neutral garrison —
-   * PROJECT_RULES.md section 2) this unit can reach and attack this turn,
-   * region id -> movement-point cost to enter. Land units must path through
-   * friendly/empty territory and enter the hostile region on the final hop;
-   * air units fly over anything within their movement range. Naval combat
-   * isn't modeled yet (Phase 8), so naval units have no attack targets.
+   * Regions/sea zones holding hostile units (enemy-owned, or a neutral
+   * garrison — PROJECT_RULES.md section 2) this unit can reach and attack
+   * this turn, id -> movement-point cost to enter. Land units must path
+   * through friendly/empty territory and enter the hostile region on the
+   * final hop; air units fly over anything within their movement range;
+   * naval units path sea-zone to sea-zone and can attack any reachable sea
+   * zone holding a hostile ship (PROJECT_RULES.md section 30 extension —
+   * ship-to-ship combat resolves exactly like a land battle, see
+   * AttackCommand's naval branch and RulesEngine.isCombatParticipant).
    */
   getReachableAttacks(
     state: GameState,
@@ -415,7 +437,7 @@ export class RulesEngine {
   private isHostileRegion(state: GameState, regionId: string, ownerId: string): boolean {
     const region = state.regions[regionId];
     if (!region) {
-      return false; // sea zones are never "hostile" — naval combat is deferred
+      return false; // sea zones aren't Regions at all — see isHostileSeaZone for naval attack targeting
     }
     if (region.ownerId !== null && region.ownerId !== ownerId) {
       return true;
@@ -423,10 +445,38 @@ export class RulesEngine {
     return this.isDefendedByHostiles(state, regionId, ownerId);
   }
 
-  /** Can a path pass THROUGH this location? Air flies over anything; land needs friendly/empty; naval needs a sea zone. */
+  /**
+   * A sea zone counts as a naval attack target if any hostile unit (a ship,
+   * or that ship's embarked cargo — always the same owner as the ship, since
+   * a transport can only carry its own side's units) is sitting there. Sea
+   * zones have no owner, so unlike isHostileRegion there's no
+   * ownership-based branch — pure presence is the whole rule.
+   */
+  private isHostileSeaZone(state: GameState, seaZoneId: string, ownerId: string): boolean {
+    return state.units.some((candidate) => candidate.regionId === seaZoneId && candidate.ownerId !== ownerId);
+  }
+
+  /**
+   * Whether this unit actually fights in a naval battle (PROJECT_RULES.md
+   * section 8, naval extension): a unit not currently embarked always
+   * fights (this covers every land-region battle, and every ship in a sea
+   * zone). A unit that IS embarked (transportedBy set) only fights if it's
+   * an air unit (a carried Fighter/Helicopter still flies combat air
+   * patrol) — embarked land/support cargo (Infantry, Tank, Rocket System...)
+   * rides along but never rolls dice or can be chosen as a casualty; if its
+   * transport is sunk, it goes down with it (RemoveCasualtyCommand).
+   */
+  isCombatParticipant(unit: UnitInstance, unitCatalog: Readonly<Record<string, UnitDefinition>>): boolean {
+    if (unit.transportedBy === null) {
+      return true;
+    }
+    return unitCatalog[unit.unitId]?.category === 'air';
+  }
+
+  /** Can a path pass THROUGH this location? Air flies over anything; land needs friendly/empty; naval needs a sea zone free of hostile ships (a plain move can't sail through/into a contested zone — that's what AttackCommand's naval branch is for). */
   private isTraversable(state: GameState, id: string, ownerId: string, category: string | undefined): boolean {
     if (category === 'naval') {
-      return id in state.seaZones;
+      return id in state.seaZones && !this.isHostileSeaZone(state, id, ownerId);
     }
     if (category === 'air') {
       return id in state.regions;
@@ -523,7 +573,11 @@ export class RulesEngine {
       }
       const nextDistance = currentDistance + 1;
       for (const neighbour of this.oneHopNeighbours(state, unit, current, category)) {
-        if (category !== 'naval' && this.isHostileRegion(state, neighbour, unit.ownerId)) {
+        const isHostileTarget =
+          category === 'naval'
+            ? this.isHostileSeaZone(state, neighbour, unit.ownerId)
+            : this.isHostileRegion(state, neighbour, unit.ownerId);
+        if (isHostileTarget) {
           const existing = attacks.get(neighbour);
           if (existing === undefined || nextDistance < existing) {
             attacks.set(neighbour, nextDistance);

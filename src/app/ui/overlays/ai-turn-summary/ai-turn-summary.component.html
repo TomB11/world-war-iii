@@ -1,0 +1,27 @@
+@if (store.aiTurnSummary(); as summary) {
+  <div class="ai-turn-summary">
+    <div class="ai-turn-summary__card">
+      <p class="ai-turn-summary__kicker">Solo Command Mode</p>
+      <h1 class="ai-turn-summary__title">AI Turn Summary</h1>
+
+      <div class="ai-turn-summary__factions">
+        @for (entry of summary; track entry.playerId; let fi = $index) {
+          <section
+            class="ai-turn-summary__faction"
+            [style.--faction-color]="entry.color"
+            [style.animation-delay.ms]="factionDelayMs(fi)"
+          >
+            <h2 class="ai-turn-summary__faction-name">{{ entry.playerName }}</h2>
+            <ul class="ai-turn-summary__actions">
+              @for (action of entry.actions; track $index; let ai = $index) {
+                <li [style.animation-delay.ms]="actionDelayMs(fi, ai)">{{ action }}</li>
+              }
+            </ul>
+          </section>
+        }
+      </div>
+
+      <button type="button" class="ai-turn-summary__continue" (click)="continue()">Continue</button>
+    </div>
+  </div>
+}

@@ -2,6 +2,7 @@ import { Command, CommandResult } from '../../interfaces/command';
 import { GameState } from '../../models/game-state.model';
 import { GameEngineEvent } from '../../interfaces/game-events';
 import { EconomyConfig } from '../../models/economy-config.model';
+import { UnitDefinition } from '../../models/unit.model';
 import { CombatCasualty, CombatStep, RegionCombat } from '../../models/region-combat.model';
 import { RulesEngine } from '../rules-engine';
 import { applyForceCaptureSatisfactionPenalty } from './shared/capture-penalties';
@@ -26,6 +27,14 @@ import { applyForceCaptureSatisfactionPenalty } from './shared/capture-penalties
  * AttackCommand capture); if the attackers are gone instead (or both sides
  * are, a mutual wipeout), the attack fails and ownership is unchanged;
  * otherwise combat continues into the next round.
+ *
+ * Sinking a transport (a naval battle's casualty happens to be a ship with
+ * cargo) also destroys everything still embarked on it (PROJECT_RULES.md
+ * section 30): those units never got a combat roll of their own (embarked
+ * land/support cargo never fights, RulesEngine.isCombatParticipant) — they
+ * just go down with the ship, removed alongside it in the same step rather
+ * than lingering with a transportedBy pointing at a unit that no longer
+ * exists.
  */
 export class RemoveCasualtyCommand implements Command {
   readonly type = 'RemoveCasualty';
@@ -34,6 +43,7 @@ export class RemoveCasualtyCommand implements Command {
     private readonly playerId: string,
     private readonly regionId: string,
     private readonly unitInstanceId: string,
+    private readonly unitCatalog: Readonly<Record<string, UnitDefinition>>,
     private readonly economyConfig: EconomyConfig,
     private readonly rules: RulesEngine = new RulesEngine(),
   ) {}
@@ -66,6 +76,9 @@ export class RemoveCasualtyCommand implements Command {
     if (!unit || unit.regionId !== this.regionId) {
       return reject(`Unknown unit "${this.unitInstanceId}" in this region`);
     }
+    if (!this.rules.isCombatParticipant(unit, this.unitCatalog)) {
+      return reject('That unit is embarked cargo and never fought — it cannot be chosen as a casualty');
+    }
     const belongsToLosingSide = removesDefenderUnit
       ? unit.ownerId !== this.playerId
       : unit.ownerId === this.playerId;
@@ -73,7 +86,11 @@ export class RemoveCasualtyCommand implements Command {
       return reject('That unit is not part of the side taking losses');
     }
 
-    const nextUnits = state.units.filter((candidate) => candidate.id !== this.unitInstanceId);
+    const isTransport = (this.unitCatalog[unit.unitId]?.transportCapacity ?? 0) > 0;
+    const nextUnits = state.units.filter(
+      (candidate) =>
+        candidate.id !== this.unitInstanceId && !(isTransport && candidate.transportedBy === this.unitInstanceId),
+    );
     const remaining = pendingCount - 1;
 
     // Keep the casualty around (instead of just vanishing) so the combat
@@ -157,9 +174,14 @@ export class RemoveCasualtyCommand implements Command {
     // The attacker only takes the region by wiping the defenders while
     // surviving themselves — a mutual wipeout (both sides hit zero in the
     // same round) is a draw, and ownership stays with the defender exactly
-    // like a simple repel.
+    // like a simple repel. A naval battle (this.regionId is a sea zone, not
+    // a Region) never "captures" anything — sea zones have no owner, so a
+    // win there is a fleet victory, not a by-force annexation, and doesn't
+    // carry the Citizen Satisfaction penalty a land capture does.
     if (!defendersRemain && attackersRemain) {
-      return this.resolveCapture(state, nextUnits, casualtyEvent);
+      return state.regions[this.regionId]
+        ? this.resolveCapture(state, nextUnits, casualtyEvent)
+        : this.resolveNavalVictory(state, nextUnits, casualtyEvent);
     }
     if (!attackersRemain) {
       const { [this.regionId]: _removed, ...remainingCombats } = state.combats;
@@ -217,6 +239,23 @@ export class RemoveCasualtyCommand implements Command {
     ];
     return {
       state: { ...state, regions: nextRegions, units: nextUnits, players: nextPlayers, combats: remainingCombats },
+      events,
+    };
+  }
+
+  /** Defenders wiped out in a naval battle (sea zones have no owner) — just clears the fight, no ownership change and no by-force Citizen Satisfaction penalty. */
+  private resolveNavalVictory(
+    state: GameState,
+    nextUnits: GameState['units'],
+    casualtyEvent: GameEngineEvent,
+  ): CommandResult {
+    const { [this.regionId]: _removed, ...remainingCombats } = state.combats;
+    const events: readonly GameEngineEvent[] = [
+      casualtyEvent,
+      { type: 'RegionCombatResolved', regionId: this.regionId, attackerId: this.playerId, captured: true },
+    ];
+    return {
+      state: { ...state, units: nextUnits, combats: remainingCombats },
       events,
     };
   }

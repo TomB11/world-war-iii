@@ -76,7 +76,7 @@ describe('DeployUnitCommand', () => {
     });
 
     // The defender's sole unit ("unit-3") dies, shrinking state.units from 3 to 2.
-    const casualtyResult = new RemoveCasualtyCommand('attacker', 'front', 'unit-3', TEST_ECONOMY_CONFIG).execute(state);
+    const casualtyResult = new RemoveCasualtyCommand('attacker', 'front', 'unit-3', catalog, TEST_ECONOMY_CONFIG).execute(state);
     state = { ...casualtyResult.state, phase: 'placeNewUnits' };
     expect(state.units.map((u) => u.id)).toEqual(['unit-1', 'unit-2']);
 

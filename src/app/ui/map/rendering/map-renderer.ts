@@ -8,6 +8,10 @@ import { MapPoint, UnitDragState, ViewTransform } from '../../../interfaces/map-
 import { DRAG_GHOST_ICON_SIZE_PX } from './unit-icon-config';
 import { UnitIconLookup, drawUnitCluster, drawUnitIcon } from './unit-icon-renderer';
 import { drawInfluenceTokens } from './influence-token-renderer';
+import { ActiveMapEffect, drawMapEffects } from './effects-renderer';
+import { ActiveProjectile, drawProjectiles } from './projectile-renderer';
+import { ActiveUnitMove, unitMovePosition } from './unit-move-renderer';
+import { ActiveFlagTransition, FLAG_TRANSITION_DURATION_MS } from './flag-transition';
 
 export interface MapDrawParams {
   readonly context: CanvasRenderingContext2D;
@@ -35,6 +39,16 @@ export interface MapDrawParams {
   readonly contestedRegionIds: ReadonlySet<string>;
   /** Declared-but-unfired Rocket System missile strikes (PROJECT_RULES.md section 15), launcher region -> target region, drawn as a trajectory line. */
   readonly missileStrikePreviews: readonly { readonly launcherRegionId: string; readonly targetRegionId: string }[];
+  /** Currently-animating attack/casualty/cyber/deploy bursts (WorldMapComponent's local effect queue, spawned from GameStore.mapEffectEvents). */
+  readonly activeEffects: readonly ActiveMapEffect[];
+  /** Missiles currently in flight (FireMissileCommand), timed to land with a matching entry in activeEffects. */
+  readonly activeProjectiles: readonly ActiveProjectile[];
+  /** Units currently sliding from their previous region/sea-zone to their new one instead of popping instantly. */
+  readonly activeUnitMoves: readonly ActiveUnitMove[];
+  /** Regions currently crossfading from their previous owner's flag to the current one. */
+  readonly activeFlagTransitions: Readonly<Record<string, ActiveFlagTransition>>;
+  /** performance.now() at the moment this frame is being painted — every animation above computes its own elapsed time from it. */
+  readonly now: number;
   readonly getFlagImage: (path: string) => HTMLImageElement;
   readonly getUnitIcon: UnitIconLookup;
 }
@@ -69,6 +83,11 @@ export class MapRenderer {
       context.fillRect(0, 0, w, h);
     }
 
+    // A unit currently sliding between regions (activeUnitMoves) is drawn
+    // separately as a traveling ghost below — omit it from its destination's
+    // cluster here so it doesn't pop in there before the slide finishes.
+    const movingUnitIds = new Set(params.activeUnitMoves.map((move) => move.unitInstanceId));
+
     const moveTargets = params.draggingUnit?.moveDestinations ?? [];
     const attackTargets = params.draggingUnit?.attackTargets ?? [];
     for (const region of params.regions) {
@@ -80,24 +99,35 @@ export class MapRenderer {
         isAttackDropTarget || moveTargets.includes(region.id) || params.pendingActionTargets.includes(region.id);
       const isContested = params.contestedRegionIds.has(region.id);
       const flagPath = params.flagPaths[region.id] ?? 'assets/flags/neutral.png';
-      this.drawHotspot(context, region, params.getFlagImage(flagPath), params.factions, view.scale, {
-        isSelected,
-        isNeighbor,
-        isHovered,
-        isLegalDropTarget,
-        isAttackDropTarget,
-        isContested,
-      });
+      this.drawHotspot(
+        context,
+        region,
+        flagPath,
+        params.getFlagImage,
+        params.factions,
+        view.scale,
+        params.now,
+        params.activeFlagTransitions[region.id] ?? null,
+        {
+          isSelected,
+          isNeighbor,
+          isHovered,
+          isLegalDropTarget,
+          isAttackDropTarget,
+          isContested,
+        },
+      );
 
       const units = params.unitsByRegion[region.id];
       if (units && units.length > 0) {
+        const visibleUnits = movingUnitIds.size > 0 ? units.filter((unit) => !movingUnitIds.has(unit.id)) : units;
         const anchor = this.geometry.iconAnchorFor(region.id, params.regionsById, params.seaZonesById, view.scale);
-        if (anchor) {
+        if (anchor && visibleUnits.length > 0) {
           drawUnitCluster(
             context,
             anchor.x,
             anchor.y,
-            units,
+            visibleUnits,
             params.factions,
             view.scale,
             params.getUnitIcon,
@@ -110,24 +140,32 @@ export class MapRenderer {
     const loadTargets = params.draggingUnit?.loadTargets;
     for (const seaZone of params.seaZones) {
       const isLoadTarget = loadTargets?.has(seaZone.id) ?? false;
+      const isAttackDropTarget = attackTargets.includes(seaZone.id);
       const isLegalDropTarget =
-        isLoadTarget || moveTargets.includes(seaZone.id) || params.pendingActionTargets.includes(seaZone.id);
-      this.drawSeaZoneMarker(context, seaZone, view.scale, {
+        isLoadTarget ||
+        isAttackDropTarget ||
+        moveTargets.includes(seaZone.id) ||
+        params.pendingActionTargets.includes(seaZone.id);
+      const isContested = params.contestedRegionIds.has(seaZone.id);
+      this.drawSeaZoneMarker(context, seaZone, view.scale, params.now, {
         isSelected: seaZone.id === params.selectedId,
         isHovered: seaZone.id === params.hoveredId,
         isLegalDropTarget,
+        isAttackDropTarget,
         isLoadTarget,
+        isContested,
       });
 
       const units = params.unitsByRegion[seaZone.id];
       if (units && units.length > 0) {
+        const visibleUnits = movingUnitIds.size > 0 ? units.filter((unit) => !movingUnitIds.has(unit.id)) : units;
         const anchor = this.geometry.iconAnchorFor(seaZone.id, params.regionsById, params.seaZonesById, view.scale);
-        if (anchor) {
+        if (anchor && visibleUnits.length > 0) {
           drawUnitCluster(
             context,
             anchor.x,
             anchor.y,
-            units,
+            visibleUnits,
             params.factions,
             view.scale,
             params.getUnitIcon,
@@ -160,6 +198,41 @@ export class MapRenderer {
       );
     }
 
+    // A moving unit's ghost icon, drawn at its interpolated position — after
+    // the normal clusters (so it's never hidden underneath one) but before
+    // projectiles/effects (a missile flying past should still read on top).
+    for (const move of params.activeUnitMoves) {
+      const point = unitMovePosition(move, params.regionsById, params.seaZonesById, w, h, params.now);
+      if (!point) {
+        continue;
+      }
+      const unit = params.unitsByRegion[move.toRegionId]?.find((candidate) => candidate.id === move.unitInstanceId);
+      if (!unit) {
+        continue;
+      }
+      const color = params.factions[unit.ownerId]?.color ?? '#888888';
+      drawUnitIcon(context, unit.unitId, point.x, point.y, DRAG_GHOST_ICON_SIZE_PX / view.scale, unit.ownerId, color, view.scale, params.getUnitIcon);
+    }
+
+    if (params.activeProjectiles.length > 0) {
+      drawProjectiles(
+        context,
+        params.activeProjectiles,
+        params.regionsById,
+        params.seaZonesById,
+        w,
+        h,
+        view.scale,
+        params.now,
+      );
+    }
+
+    // Drawn last so an attack/casualty/cyber/deploy burst always reads on
+    // top of the region hotspot, units, and everything else underneath it.
+    if (params.activeEffects.length > 0) {
+      drawMapEffects(context, params.activeEffects, params.regionsById, params.seaZonesById, w, h, view.scale, params.now);
+    }
+
     context.restore();
   }
 
@@ -173,7 +246,15 @@ export class MapRenderer {
     context: CanvasRenderingContext2D,
     seaZone: SeaZone,
     scale: number,
-    flags: { isSelected: boolean; isHovered: boolean; isLegalDropTarget: boolean; isLoadTarget: boolean },
+    now: number,
+    flags: {
+      isSelected: boolean;
+      isHovered: boolean;
+      isLegalDropTarget: boolean;
+      isAttackDropTarget: boolean;
+      isLoadTarget: boolean;
+      isContested: boolean;
+    },
   ): void {
     const w = this.config.mapViewBoxWidth;
     const h = this.config.mapViewBoxHeight;
@@ -182,30 +263,53 @@ export class MapRenderer {
     const radius = (this.config.seaZone.radiusFraction * h) / scale;
 
     // A load target (drop a unit here to board a transport) reads cyan; a
+    // declared attack reads red (matching drawHotspot's land convention); a
     // plain move destination reads green; selection gold.
     context.beginPath();
     context.arc(cx, cy, radius, 0, Math.PI * 2);
     context.fillStyle = flags.isLoadTarget
       ? 'rgba(74, 200, 220, 0.35)'
-      : flags.isSelected
-        ? 'rgba(79, 184, 224, 0.22)'
-        : flags.isLegalDropTarget
-          ? 'rgba(92, 184, 92, 0.28)'
-          : flags.isHovered
-            ? 'rgba(143, 180, 224, 0.2)'
-            : 'rgba(74, 200, 220, 0.1)';
+      : flags.isAttackDropTarget
+        ? 'rgba(192, 57, 43, 0.28)'
+        : flags.isSelected
+          ? 'rgba(79, 184, 224, 0.22)'
+          : flags.isLegalDropTarget
+            ? 'rgba(92, 184, 92, 0.28)'
+            : flags.isHovered
+              ? 'rgba(143, 180, 224, 0.2)'
+              : 'rgba(74, 200, 220, 0.1)';
     context.fill();
     context.lineWidth = (flags.isSelected || flags.isLegalDropTarget ? 2.5 : flags.isHovered ? 2 : 1.2) / scale;
     context.strokeStyle = flags.isLoadTarget
       ? '#4ac8dc'
-      : flags.isSelected
-        ? '#4fb8e0'
-        : flags.isLegalDropTarget
-          ? '#5cb85c'
-          : flags.isHovered
-            ? '#8fb4e0'
-            : 'rgba(74, 200, 220, 0.65)';
+      : flags.isAttackDropTarget
+        ? '#c0392b'
+        : flags.isSelected
+          ? '#4fb8e0'
+          : flags.isLegalDropTarget
+            ? '#5cb85c'
+            : flags.isHovered
+              ? '#8fb4e0'
+              : 'rgba(74, 200, 220, 0.65)';
     context.stroke();
+
+    // A pending Attack Phase battle in this sea zone (naval combat) — same
+    // dashed danger-red marching-ants ring drawHotspot draws for land regions,
+    // so a contested fleet reads as clickable/urgent exactly like a contested
+    // land region does.
+    if (flags.isContested) {
+      context.save();
+      const dashLength = 6 / scale;
+      const gapLength = 4 / scale;
+      context.setLineDash([dashLength, gapLength]);
+      context.lineDashOffset = -(now / 40) % (dashLength + gapLength);
+      context.lineWidth = 3 / scale;
+      context.strokeStyle = '#b8433f';
+      context.beginPath();
+      context.arc(cx, cy, radius, 0, Math.PI * 2);
+      context.stroke();
+      context.restore();
+    }
 
     context.fillStyle = flags.isSelected || flags.isHovered ? '#e6e9f0' : 'rgba(230, 233, 240, 0.75)';
     context.font = `${11 / scale}px Segoe UI, Roboto, sans-serif`;
@@ -217,9 +321,12 @@ export class MapRenderer {
   private drawHotspot(
     context: CanvasRenderingContext2D,
     region: Region,
-    flagImage: HTMLImageElement,
+    flagPath: string,
+    getFlagImage: (path: string) => HTMLImageElement,
     factions: Readonly<Record<string, Faction>>,
     scale: number,
+    now: number,
+    flagTransition: ActiveFlagTransition | null,
     flags: {
       isSelected: boolean;
       isNeighbor: boolean;
@@ -245,12 +352,35 @@ export class MapRenderer {
 
     // Draw the owner's actual flag image over the flag icon baked into the
     // map background. Redrawn every time regionFlagPaths() changes, so a
-    // captured region visibly shows its new owner's flag.
-    if (flagImage.complete && flagImage.naturalWidth > 0) {
-      context.drawImage(flagImage, left, top, boxWidth, boxHeight);
+    // captured region visibly shows its new owner's flag — crossfading from
+    // the previous owner's flag for FLAG_TRANSITION_DURATION_MS right after
+    // a capture, instead of swapping instantly.
+    const elapsed = flagTransition ? now - flagTransition.startedAt : Infinity;
+    if (flagTransition && elapsed >= 0 && elapsed < FLAG_TRANSITION_DURATION_MS) {
+      const t = elapsed / FLAG_TRANSITION_DURATION_MS;
+      const previousPath = flagTransition.previousOwnerId
+        ? `assets/flags/${flagTransition.previousOwnerId}.png`
+        : 'assets/flags/neutral.png';
+      const previousImage = getFlagImage(previousPath);
+      const currentImage = getFlagImage(flagPath);
+      context.save();
+      if (previousImage.complete && previousImage.naturalWidth > 0) {
+        context.globalAlpha = 1 - t;
+        context.drawImage(previousImage, left, top, boxWidth, boxHeight);
+      }
+      if (currentImage.complete && currentImage.naturalWidth > 0) {
+        context.globalAlpha = t;
+        context.drawImage(currentImage, left, top, boxWidth, boxHeight);
+      }
+      context.restore();
     } else {
-      context.fillStyle = '#111319';
-      context.fillRect(left, top, boxWidth, boxHeight);
+      const flagImage = getFlagImage(flagPath);
+      if (flagImage.complete && flagImage.naturalWidth > 0) {
+        context.drawImage(flagImage, left, top, boxWidth, boxHeight);
+      } else {
+        context.fillStyle = '#111319';
+        context.fillRect(left, top, boxWidth, boxHeight);
+      }
     }
 
     context.lineWidth = (flags.isSelected || flags.isLegalDropTarget ? 3 : flags.isNeighbor ? 2 : 1) / scale;
@@ -275,12 +405,17 @@ export class MapRenderer {
 
     // A pending Attack Phase battle (PROJECT_RULES.md sections 9-14): a
     // dashed danger-red ring on top of everything else, so the player can
-    // spot which regions still need combat resolved at a glance.
+    // spot which regions still need combat resolved at a glance. The dashes
+    // "march" (animated offset driven by `now`) so a contested region reads
+    // as urgent/ongoing rather than a static decoration.
     if (flags.isContested) {
       context.fillStyle = 'rgba(184, 67, 63, 0.22)';
       context.fillRect(left, top, boxWidth, boxHeight);
       context.save();
-      context.setLineDash([6 / scale, 4 / scale]);
+      const dashLength = 6 / scale;
+      const gapLength = 4 / scale;
+      context.setLineDash([dashLength, gapLength]);
+      context.lineDashOffset = -(now / 40) % (dashLength + gapLength);
       context.lineWidth = 3 / scale;
       context.strokeStyle = '#b8433f';
       context.strokeRect(left, top, boxWidth, boxHeight);
