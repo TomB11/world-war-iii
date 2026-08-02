@@ -1,0 +1,56 @@
+:host {
+  display: block;
+}
+
+.threat-track__label {
+  color: var(--wwiii-text-dim);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.threat-track__bar {
+  position: relative;
+  width: 120px;
+  height: 10px;
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1px solid var(--wwiii-border);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.threat-track__fill {
+  height: 100%;
+  background: linear-gradient(90deg, #d9a441, var(--wwiii-danger));
+  transition: width 0.45s ease;
+}
+
+.threat-track__bar--total-war .threat-track__fill {
+  animation: threat-track-total-war-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes threat-track-total-war-pulse {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.35);
+  }
+}
+
+.threat-track__value {
+  color: var(--wwiii-text);
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 30px;
+  white-space: nowrap;
+}
+
+.threat-track__total-war {
+  color: var(--wwiii-danger);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}

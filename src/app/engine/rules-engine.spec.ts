@@ -155,6 +155,70 @@ describe('RulesEngine movement/attack reach (computeReach)', () => {
     expect(moves.has('b')).toBe(false);
     expect(attacks.get('b')).toBe(1);
   });
+
+  it('lists an enemy-occupied sea zone as a naval attack target, not a move (PROJECT_RULES.md section 30 extension)', () => {
+    const state = testState({
+      seaZones: {
+        s1: { id: 's1', label: '1', position: { x: 0, y: 0 }, neighbors: ['s2'], adjacentRegionIds: [] },
+        s2: { id: 's2', label: '2', position: { x: 0, y: 0 }, neighbors: ['s1'], adjacentRegionIds: [] },
+      },
+      units: [
+        unitInstance({ id: 'u1', unitId: 'destroyer', ownerId: 'p1', regionId: 's1', movesRemaining: 1 }),
+        unitInstance({ id: 'enemy-ship', unitId: 'destroyer', ownerId: 'p2', regionId: 's2' }),
+      ],
+    });
+    const unit = state.units[0];
+
+    const moves = rules.getReachableMoves(state, unit, catalog);
+    const attacks = rules.getReachableAttacks(state, unit, catalog);
+
+    expect(moves.has('s2')).toBe(false);
+    expect(attacks.get('s2')).toBe(1);
+  });
+
+  it('an empty sea zone is a move for a naval unit, never an attack target', () => {
+    const state = testState({
+      seaZones: {
+        s1: { id: 's1', label: '1', position: { x: 0, y: 0 }, neighbors: ['s2'], adjacentRegionIds: [] },
+        s2: { id: 's2', label: '2', position: { x: 0, y: 0 }, neighbors: ['s1'], adjacentRegionIds: [] },
+      },
+      units: [unitInstance({ id: 'u1', unitId: 'destroyer', ownerId: 'p1', regionId: 's1', movesRemaining: 1 })],
+    });
+    const unit = state.units[0];
+
+    const moves = rules.getReachableMoves(state, unit, catalog);
+    const attacks = rules.getReachableAttacks(state, unit, catalog);
+
+    expect(moves.get('s2')).toBe(1);
+    expect(attacks.has('s2')).toBe(false);
+  });
+});
+
+describe('RulesEngine.isCombatParticipant (PROJECT_RULES.md section 30 extension: naval battles)', () => {
+  const rules = new RulesEngine();
+  const catalog: Readonly<Record<string, UnitDefinition>> = {
+    infantry: unitDef({ id: 'infantry', category: 'land' }),
+    'rocket-system': unitDef({ id: 'rocket-system', category: 'support' }),
+    fighter: unitDef({ id: 'fighter', category: 'air' }),
+    destroyer: unitDef({ id: 'destroyer', category: 'naval' }),
+  };
+
+  it('a unit not embarked always participates, regardless of category', () => {
+    const unit = unitInstance({ id: 'u1', unitId: 'destroyer', ownerId: 'p1', regionId: 's1' });
+    expect(rules.isCombatParticipant(unit, catalog)).toBe(true);
+  });
+
+  it('embarked land/support cargo never participates', () => {
+    const infantryCargo = unitInstance({ id: 'u1', unitId: 'infantry', ownerId: 'p1', regionId: 's1', transportedBy: 'ship-1' });
+    const rocketCargo = unitInstance({ id: 'u2', unitId: 'rocket-system', ownerId: 'p1', regionId: 's1', transportedBy: 'ship-1' });
+    expect(rules.isCombatParticipant(infantryCargo, catalog)).toBe(false);
+    expect(rules.isCombatParticipant(rocketCargo, catalog)).toBe(false);
+  });
+
+  it('embarked air cargo (a carried Fighter/Helicopter) still participates', () => {
+    const fighterCargo = unitInstance({ id: 'u1', unitId: 'fighter', ownerId: 'p1', regionId: 's1', transportedBy: 'carrier-1' });
+    expect(rules.isCombatParticipant(fighterCargo, catalog)).toBe(true);
+  });
 });
 
 describe('RulesEngine.hasPendingMissileStrike / createInitialCombat (PROJECT_RULES.md section 15)', () => {

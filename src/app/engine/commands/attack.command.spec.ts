@@ -217,3 +217,52 @@ describe('AttackCommand — undefended capture stamps capturedOnTurn (PROJECT_RU
     expect(capturedFront.capturedOnTurn).toBe(5);
   });
 });
+
+describe('AttackCommand — naval attacks (PROJECT_RULES.md section 30 extension: ship-to-ship combat)', () => {
+  const catalog: Readonly<Record<string, UnitDefinition>> = {
+    destroyer: unitDef({ id: 'destroyer', category: 'naval', attack: 5, defense: 4, movement: 2 }),
+  };
+
+  function seaZoneState(overrides: Parameters<typeof testState>[0] = {}) {
+    return testState({
+      phase: 'attackMoves',
+      activePlayerId: 'attacker',
+      players: [player({ id: 'attacker' }), player({ id: 'defender' })],
+      regions: {},
+      seaZones: {
+        'sea-1': { id: 'sea-1', label: 'Sea 1', position: { x: 0, y: 0 }, neighbors: ['sea-2'], adjacentRegionIds: [] },
+        'sea-2': { id: 'sea-2', label: 'Sea 2', position: { x: 0, y: 0 }, neighbors: ['sea-1'], adjacentRegionIds: [] },
+      },
+      ...overrides,
+    });
+  }
+
+  it('a ship attacking an enemy-occupied sea zone contests it (co-locate), never captures — sea zones have no owner', () => {
+    const state = seaZoneState({
+      units: [
+        unitInstance({ id: 'atk-ship', unitId: 'destroyer', ownerId: 'attacker', regionId: 'sea-1', movesRemaining: 2 }),
+        unitInstance({ id: 'def-ship', unitId: 'destroyer', ownerId: 'defender', regionId: 'sea-2' }),
+      ],
+    });
+
+    const result = new AttackCommand('attacker', 'atk-ship', 'sea-2', catalog, TEST_ECONOMY_CONFIG).execute(state);
+
+    expect(result.events).toEqual([
+      { type: 'RegionContested', playerId: 'attacker', regionId: 'sea-2' },
+      { type: 'UnitMoved', unitInstanceId: 'atk-ship', fromRegionId: 'sea-1', toRegionId: 'sea-2' },
+    ]);
+    const attackerShip = result.state.units.find((u) => u.id === 'atk-ship');
+    expect(attackerShip?.regionId).toBe('sea-2');
+    expect(attackerShip?.hasFoughtThisTurn).toBe(true);
+  });
+
+  it('rejects attacking a sea zone with no hostile ship in it — never a legal attack target in the first place', () => {
+    const state = seaZoneState({
+      units: [unitInstance({ id: 'atk-ship', unitId: 'destroyer', ownerId: 'attacker', regionId: 'sea-1', movesRemaining: 2 })],
+    });
+    const result = new AttackCommand('attacker', 'atk-ship', 'sea-2', catalog, TEST_ECONOMY_CONFIG).execute(state);
+    expect(result.events).toEqual([
+      { type: 'MovementRejected', playerId: 'attacker', reason: '"sea-2" is not a legal attack target for this unit' },
+    ]);
+  });
+});

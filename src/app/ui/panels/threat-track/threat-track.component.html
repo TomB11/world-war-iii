@@ -1,0 +1,17 @@
+@if (store.state()?.aiConfig; as aiConfig) {
+  <div class="d-flex align-items-center gap-2" [title]="'Threat Track: ' + threatLevel() + ' / ' + maxLevel()">
+    <span class="threat-track__label">Threat</span>
+
+    <div class="threat-track__bar" [class.threat-track__bar--total-war]="totalWarActive()">
+      <div class="threat-track__fill" [style.width.%]="fillPercent()"></div>
+    </div>
+
+    <span class="threat-track__value">{{ threatLevel() }}/{{ maxLevel() }}</span>
+
+    @if (totalWarActive()) {
+      <span class="threat-track__total-war" title="Threat Track maxed out — Total War is permanently active">
+        ☠ TOTAL WAR
+      </span>
+    }
+  </div>
+}

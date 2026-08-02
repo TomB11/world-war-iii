@@ -2,11 +2,9 @@ import { Command, CommandResult } from '../../interfaces/command';
 import { GameState } from '../../models/game-state.model';
 import { GameEngineEvent } from '../../interfaces/game-events';
 import { UnitDefinition } from '../../models/unit.model';
-import { MissileOutcome, MissileResult, RegionCombat } from '../../models/region-combat.model';
+import { MissileResult, RegionCombat } from '../../models/region-combat.model';
 import { RulesEngine } from '../rules-engine';
-import { rollDie } from '../random';
-import { DICE_SIDES } from '../constants/dice.constants';
-import { INTERCEPT_THRESHOLD } from './fire-missile.constants';
+import { hasInterceptor, resolveMissileStrike } from './shared/missile-resolution';
 
 /**
  * Rolls the missile a player armed via SelectMissileCommand (PROJECT_RULES.md
@@ -87,50 +85,38 @@ export class FireMissileCommand implements Command {
 
     // Interception: only possible if the defender has their own missile
     // launcher in the target region or a neighboring one.
-    const targetRegion = state.regions[this.regionId];
-    const neighborIds = new Set(targetRegion?.neighbors ?? []);
-    const interceptorPresent = state.units.some(
-      (unit) =>
-        unit.ownerId !== this.playerId &&
-        (unit.regionId === this.regionId || neighborIds.has(unit.regionId)) &&
-        this.unitCatalog[unit.unitId]?.canDeclareMissile,
-    );
+    const interceptorPresent = hasInterceptor(state, this.regionId, this.playerId, this.unitCatalog);
+    const resolution = resolveMissileStrike(state.randomSeed, missileDef.attack, interceptorPresent);
 
-    let seed = state.randomSeed;
-    let interceptRoll: number | null = null;
-    let attackRoll: number | null = null;
-    let outcome: MissileOutcome = 'miss';
-
-    if (interceptorPresent) {
-      const roll = rollDie(seed, DICE_SIDES);
-      seed = roll.nextSeed;
-      interceptRoll = roll.result;
-      if (roll.result <= INTERCEPT_THRESHOLD) {
-        outcome = 'intercepted';
-      }
-    }
-
-    if (outcome !== 'intercepted') {
-      const roll = rollDie(seed, DICE_SIDES);
-      seed = roll.nextSeed;
-      attackRoll = roll.result;
-      outcome = roll.result <= missileDef.attack ? 'hit' : 'miss';
-    }
-
-    const missileResult: MissileResult = { missileId: missileUnitId, interceptRoll, attackRoll, outcome };
+    const missileResult: MissileResult = {
+      missileId: missileUnitId,
+      interceptRoll: resolution.interceptRoll,
+      attackRoll: resolution.attackRoll,
+      outcome: resolution.outcome,
+    };
     const nextCombat: RegionCombat = {
       ...combat,
-      step: outcome === 'hit' ? 'missileCasualty' : 'attackerRoll',
-      pendingDefenderCasualties: outcome === 'hit' ? 1 : 0,
+      step: resolution.outcome === 'hit' ? 'missileCasualty' : 'attackerRoll',
+      pendingDefenderCasualties: resolution.outcome === 'hit' ? 1 : 0,
       armedMissileUnitId: null,
       missileResult,
     };
 
-    const events: readonly GameEngineEvent[] = [{ type: 'CombatRoundRolled', regionId: this.regionId }];
+    // The launcher never physically enters the battle (PROJECT_RULES.md
+    // section 15) — its region only lives in missileDeclarations, purely so
+    // the map can animate a projectile traveling from there to the battle.
+    const launcherUnitInstanceId = state.missileDeclarations[this.regionId];
+    const launcherRegionId = launcherUnitInstanceId
+      ? this.rules.getUnitInstance(state, launcherUnitInstanceId)?.regionId
+      : undefined;
+    const events: readonly GameEngineEvent[] = [
+      { type: 'CombatRoundRolled', regionId: this.regionId },
+      ...(launcherRegionId ? [{ type: 'MissileFired' as const, regionId: this.regionId, launcherRegionId }] : []),
+    ];
     return {
       state: {
         ...state,
-        randomSeed: seed,
+        randomSeed: resolution.nextSeed,
         players: nextPlayers,
         combats: { ...state.combats, [this.regionId]: nextCombat },
       },

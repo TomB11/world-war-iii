@@ -32,6 +32,8 @@ export interface UnitDefinition {
   readonly canDeclareMissile?: boolean;
   /** For a missile (category 'missile') only: how many hops away a Rocket System holding one in Reserve may declare a strike (PROJECT_RULES.md section 16 — Missile B's longer range). Defaults to 1 when absent. */
   readonly missileRange?: number;
+  /** Solo Command Mode only: whether this unit counts as "tank or fighter support" for the AI's attack-conditions check (rulebook section 3 — Tank, Fighter). Defaults to false when absent. */
+  readonly aiAttackSupport?: boolean;
 }
 
 /** One line of a player's Reserve: how many of a given unit type are awaiting deployment. */

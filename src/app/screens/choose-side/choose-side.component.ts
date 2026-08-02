@@ -1,18 +1,23 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
+import { SoloSetupState } from '../../state/solo-setup.state';
 
 export type AllianceSide = 'west' | 'east';
+
+const TEAM_ID_BY_SIDE: Readonly<Record<AllianceSide, string>> = {
+  west: 'team-west',
+  east: 'team-east',
+};
 
 /**
  * Intro screen between the main menu and the game itself (app.routes.ts
  * path 'choose-side'): a single background image split into two transparent
  * click zones — left picks the Western Allies (EUTO/USA/SEATO, teamId
  * 'team-west' in data/factions.json), right picks the Eurasian Pact
- * (Russia/China/Arabia League, 'team-east'). Purely a mood-setting choice
- * for now — this is a hotseat game where every faction still takes its own
- * turn regardless of which half was clicked, so the pick isn't threaded into
- * GameStore. Continue only appears once a side is chosen, then navigates to
- * /game the same way MainMenuComponent's "Start Game" used to.
+ * (Russia/China/Arabia League, 'team-east'). This is the human's alliance
+ * for Solo Command Mode — the pick is handed to SoloSetupState and the next
+ * screen ('solo-setup') lets the player choose an AI Doctrine/Difficulty for
+ * the opposing alliance, or skip straight into today's full hotseat play.
  */
 @Component({
   selector: 'wwiii-choose-side',
@@ -23,6 +28,7 @@ export type AllianceSide = 'west' | 'east';
 })
 export class ChooseSideComponent {
   private readonly router = inject(Router);
+  private readonly soloSetup = inject(SoloSetupState);
 
   protected readonly backgroundImage = 'assets/menu/choose.jpg';
   protected readonly selectedSide = signal<AllianceSide | null>(null);
@@ -32,9 +38,11 @@ export class ChooseSideComponent {
   }
 
   protected continue(): void {
-    if (!this.selectedSide()) {
+    const side = this.selectedSide();
+    if (!side) {
       return;
     }
-    void this.router.navigateByUrl('/game');
+    this.soloSetup.setHumanTeamId(TEAM_ID_BY_SIDE[side]);
+    void this.router.navigateByUrl('/solo-setup');
   }
 }

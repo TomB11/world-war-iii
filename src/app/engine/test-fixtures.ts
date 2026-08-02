@@ -4,6 +4,7 @@ import { UnitDefinition } from '../models/unit.model';
 import { UnitInstance } from '../models/unit-instance.model';
 import { PlayerState } from '../models/player.model';
 import { EconomyConfig } from '../models/economy-config.model';
+import { AiConfig } from '../models/ai-config.model';
 
 /**
  * Minimal fixtures shared by engine specs. Not part of the app build — no
@@ -105,6 +106,18 @@ export function testState(overrides: Partial<GameState> = {}): GameState {
     combats: {},
     missileDeclarations: {},
     unitsDeployedThisTurn: {},
+    aiConfig: null,
+    sabotagedRegionIds: [],
+    ...overrides,
+  };
+}
+
+export function aiConfig(overrides: Partial<AiConfig> & { aiTeamId: string }): AiConfig {
+  return {
+    doctrine: 'aggressor',
+    difficulty: 'normal',
+    threatLevel: 0,
+    totalWarActive: false,
     ...overrides,
   };
 }

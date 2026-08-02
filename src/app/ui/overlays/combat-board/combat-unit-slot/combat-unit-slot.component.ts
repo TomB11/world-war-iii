@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, input, output, signal } from '@angular/core';
 import { CombatDieRoll } from '../../../../models/region-combat.model';
 import { UnitIconComponent } from '../../../shared/unit-icon/unit-icon.component';
 
@@ -34,4 +34,19 @@ export class CombatUnitSlotComponent {
   readonly armed = input<boolean>(false);
 
   readonly unitClick = output<void>();
+
+  /** Briefly true right after a fresh roll lands, driving a one-shot "pop" on the roll badge (CombatDieRoll is a new object every round, even when a unit rolls the same number twice, so reference inequality alone marks a new roll — see constructor). */
+  protected readonly rollJustLanded = signal(false);
+  private lastRollInfo: CombatDieRoll | null = null;
+
+  constructor() {
+    effect(() => {
+      const roll = this.rollInfo();
+      if (roll && roll !== this.lastRollInfo) {
+        this.rollJustLanded.set(true);
+        setTimeout(() => this.rollJustLanded.set(false), 420);
+      }
+      this.lastRollInfo = roll;
+    });
+  }
 }

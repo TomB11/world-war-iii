@@ -98,6 +98,13 @@ export class DeployUnitCommand implements Command {
       sourceFactoryRegionId = region.id;
     }
 
+    if (state.sabotagedRegionIds.includes(sourceFactoryRegionId)) {
+      const sabotagedRegion = this.rules.getRegion(state, sourceFactoryRegionId);
+      return reject(
+        `${sabotagedRegion?.name ?? sourceFactoryRegionId}'s factory was sabotaged and cannot produce this turn`,
+      );
+    }
+
     const reserveEntry = player.reserve.find((entry) => entry.unitId === this.unitId);
     if (!reserveEntry || reserveEntry.quantity <= 0) {
       return reject(`No "${this.unitId}" units available in Reserve`);

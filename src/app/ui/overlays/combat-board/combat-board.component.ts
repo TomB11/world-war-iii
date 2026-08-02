@@ -38,9 +38,13 @@ export class CombatBoardComponent {
   protected readonly store = inject(GameStore);
   protected readonly columns = COMBAT_COLUMNS;
 
-  protected readonly region = computed(() => {
+  /** The battle's location name — a Region for a land fight, or a SeaZone's label for a naval one (combatRegionId is a sea zone id there). */
+  protected readonly regionLabel = computed(() => {
     const id = this.store.combatRegionId();
-    return id ? (this.store.regions()[id] ?? null) : null;
+    if (!id) {
+      return '';
+    }
+    return this.store.regions()[id]?.name ?? this.store.seaZones()[id]?.label ?? '';
   });
 
   protected readonly attackerId = computed(() => this.store.activePlayer()?.id ?? null);
@@ -106,9 +110,13 @@ export class CombatBoardComponent {
       .map((entry) => ({ unitId: entry.unitId, name: catalog[entry.unitId]?.name ?? entry.unitId, quantity: entry.quantity }));
   });
 
+  /** Units actually IN this battle — excludes embarked land/support cargo riding along on a transport in a naval fight (they never roll, see GameStore.isCombatParticipant). */
   private readonly regionUnits = computed<readonly UnitInstance[]>(() => {
     const id = this.store.combatRegionId();
-    return id ? (this.store.unitsByRegion()[id] ?? []) : [];
+    if (!id) {
+      return [];
+    }
+    return (this.store.unitsByRegion()[id] ?? []).filter((unit) => this.store.isCombatParticipant(unit));
   });
 
   private readonly defenderOwnerId = computed(() => {

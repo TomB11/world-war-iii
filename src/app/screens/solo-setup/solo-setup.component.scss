@@ -1,0 +1,131 @@
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.solo-setup {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 48px 24px 64px;
+  font-family: var(--wwiii-font);
+  color: var(--wwiii-text);
+}
+
+.solo-setup__title {
+  margin: 0 0 6px;
+  text-align: center;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.solo-setup__subtitle {
+  margin: 0 0 32px;
+  text-align: center;
+  color: var(--wwiii-text-dim);
+  font-size: 14px;
+}
+
+.solo-setup__section {
+  margin-bottom: 28px;
+}
+
+.solo-setup__section-title {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--wwiii-text-dim);
+}
+
+.solo-setup__cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.solo-setup__card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  text-align: left;
+  background: var(--wwiii-bg-panel);
+  border: 1px solid var(--wwiii-border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+
+  &:hover {
+    border-color: var(--wwiii-accent);
+  }
+
+  &.solo-setup__card--selected {
+    border-color: var(--wwiii-accent);
+    box-shadow: 0 0 0 1px var(--wwiii-accent), 0 0 16px color-mix(in srgb, var(--wwiii-accent) 35%, transparent);
+  }
+}
+
+.solo-setup__card-name {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.solo-setup__card-description {
+  font-size: 12px;
+  color: var(--wwiii-text-dim);
+  line-height: 1.4;
+}
+
+.solo-setup__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.solo-setup__skip {
+  background: none;
+  border: none;
+  color: var(--wwiii-text-dim);
+  font-size: 13px;
+  text-decoration: underline;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--wwiii-text);
+  }
+}
+
+.solo-setup__continue {
+  padding: 12px 32px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #0b0e14;
+  background: var(--wwiii-accent);
+  border: 1px solid var(--wwiii-accent);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.15s, transform 0.1s, opacity 0.15s;
+
+  &:hover:not(:disabled) {
+    background: var(--wwiii-accent-hover);
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}

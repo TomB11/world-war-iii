@@ -1,0 +1,10 @@
+{
+  "maxLevel": 10,
+  "thresholds": [
+    { "level": 3, "bonus": "treasury", "amount": 2 },
+    { "level": 5, "bonus": "freeCyberAttack" },
+    { "level": 7, "bonus": "freeInfantry", "unitId": "infantry", "quantity": 2 },
+    { "level": 9, "bonus": "freeMissileStrike" },
+    { "level": 10, "bonus": "totalWar" }
+  ]
+}
