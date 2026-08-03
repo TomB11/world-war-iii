@@ -2,6 +2,7 @@ import { Command, CommandResult } from '../../interfaces/command';
 import { GameState } from '../../models/game-state.model';
 import { GameEngineEvent } from '../../interfaces/game-events';
 import { UnitDefinition } from '../../models/unit.model';
+import { Faction } from '../../models/faction.model';
 import { RulesEngine } from '../rules-engine';
 
 /**
@@ -28,6 +29,7 @@ export class MoveUnitCommand implements Command {
     private readonly unitInstanceId: string,
     private readonly destinationRegionId: string,
     private readonly unitCatalog: Readonly<Record<string, UnitDefinition>>,
+    private readonly factions: Readonly<Record<string, Faction>>,
     private readonly rules: RulesEngine = new RulesEngine(),
   ) {}
 
@@ -63,7 +65,7 @@ export class MoveUnitCommand implements Command {
       return reject('Units that already fought this turn cannot move again');
     }
 
-    const reachable = this.rules.getReachableMoves(state, unit, this.unitCatalog);
+    const reachable = this.rules.getReachableMoves(state, unit, this.unitCatalog, this.factions);
     const cost = reachable.get(this.destinationRegionId);
     const isFriendly = state.regions[this.destinationRegionId]?.ownerId === unit.ownerId;
     const isSeaZone = this.destinationRegionId in state.seaZones;

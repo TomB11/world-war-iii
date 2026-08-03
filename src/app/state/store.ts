@@ -165,6 +165,15 @@ export class GameStore {
     return this.engine.getRules().isCombatParticipant(unit, this._units());
   }
 
+  /** Whether two players are hostile to each other (different teams, PROJECT_RULES.md section 2) rather than teammates. */
+  isHostileTo(playerIdA: string, playerIdB: string): boolean {
+    const state = this.state();
+    if (!state) {
+      return false;
+    }
+    return this.engine.getRules().isHostileTo(state, playerIdA, playerIdB, this._factions());
+  }
+
   /** Deployed units belonging to the active player, for the Movement panel. */
   readonly activePlayerUnits = computed<readonly UnitInstance[]>(() => {
     const state = this.state();
@@ -207,6 +216,7 @@ export class GameStore {
     }
     const rules = this.engine.getRules();
     const catalog = this._units();
+    const factions = this._factions();
     const ids = new Set<string>();
     for (const unit of state.units) {
       if (unit.ownerId !== player.id || unit.transportedBy !== null || unit.movesRemaining <= 0) {
@@ -218,14 +228,14 @@ export class GameStore {
         if (unit.hasFoughtThisTurn) {
           continue;
         }
-        if (canLoad || rules.getTacticalMoveDestinations(state, unit, catalog).length > 0) {
+        if (canLoad || rules.getTacticalMoveDestinations(state, unit, catalog, factions).length > 0) {
           ids.add(unit.id);
         }
       } else {
         // Attack Moves is attack-only (PROJECT_RULES.md section 7): a unit is
         // movable here only if it can reach a hostile region to attack (or
         // board a transport to get there).
-        if (canLoad || rules.getLegalAttackTargets(state, unit, catalog).length > 0) {
+        if (canLoad || rules.getLegalAttackTargets(state, unit, catalog, factions).length > 0) {
           ids.add(unit.id);
         }
       }
@@ -245,7 +255,7 @@ export class GameStore {
     if (!state || !player || state.phase !== 'attack') {
       return new Set();
     }
-    return new Set(this.engine.getRules().getContestedRegionIds(state, player.id));
+    return new Set(this.engine.getRules().getContestedRegionIds(state, player.id, this._factions()));
   });
 
   /**
@@ -540,7 +550,15 @@ export class GameStore {
       return;
     }
     this.dispatch(
-      new AiSabotageCommand(playerId, targetPlayerId, targetRegionId, economyConfig, sabotageEffects, this.engine.getRules()),
+      new AiSabotageCommand(
+        playerId,
+        targetPlayerId,
+        targetRegionId,
+        economyConfig,
+        sabotageEffects,
+        this._factions(),
+        this.engine.getRules(),
+      ),
     );
   }
 
@@ -615,7 +633,7 @@ export class GameStore {
   }
 
   advancePhase(playerId: string): void {
-    this.dispatch(new AdvancePhaseCommand(playerId, this._units(), this.engine.getRules()));
+    this.dispatch(new AdvancePhaseCommand(playerId, this._units(), this._factions(), this.engine.getRules()));
   }
 
   endTurn(playerId: string): void {
@@ -636,7 +654,14 @@ export class GameStore {
 
   moveUnit(playerId: string, unitInstanceId: string, destinationRegionId: string): void {
     this.dispatch(
-      new MoveUnitCommand(playerId, unitInstanceId, destinationRegionId, this._units(), this.engine.getRules()),
+      new MoveUnitCommand(
+        playerId,
+        unitInstanceId,
+        destinationRegionId,
+        this._units(),
+        this._factions(),
+        this.engine.getRules(),
+      ),
     );
   }
 
@@ -658,6 +683,7 @@ export class GameStore {
         destinationRegionId,
         this._units(),
         economyConfig,
+        this._factions(),
         this.engine.getRules(),
       ),
     );
@@ -670,7 +696,7 @@ export class GameStore {
     if (!state || !unit) {
       return [];
     }
-    return this.engine.getRules().getUnloadDestinations(state, unit);
+    return this.engine.getRules().getUnloadDestinations(state, unit, this._factions());
   }
 
   /** Regions (or, for naval units, sea zones) a Reserve unit could be deployed to right now (PROJECT_RULES.md section 18). */
@@ -734,7 +760,15 @@ export class GameStore {
       return;
     }
     this.dispatch(
-      new AttackCommand(playerId, unitInstanceId, targetRegionId, this._units(), economyConfig, this.engine.getRules()),
+      new AttackCommand(
+        playerId,
+        unitInstanceId,
+        targetRegionId,
+        this._units(),
+        economyConfig,
+        this._factions(),
+        this.engine.getRules(),
+      ),
     );
   }
 
@@ -791,7 +825,7 @@ export class GameStore {
     if (!economyConfig) {
       return;
     }
-    this.dispatch(new HackCommand(playerId, targetPlayerId, economyConfig, this.engine.getRules()));
+    this.dispatch(new HackCommand(playerId, targetPlayerId, economyConfig, this._factions(), this.engine.getRules()));
   }
 
   /** Political Influence (PROJECT_RULES.md section 6): attempt to place an influence token on a neutral region. */
@@ -831,7 +865,7 @@ export class GameStore {
     if (state.phase !== 'tacticalMoves' && !isNavalRepositioning) {
       return [];
     }
-    return this.engine.getRules().getTacticalMoveDestinations(state, unit, this._units());
+    return this.engine.getRules().getTacticalMoveDestinations(state, unit, this._units(), this._factions());
   }
 
   /** Read-only preview of a unit's legal attack targets, delegated to RulesEngine. */
@@ -841,7 +875,7 @@ export class GameStore {
     if (!state || !unit) {
       return [];
     }
-    return this.engine.getRules().getLegalAttackTargets(state, unit, this._units());
+    return this.engine.getRules().getLegalAttackTargets(state, unit, this._units(), this._factions());
   }
 
   /** Sea-zone drop targets that would load this unit onto a transport there (PROJECT_RULES.md section 30). */

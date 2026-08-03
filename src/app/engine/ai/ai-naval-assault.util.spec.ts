@@ -26,7 +26,7 @@ describe('pickNavalAssaultPlan', () => {
 
   it('returns null when the player has no eligible passenger units', () => {
     const state = testState({ phase: 'attackMoves', activePlayerId: 'p1', regions: {}, seaZones: {}, units: [] });
-    expect(pickNavalAssaultPlan(state, 'p1', catalog, rules)).toBeNull();
+    expect(pickNavalAssaultPlan(state, 'p1', catalog, {}, rules)).toBeNull();
   });
 
   it('returns null when a passenger exists but no transport is in boarding range', () => {
@@ -37,7 +37,7 @@ describe('pickNavalAssaultPlan', () => {
       seaZones: {},
       units: [unitInstance({ id: 'inf', unitId: 'infantry', ownerId: 'p1', regionId: 'coast', movesRemaining: 1 })],
     });
-    expect(pickNavalAssaultPlan(state, 'p1', catalog, rules)).toBeNull();
+    expect(pickNavalAssaultPlan(state, 'p1', catalog, {}, rules)).toBeNull();
   });
 
   it('plans an immediate unload (0 hops) when the transport already sits adjacent to a hostile coast', () => {
@@ -57,7 +57,7 @@ describe('pickNavalAssaultPlan', () => {
       ],
     });
 
-    const plan = pickNavalAssaultPlan(state, 'p1', catalog, rules);
+    const plan = pickNavalAssaultPlan(state, 'p1', catalog, {}, rules);
     expect(plan).toEqual({
       passengerUnitId: 'inf',
       transportUnitId: 'boat',
@@ -84,7 +84,7 @@ describe('pickNavalAssaultPlan', () => {
       ],
     });
 
-    const plan = pickNavalAssaultPlan(state, 'p1', catalog, rules);
+    const plan = pickNavalAssaultPlan(state, 'p1', catalog, {}, rules);
     expect(plan?.sailToSeaZoneId).toBe('sea-2');
     expect(plan?.targetRegionId).toBe('enemy-coast');
   });
@@ -106,6 +106,6 @@ describe('pickNavalAssaultPlan', () => {
       ],
     });
 
-    expect(pickNavalAssaultPlan(state, 'p1', catalog, rules)).toBeNull();
+    expect(pickNavalAssaultPlan(state, 'p1', catalog, {}, rules)).toBeNull();
   });
 });

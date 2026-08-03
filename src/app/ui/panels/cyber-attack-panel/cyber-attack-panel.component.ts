@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { GameStore } from '../../../state/store';
 import { PlayerState } from '../../../models/player.model';
 import { Region } from '../../../models/region.model';
@@ -7,7 +6,6 @@ import { Region } from '../../../models/region.model';
 @Component({
   selector: 'wwiii-cyber-attack-panel',
   standalone: true,
-  imports: [FormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './cyber-attack-panel.component.html',
   styleUrl: './cyber-attack-panel.component.scss',
@@ -23,14 +21,22 @@ export class CyberAttackPanelComponent {
   protected readonly hackUpgradeCost = computed(() => this.store.economyConfig()?.hackLevelUpgradeCost ?? 0);
   protected readonly hackLevelMax = computed(() => this.store.economyConfig()?.hackLevelMax ?? 0);
 
-  /** Every other non-eliminated player, as possible Hack targets. */
+  /** 1..hackLevelMax, for rendering the Hack Level progress track as discrete pips. */
+  protected readonly hackLevelSteps = computed(() => {
+    const max = this.hackLevelMax();
+    return Array.from({ length: max }, (_, index) => index + 1);
+  });
+
+  /** Every other non-eliminated, non-allied player, as possible Hack targets — a teammate (PROJECT_RULES.md section 2) is never a legal target, hacking is an attack. */
   protected readonly hackTargets = computed<readonly PlayerState[]>(() => {
     const state = this.store.state();
     const activeId = state?.activePlayerId;
-    if (!state) {
+    if (!state || !activeId) {
       return [];
     }
-    return state.players.filter((player) => player.id !== activeId && !player.isEliminated);
+    return state.players.filter(
+      (player) => player.id !== activeId && !player.isEliminated && this.store.isHostileTo(player.id, activeId),
+    );
   });
 
   /** Every neutral (unowned) region, as possible Political Influence targets. */

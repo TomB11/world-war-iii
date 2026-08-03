@@ -37,7 +37,30 @@
 }
 
 .victory-banner__detail {
-  margin: 0;
+  margin: 0 0 28px;
   color: var(--wwiii-text);
   font-size: 14px;
+}
+
+.victory-banner__menu-btn {
+  padding: 14px 32px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #0b0e14;
+  background: var(--wwiii-accent);
+  border: 1px solid var(--wwiii-accent);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s, transform 0.1s;
+
+  &:hover {
+    background: var(--wwiii-accent-hover);
+    border-color: var(--wwiii-accent-hover);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
 }

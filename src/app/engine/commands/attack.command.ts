@@ -4,6 +4,7 @@ import { GameEngineEvent } from '../../interfaces/game-events';
 import { UnitDefinition } from '../../models/unit.model';
 import { UnitInstance } from '../../models/unit-instance.model';
 import { EconomyConfig } from '../../models/economy-config.model';
+import { Faction } from '../../models/faction.model';
 import { RulesEngine } from '../rules-engine';
 import { applyForceCaptureSatisfactionPenalty } from './shared/capture-penalties';
 
@@ -64,6 +65,7 @@ export class AttackCommand implements Command {
     private readonly targetRegionId: string,
     private readonly unitCatalog: Readonly<Record<string, UnitDefinition>>,
     private readonly economyConfig: EconomyConfig,
+    private readonly factions: Readonly<Record<string, Faction>>,
     private readonly rules: RulesEngine = new RulesEngine(),
   ) {}
 
@@ -101,7 +103,11 @@ export class AttackCommand implements Command {
     // isDefendedTargetForMissile branch below.
     const isDefendedTargetForMissile =
       unitDef.canDeclareMissile &&
-      state.units.some((candidate) => candidate.regionId === this.targetRegionId && candidate.ownerId !== this.playerId);
+      state.units.some(
+        (candidate) =>
+          candidate.regionId === this.targetRegionId &&
+          this.rules.isHostileTo(state, candidate.ownerId, this.playerId, this.factions),
+      );
     if (unitDef.attack <= 0 && !isDefendedTargetForMissile) {
       return reject('This unit has no attack capability');
     }
@@ -119,8 +125,8 @@ export class AttackCommand implements Command {
     // Reserve (PROJECT_RULES.md section 16 — Missile B reaches 2 hops vs.
     // the usual 1), so it gets its own reach query here.
     const attackReach = isDefendedTargetForMissile
-      ? this.rules.getMissileStrikeTargets(state, unit, this.unitCatalog)
-      : this.rules.getReachableAttacks(state, unit, this.unitCatalog);
+      ? this.rules.getMissileStrikeTargets(state, unit, this.unitCatalog, this.factions)
+      : this.rules.getReachableAttacks(state, unit, this.unitCatalog, this.factions);
     const cost = attackReach.get(this.targetRegionId);
     if (cost === undefined) {
       return reject(`"${this.targetRegionId}" is not a legal attack target for this unit`);
@@ -145,7 +151,9 @@ export class AttackCommand implements Command {
         return reject(`Unknown sea zone "${this.targetRegionId}"`);
       }
       const seaDefenders = state.units.filter(
-        (candidate) => candidate.regionId === this.targetRegionId && candidate.ownerId !== this.playerId,
+        (candidate) =>
+          candidate.regionId === this.targetRegionId &&
+          this.rules.isHostileTo(state, candidate.ownerId, this.playerId, this.factions),
       );
       const movedUnitEvent: GameEngineEvent = {
         type: 'UnitMoved',
@@ -173,7 +181,9 @@ export class AttackCommand implements Command {
     }
 
     const defenders = state.units.filter(
-      (candidate) => candidate.regionId === this.targetRegionId && candidate.ownerId !== this.playerId,
+      (candidate) =>
+        candidate.regionId === this.targetRegionId &&
+        this.rules.isHostileTo(state, candidate.ownerId, this.playerId, this.factions),
     );
 
     // Rocket System "attacking" a defended region: declare a supporting

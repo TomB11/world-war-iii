@@ -5,6 +5,7 @@ import { UnitInstance } from '../models/unit-instance.model';
 import { PlayerState } from '../models/player.model';
 import { EconomyConfig } from '../models/economy-config.model';
 import { AiConfig } from '../models/ai-config.model';
+import { Faction } from '../models/faction.model';
 
 /**
  * Minimal fixtures shared by engine specs. Not part of the app build — no
@@ -66,6 +67,15 @@ export function player(overrides: Partial<PlayerState> & { id: string }): Player
     rebellionLevel: 0,
     victoryPoints: 0,
     hasUsedCyberAttackThisTurn: false,
+    ...overrides,
+  };
+}
+
+export function faction(overrides: Partial<Faction> & { id: string; teamId: string }): Faction {
+  return {
+    name: overrides.id,
+    color: '#888888',
+    capitalRegionId: overrides.id,
     ...overrides,
   };
 }

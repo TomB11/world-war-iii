@@ -29,7 +29,7 @@ describe('UnloadUnitCommand', () => {
       ],
     });
 
-    const result = new UnloadUnitCommand('attacker', 'cargo-1', 'coast', catalog, TEST_ECONOMY_CONFIG).execute(state);
+    const result = new UnloadUnitCommand('attacker', 'cargo-1', 'coast', catalog, TEST_ECONOMY_CONFIG, {}).execute(state);
 
     expect(result.state.regions['coast'].ownerId).toBe('attacker');
     expect(result.state.regions['coast'].capturedOnTurn).toBe(6);

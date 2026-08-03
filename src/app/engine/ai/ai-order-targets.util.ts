@@ -1,6 +1,7 @@
 import { GameState } from '../../models/game-state.model';
 import { UnitDefinition } from '../../models/unit.model';
 import { UnitInstance } from '../../models/unit-instance.model';
+import { Faction } from '../../models/faction.model';
 import { RulesEngine } from '../rules-engine';
 import { AiOrderAction } from '../../models/ai-order.model';
 
@@ -20,6 +21,7 @@ function collectAttackCandidates(
   state: GameState,
   playerId: string,
   unitCatalog: Readonly<Record<string, UnitDefinition>>,
+  factions: Readonly<Record<string, Faction>>,
   rules: RulesEngine,
 ): readonly AttackCandidate[] {
   const candidates: AttackCandidate[] = [];
@@ -36,7 +38,7 @@ function collectAttackCandidates(
     if (!unitDef || unitDef.attack <= 0) {
       continue;
     }
-    const reach = rules.getReachableAttacks(state, unit, unitCatalog);
+    const reach = rules.getReachableAttacks(state, unit, unitCatalog, factions);
     for (const [targetRegionId, hopCost] of reach) {
       candidates.push({ unitInstanceId: unit.id, targetRegionId, hopCost });
     }
@@ -94,9 +96,10 @@ export function pickAttackTargetRegion(
   playerId: string,
   action: AiOrderAction,
   unitCatalog: Readonly<Record<string, UnitDefinition>>,
+  factions: Readonly<Record<string, Faction>>,
   rules: RulesEngine,
 ): string | null {
-  const candidates = collectAttackCandidates(state, playerId, unitCatalog, rules);
+  const candidates = collectAttackCandidates(state, playerId, unitCatalog, factions, rules);
   if (candidates.length === 0) {
     return null;
   }
@@ -147,6 +150,7 @@ export function getCommittingUnitIds(
   playerId: string,
   targetRegionId: string,
   unitCatalog: Readonly<Record<string, UnitDefinition>>,
+  factions: Readonly<Record<string, Faction>>,
   rules: RulesEngine,
 ): readonly string[] {
   const undefended = isUndefended(state, targetRegionId, playerId, unitCatalog, rules);
@@ -158,7 +162,7 @@ export function getCommittingUnitIds(
     return unit ? unitCatalog[unit.unitId]?.canCapture !== false : false;
   };
 
-  return collectAttackCandidates(state, playerId, unitCatalog, rules)
+  return collectAttackCandidates(state, playerId, unitCatalog, factions, rules)
     .filter((candidate) => candidate.targetRegionId === targetRegionId && canJoin(candidate.unitInstanceId))
     .map((candidate) => candidate.unitInstanceId);
 }

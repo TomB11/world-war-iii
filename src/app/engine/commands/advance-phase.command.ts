@@ -3,6 +3,7 @@ import { GameState } from '../../models/game-state.model';
 import { GameEngineEvent } from '../../interfaces/game-events';
 import { TURN_PHASE_ORDER } from '../../core/constants/game.constants';
 import { UnitDefinition } from '../../models/unit.model';
+import { Faction } from '../../models/faction.model';
 import { RulesEngine } from '../rules-engine';
 
 /**
@@ -29,6 +30,7 @@ export class AdvancePhaseCommand implements Command {
   constructor(
     private readonly playerId: string,
     private readonly unitCatalog: Readonly<Record<string, UnitDefinition>> = {},
+    private readonly factions: Readonly<Record<string, Faction>> = {},
     private readonly rules: RulesEngine = new RulesEngine(),
   ) {}
 
@@ -37,7 +39,10 @@ export class AdvancePhaseCommand implements Command {
       return { state, events: [] };
     }
 
-    if (state.phase === 'attack' && this.rules.getContestedRegionIds(state, this.playerId).length > 0) {
+    if (
+      state.phase === 'attack' &&
+      this.rules.getContestedRegionIds(state, this.playerId, this.factions).length > 0
+    ) {
       return {
         state,
         events: [

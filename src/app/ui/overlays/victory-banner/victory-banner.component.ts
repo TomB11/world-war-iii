@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { Router } from '@angular/router';
 import { GameStore } from '../../../state/store';
 
 /** Full-screen banner shown once PROJECT_RULES.md section 2's win condition is met. */
@@ -11,6 +12,7 @@ import { GameStore } from '../../../state/store';
 })
 export class VictoryBannerComponent {
   protected readonly store = inject(GameStore);
+  private readonly router = inject(Router);
 
   protected readonly winnerLabel = computed(() => {
     const status = this.store.victoryStatus();
@@ -26,4 +28,8 @@ export class VictoryBannerComponent {
       .map((faction) => faction.name);
     return teamFactionNames.length > 0 ? teamFactionNames.join(' + ') : status.winnerId;
   });
+
+  protected returnToMenu(): void {
+    void this.router.navigateByUrl('/');
+  }
 }

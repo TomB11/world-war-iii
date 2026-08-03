@@ -3,6 +3,7 @@ import { GameState } from '../../models/game-state.model';
 import { GameEngineEvent } from '../../interfaces/game-events';
 import { EconomyConfig } from '../../models/economy-config.model';
 import { AiSabotageEffectsData } from '../../models/ai-sabotage.model';
+import { Faction } from '../../models/faction.model';
 import { RulesEngine } from '../rules-engine';
 import { rollDie } from '../random';
 import { DICE_SIDES } from '../constants/dice.constants';
@@ -29,6 +30,7 @@ export class AiSabotageCommand implements Command {
     private readonly targetRegionId: string,
     private readonly economyConfig: EconomyConfig,
     private readonly sabotageEffects: AiSabotageEffectsData,
+    private readonly factions: Readonly<Record<string, Faction>>,
     private readonly rules: RulesEngine = new RulesEngine(),
   ) {}
 
@@ -57,6 +59,9 @@ export class AiSabotageCommand implements Command {
     const target = this.rules.getPlayer(state, this.targetPlayerId);
     if (!target) {
       return reject(`Unknown target "${this.targetPlayerId}"`);
+    }
+    if (!this.rules.isHostileTo(state, this.targetPlayerId, this.playerId, this.factions)) {
+      return reject('You cannot sabotage a teammate (PROJECT_RULES.md section 2)');
     }
 
     const roll = rollDie(state.randomSeed, DICE_SIDES);

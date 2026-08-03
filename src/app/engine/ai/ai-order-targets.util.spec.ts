@@ -13,7 +13,7 @@ describe('pickAttackTargetRegion', () => {
 
   it('returns null when there are no candidate units at all', () => {
     const state = testState({ phase: 'attackMoves', activePlayerId: 'p1', regions: {}, units: [] });
-    expect(pickAttackTargetRegion(state, 'p1', 'attackNearest', catalog, rules)).toBeNull();
+    expect(pickAttackTargetRegion(state, 'p1', 'attackNearest', catalog, {}, rules)).toBeNull();
   });
 
   it('never considers a Rocket System (attack: 0) as an attacker', () => {
@@ -26,7 +26,7 @@ describe('pickAttackTargetRegion', () => {
       },
       units: [unitInstance({ id: 'u1', unitId: 'rocket-system', ownerId: 'p1', regionId: 'home', movesRemaining: 1 })],
     });
-    expect(pickAttackTargetRegion(state, 'p1', 'attackNearest', catalog, rules)).toBeNull();
+    expect(pickAttackTargetRegion(state, 'p1', 'attackNearest', catalog, {}, rules)).toBeNull();
   });
 
   it('attackNearest picks the lowest hop-cost target, defended or not', () => {
@@ -43,7 +43,7 @@ describe('pickAttackTargetRegion', () => {
         unitInstance({ id: 'defender', unitId: 'infantry', ownerId: 'enemy', regionId: 'far', movesRemaining: 1 }),
       ],
     });
-    expect(pickAttackTargetRegion(state, 'p1', 'attackNearest', catalog, rules)).toBe('far');
+    expect(pickAttackTargetRegion(state, 'p1', 'attackNearest', catalog, {}, rules)).toBe('far');
   });
 
   it('attackRichestAdjacent picks the highest-value adjacent region even if defended', () => {
@@ -60,7 +60,7 @@ describe('pickAttackTargetRegion', () => {
         unitInstance({ id: 'defender', unitId: 'infantry', ownerId: 'enemy', regionId: 'rich', movesRemaining: 1 }),
       ],
     });
-    expect(pickAttackTargetRegion(state, 'p1', 'attackRichestAdjacent', catalog, rules)).toBe('rich');
+    expect(pickAttackTargetRegion(state, 'p1', 'attackRichestAdjacent', catalog, {}, rules)).toBe('rich');
   });
 
   it('attackWeakestAdjacent picks the adjacent region with the lowest total defense value', () => {
@@ -80,7 +80,7 @@ describe('pickAttackTargetRegion', () => {
       ],
     });
     // "strong" has 2 infantry defenders (defense 2 each = 4 total); "weak" has 1 helicopter (defense 2 total).
-    expect(pickAttackTargetRegion(state, 'p1', 'attackWeakestAdjacent', catalog, rules)).toBe('weak');
+    expect(pickAttackTargetRegion(state, 'p1', 'attackWeakestAdjacent', catalog, {}, rules)).toBe('weak');
   });
 
   it('returns null for order actions this build step does not attack on (reinforce/pressure-neutral/doctrine special)', () => {
@@ -93,9 +93,9 @@ describe('pickAttackTargetRegion', () => {
       },
       units: [unitInstance({ id: 'u1', unitId: 'infantry', ownerId: 'p1', regionId: 'home', movesRemaining: 1 })],
     });
-    expect(pickAttackTargetRegion(state, 'p1', 'reinforceThreatened', catalog, rules)).toBeNull();
-    expect(pickAttackTargetRegion(state, 'p1', 'pressureNeutral', catalog, rules)).toBeNull();
-    expect(pickAttackTargetRegion(state, 'p1', 'doctrineSpecial', catalog, rules)).toBeNull();
+    expect(pickAttackTargetRegion(state, 'p1', 'reinforceThreatened', catalog, {}, rules)).toBeNull();
+    expect(pickAttackTargetRegion(state, 'p1', 'pressureNeutral', catalog, {}, rules)).toBeNull();
+    expect(pickAttackTargetRegion(state, 'p1', 'doctrineSpecial', catalog, {}, rules)).toBeNull();
   });
 
   describe('getCommittingUnitIds', () => {
@@ -112,7 +112,7 @@ describe('pickAttackTargetRegion', () => {
           unitInstance({ id: 'heli-unit', unitId: 'helicopter', ownerId: 'p1', regionId: 'home', movesRemaining: 3 }),
         ],
       });
-      const committing = getCommittingUnitIds(state, 'p1', 'empty', catalog, rules);
+      const committing = getCommittingUnitIds(state, 'p1', 'empty', catalog, {}, rules);
       expect(committing).toContain('infantry-unit');
       expect(committing).not.toContain('heli-unit');
     });
@@ -130,7 +130,7 @@ describe('pickAttackTargetRegion', () => {
           unitInstance({ id: 'defender', unitId: 'infantry', ownerId: 'enemy', regionId: 'defended', movesRemaining: 1 }),
         ],
       });
-      const committing = getCommittingUnitIds(state, 'p1', 'defended', catalog, rules);
+      const committing = getCommittingUnitIds(state, 'p1', 'defended', catalog, {}, rules);
       expect(committing).toContain('heli-unit');
     });
   });

@@ -1,5 +1,6 @@
 import { GameState } from '../../models/game-state.model';
 import { UnitDefinition } from '../../models/unit.model';
+import { Faction } from '../../models/faction.model';
 import { RulesEngine } from '../rules-engine';
 
 export interface NavalAssaultPlan {
@@ -9,15 +10,21 @@ export interface NavalAssaultPlan {
   readonly targetRegionId: string;
 }
 
-function isHostileCoast(state: GameState, regionId: string, playerId: string, rules: RulesEngine): boolean {
+function isHostileCoast(
+  state: GameState,
+  regionId: string,
+  playerId: string,
+  factions: Readonly<Record<string, Faction>>,
+  rules: RulesEngine,
+): boolean {
   const region = state.regions[regionId];
   if (!region) {
     return false;
   }
-  if (region.ownerId !== null && region.ownerId !== playerId) {
+  if (region.ownerId !== null && rules.isHostileTo(state, region.ownerId, playerId, factions)) {
     return true;
   }
-  return rules.getUnitsInRegion(state, regionId).some((unit) => unit.ownerId !== playerId);
+  return rules.getUnitsInRegion(state, regionId).some((unit) => rules.isHostileTo(state, unit.ownerId, playerId, factions));
 }
 
 /**
@@ -36,6 +43,7 @@ export function pickNavalAssaultPlan(
   state: GameState,
   playerId: string,
   unitCatalog: Readonly<Record<string, UnitDefinition>>,
+  factions: Readonly<Record<string, Faction>>,
   rules: RulesEngine,
 ): NavalAssaultPlan | null {
   const passengers = state.units.filter(
@@ -58,7 +66,7 @@ export function pickNavalAssaultPlan(
       // legitimate option too — getReachableMoves never includes the
       // starting position itself (it's a BFS over NEIGHBOURS), so it's added
       // back in here explicitly.
-      const reach = new Map(rules.getReachableMoves(state, transport, unitCatalog));
+      const reach = new Map(rules.getReachableMoves(state, transport, unitCatalog, factions));
       reach.set(transport.regionId, 0);
 
       let best: { seaZoneId: string; targetRegionId: string; hopCost: number } | null = null;
@@ -68,7 +76,7 @@ export function pickNavalAssaultPlan(
           continue;
         }
         for (const coastRegionId of seaZone.adjacentRegionIds) {
-          if (isHostileCoast(state, coastRegionId, playerId, rules) && (!best || hopCost < best.hopCost)) {
+          if (isHostileCoast(state, coastRegionId, playerId, factions, rules) && (!best || hopCost < best.hopCost)) {
             best = { seaZoneId, targetRegionId: coastRegionId, hopCost };
           }
         }

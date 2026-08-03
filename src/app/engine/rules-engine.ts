@@ -53,6 +53,41 @@ export class RulesEngine {
     return factions[player.factionId]?.teamId === aiTeamId;
   }
 
+  /**
+   * Whether two owners are on the same team (PROJECT_RULES.md section 2's
+   * team-victory grouping is also a standing non-aggression pact between
+   * teammates — see isHostileRegion/isHostileSeaZone below): the same player
+   * always counts as allied with themselves, otherwise their factions'
+   * Faction.teamId must match. An unresolvable player/faction id (neither
+   * should normally happen) is treated as NOT allied, so an unknown owner
+   * still reads as hostile rather than silently exempted.
+   */
+  private isAllied(
+    state: GameState,
+    ownerIdA: string,
+    ownerIdB: string,
+    factions: Readonly<Record<string, Faction>>,
+  ): boolean {
+    if (ownerIdA === ownerIdB) {
+      return true;
+    }
+    const playerA = this.getPlayer(state, ownerIdA);
+    const playerB = this.getPlayer(state, ownerIdB);
+    const teamA = playerA ? factions[playerA.factionId]?.teamId : undefined;
+    const teamB = playerB ? factions[playerB.factionId]?.teamId : undefined;
+    return teamA !== undefined && teamA === teamB;
+  }
+
+  /** Public inverse of isAllied, for commands that need to filter defenders/targets down to true hostiles (never a teammate) themselves. */
+  isHostileTo(
+    state: GameState,
+    ownerIdA: string,
+    ownerIdB: string,
+    factions: Readonly<Record<string, Faction>>,
+  ): boolean {
+    return !this.isAllied(state, ownerIdA, ownerIdB, factions);
+  }
+
   /** Sum of region.value across every region currently owned by the given player (PROJECT_RULES.md section 4). */
   calculateIncome(state: GameState, playerId: string): number {
     let total = 0;
@@ -134,7 +169,11 @@ export class RulesEngine {
    * - Tactical Moves (or anything else): friendly-owned or empty coasts only
    *   — a peaceful landing.
    */
-  getUnloadDestinations(state: GameState, embarkedUnit: UnitInstance): readonly string[] {
+  getUnloadDestinations(
+    state: GameState,
+    embarkedUnit: UnitInstance,
+    factions: Readonly<Record<string, Faction>>,
+  ): readonly string[] {
     if (embarkedUnit.transportedBy === null) {
       return [];
     }
@@ -149,12 +188,12 @@ export class RulesEngine {
         return false;
       }
       if (amphibiousAssault) {
-        return this.isHostileRegion(state, regionId, embarkedUnit.ownerId);
+        return this.isHostileRegion(state, regionId, embarkedUnit.ownerId, factions);
       }
       if (region.ownerId === embarkedUnit.ownerId) {
         return true;
       }
-      return region.ownerId === null && !this.isDefendedByHostiles(state, regionId, embarkedUnit.ownerId);
+      return region.ownerId === null && !this.isDefendedByHostiles(state, regionId, embarkedUnit.ownerId, factions);
     });
   }
 
@@ -246,8 +285,12 @@ export class RulesEngine {
       .map((region) => region.id);
   }
 
-  /** Regions where playerId's units co-locate with at least one hostile owner's units — an unresolved Attack Phase battle (PROJECT_RULES.md sections 7/8/31). */
-  getContestedRegionIds(state: GameState, playerId: string): readonly string[] {
+  /** Regions where playerId's units co-locate with at least one hostile (non-allied) owner's units — an unresolved Attack Phase battle (PROJECT_RULES.md sections 7/8/31). Teammates sharing a region/sea zone (e.g. two allies' ships in the same zone) never count as contested. */
+  getContestedRegionIds(
+    state: GameState,
+    playerId: string,
+    factions: Readonly<Record<string, Faction>>,
+  ): readonly string[] {
     const ownersByRegion = new Map<string, Set<string>>();
     for (const unit of state.units) {
       let owners = ownersByRegion.get(unit.regionId);
@@ -259,7 +302,13 @@ export class RulesEngine {
     }
     const contested: string[] = [];
     for (const [regionId, owners] of ownersByRegion) {
-      if (owners.has(playerId) && owners.size > 1) {
+      if (!owners.has(playerId)) {
+        continue;
+      }
+      const hasHostileOwner = [...owners].some(
+        (ownerId) => ownerId !== playerId && !this.isAllied(state, ownerId, playerId, factions),
+      );
+      if (hasHostileOwner) {
         contested.push(regionId);
       }
     }
@@ -342,8 +391,9 @@ export class RulesEngine {
     state: GameState,
     unit: UnitInstance,
     unitCatalog: Readonly<Record<string, UnitDefinition>>,
+    factions: Readonly<Record<string, Faction>>,
   ): ReadonlyMap<string, number> {
-    return this.computeReach(state, unit, unitCatalog).moves;
+    return this.computeReach(state, unit, unitCatalog, factions).moves;
   }
 
   /**
@@ -361,8 +411,9 @@ export class RulesEngine {
     state: GameState,
     unit: UnitInstance,
     unitCatalog: Readonly<Record<string, UnitDefinition>>,
+    factions: Readonly<Record<string, Faction>>,
   ): ReadonlyMap<string, number> {
-    return this.computeReach(state, unit, unitCatalog).attacks;
+    return this.computeReach(state, unit, unitCatalog, factions).attacks;
   }
 
   /**
@@ -378,6 +429,7 @@ export class RulesEngine {
     state: GameState,
     launcher: UnitInstance,
     unitCatalog: Readonly<Record<string, UnitDefinition>>,
+    factions: Readonly<Record<string, Faction>>,
   ): ReadonlyMap<string, number> {
     const player = this.getPlayer(state, launcher.ownerId);
     const range = (player?.reserve ?? []).reduce((best, entry) => {
@@ -387,7 +439,7 @@ export class RulesEngine {
       }
       return Math.max(best, def.missileRange ?? 1);
     }, 1);
-    return this.computeReach(state, launcher, unitCatalog, range).attacks;
+    return this.computeReach(state, launcher, unitCatalog, factions, range).attacks;
   }
 
   /**
@@ -402,9 +454,10 @@ export class RulesEngine {
     state: GameState,
     unit: UnitInstance,
     unitCatalog: Readonly<Record<string, UnitDefinition>>,
+    factions: Readonly<Record<string, Faction>>,
   ): readonly string[] {
     const category = unitCatalog[unit.unitId]?.category;
-    const reachable = this.computeReach(state, unit, unitCatalog).moves;
+    const reachable = this.computeReach(state, unit, unitCatalog, factions).moves;
     if (category === 'naval') {
       return [...reachable.keys()];
     }
@@ -422,38 +475,59 @@ export class RulesEngine {
     state: GameState,
     unit: UnitInstance,
     unitCatalog: Readonly<Record<string, UnitDefinition>>,
+    factions: Readonly<Record<string, Faction>>,
   ): readonly string[] {
     if (unitCatalog[unit.unitId]?.canDeclareMissile) {
-      return [...this.getMissileStrikeTargets(state, unit, unitCatalog).keys()];
+      return [...this.getMissileStrikeTargets(state, unit, unitCatalog, factions).keys()];
     }
-    return [...this.computeReach(state, unit, unitCatalog).attacks.keys()];
+    return [...this.computeReach(state, unit, unitCatalog, factions).attacks.keys()];
   }
 
-  /** Whether any unit not owned by `ownerId` currently sits in `regionId` — enemy defenders, or a neutral garrison. */
-  private isDefendedByHostiles(state: GameState, regionId: string, ownerId: string): boolean {
-    return state.units.some((candidate) => candidate.regionId === regionId && candidate.ownerId !== ownerId);
+  /** Whether any unit not allied with `ownerId` (a different team, PROJECT_RULES.md section 2) currently sits in `regionId` — enemy defenders, or a neutral garrison. A teammate's units never count, even under a different player id. */
+  private isDefendedByHostiles(
+    state: GameState,
+    regionId: string,
+    ownerId: string,
+    factions: Readonly<Record<string, Faction>>,
+  ): boolean {
+    return state.units.some(
+      (candidate) => candidate.regionId === regionId && !this.isAllied(state, candidate.ownerId, ownerId, factions),
+    );
   }
 
-  private isHostileRegion(state: GameState, regionId: string, ownerId: string): boolean {
+  private isHostileRegion(
+    state: GameState,
+    regionId: string,
+    ownerId: string,
+    factions: Readonly<Record<string, Faction>>,
+  ): boolean {
     const region = state.regions[regionId];
     if (!region) {
       return false; // sea zones aren't Regions at all — see isHostileSeaZone for naval attack targeting
     }
-    if (region.ownerId !== null && region.ownerId !== ownerId) {
+    if (region.ownerId !== null && !this.isAllied(state, region.ownerId, ownerId, factions)) {
       return true;
     }
-    return this.isDefendedByHostiles(state, regionId, ownerId);
+    return this.isDefendedByHostiles(state, regionId, ownerId, factions);
   }
 
   /**
-   * A sea zone counts as a naval attack target if any hostile unit (a ship,
-   * or that ship's embarked cargo — always the same owner as the ship, since
-   * a transport can only carry its own side's units) is sitting there. Sea
-   * zones have no owner, so unlike isHostileRegion there's no
-   * ownership-based branch — pure presence is the whole rule.
+   * A sea zone counts as a naval attack target if any hostile (non-allied)
+   * unit (a ship, or that ship's embarked cargo — always the same owner as
+   * the ship, since a transport can only carry its own side's units) is
+   * sitting there. Sea zones have no owner, so unlike isHostileRegion there's
+   * no ownership-based branch — pure presence (of a non-teammate) is the
+   * whole rule; two allies' ships may freely share a zone.
    */
-  private isHostileSeaZone(state: GameState, seaZoneId: string, ownerId: string): boolean {
-    return state.units.some((candidate) => candidate.regionId === seaZoneId && candidate.ownerId !== ownerId);
+  private isHostileSeaZone(
+    state: GameState,
+    seaZoneId: string,
+    ownerId: string,
+    factions: Readonly<Record<string, Faction>>,
+  ): boolean {
+    return state.units.some(
+      (candidate) => candidate.regionId === seaZoneId && !this.isAllied(state, candidate.ownerId, ownerId, factions),
+    );
   }
 
   /**
@@ -473,10 +547,16 @@ export class RulesEngine {
     return unitCatalog[unit.unitId]?.category === 'air';
   }
 
-  /** Can a path pass THROUGH this location? Air flies over anything; land needs friendly/empty; naval needs a sea zone free of hostile ships (a plain move can't sail through/into a contested zone — that's what AttackCommand's naval branch is for). */
-  private isTraversable(state: GameState, id: string, ownerId: string, category: string | undefined): boolean {
+  /** Can a path pass THROUGH this location? Air flies over anything; land needs friendly/empty; naval needs a sea zone free of hostile (non-allied) ships (a plain move can't sail through/into a contested zone — that's what AttackCommand's naval branch is for). */
+  private isTraversable(
+    state: GameState,
+    id: string,
+    ownerId: string,
+    category: string | undefined,
+    factions: Readonly<Record<string, Faction>>,
+  ): boolean {
     if (category === 'naval') {
-      return id in state.seaZones && !this.isHostileSeaZone(state, id, ownerId);
+      return id in state.seaZones && !this.isHostileSeaZone(state, id, ownerId, factions);
     }
     if (category === 'air') {
       return id in state.regions;
@@ -488,7 +568,7 @@ export class RulesEngine {
     if (region.ownerId === ownerId) {
       return true;
     }
-    return region.ownerId === null && !this.isDefendedByHostiles(state, id, ownerId);
+    return region.ownerId === null && !this.isDefendedByHostiles(state, id, ownerId, factions);
   }
 
   /** Can the unit END its move here? Friendly-owned, truly empty, or any sea zone for naval. */
@@ -553,6 +633,7 @@ export class RulesEngine {
     state: GameState,
     unit: UnitInstance,
     unitCatalog: Readonly<Record<string, UnitDefinition>>,
+    factions: Readonly<Record<string, Faction>>,
     maxMovesOverride?: number,
   ): { moves: Map<string, number>; attacks: Map<string, number> } {
     const category = unitCatalog[unit.unitId]?.category;
@@ -575,15 +656,15 @@ export class RulesEngine {
       for (const neighbour of this.oneHopNeighbours(state, unit, current, category)) {
         const isHostileTarget =
           category === 'naval'
-            ? this.isHostileSeaZone(state, neighbour, unit.ownerId)
-            : this.isHostileRegion(state, neighbour, unit.ownerId);
+            ? this.isHostileSeaZone(state, neighbour, unit.ownerId, factions)
+            : this.isHostileRegion(state, neighbour, unit.ownerId, factions);
         if (isHostileTarget) {
           const existing = attacks.get(neighbour);
           if (existing === undefined || nextDistance < existing) {
             attacks.set(neighbour, nextDistance);
           }
         }
-        if (this.isTraversable(state, neighbour, unit.ownerId, category)) {
+        if (this.isTraversable(state, neighbour, unit.ownerId, category, factions)) {
           const existing = distance.get(neighbour);
           if (existing === undefined || nextDistance < existing) {
             distance.set(neighbour, nextDistance);

@@ -170,7 +170,7 @@ export class AiTurnService {
         return;
       case 'freeCyberAttack': {
         const state = this.store.state();
-        const targetPlayerId = state ? this.decisionEngine.pickHackTarget(state, playerId) : null;
+        const targetPlayerId = state ? this.decisionEngine.pickHackTarget(state, playerId, this.store.factions(), this.rules) : null;
         if (targetPlayerId) {
           this.store.freeCyberAttack(playerId, targetPlayerId);
           this.store.narrateAiAction(playerId, `${playerName}'s Threat Track triggers a free cyber attack.`);
@@ -185,7 +185,9 @@ export class AiTurnService {
         return;
       case 'freeMissileStrike': {
         const state = this.store.state();
-        const targetRegionId = state ? this.decisionEngine.pickRichestEnemyRegion(state, playerId) : null;
+        const targetRegionId = state
+          ? this.decisionEngine.pickRichestEnemyRegion(state, playerId, this.store.factions(), this.rules)
+          : null;
         if (targetRegionId) {
           this.store.applyFreeMissileStrike(playerId, targetRegionId);
           const regionName = this.store.regions()[targetRegionId]?.name ?? targetRegionId;
@@ -219,7 +221,7 @@ export class AiTurnService {
       const aiTurnCounter = this.store.activePlayer()?.aiTurnCounter ?? 0;
       if (aiTurnCounter > 0 && aiTurnCounter % preset.freeCyberAttackEveryNTurns === 0) {
         const state = this.store.state();
-        const targetPlayerId = state ? this.decisionEngine.pickHackTarget(state, playerId) : null;
+        const targetPlayerId = state ? this.decisionEngine.pickHackTarget(state, playerId, this.store.factions(), this.rules) : null;
         if (targetPlayerId) {
           this.store.freeCyberAttack(playerId, targetPlayerId);
           const playerName = this.store.activePlayer()?.displayName ?? playerId;
@@ -284,7 +286,7 @@ export class AiTurnService {
     if (this.pendingOrderAction !== 'doctrineSpecial' || state?.aiConfig?.doctrine !== 'cyberState') {
       return;
     }
-    const targetPlayerId = this.decisionEngine.pickHackTarget(state, playerId);
+    const targetPlayerId = this.decisionEngine.pickHackTarget(state, playerId, this.store.factions(), this.rules);
     if (!targetPlayerId) {
       return;
     }
@@ -298,7 +300,7 @@ export class AiTurnService {
     if (!state) {
       return;
     }
-    const targetPlayerId = this.decisionEngine.pickHackTarget(state, playerId);
+    const targetPlayerId = this.decisionEngine.pickHackTarget(state, playerId, this.store.factions(), this.rules);
     if (!targetPlayerId) {
       return;
     }
@@ -328,7 +330,7 @@ export class AiTurnService {
     if (!state) {
       return;
     }
-    const targetRegionId = this.decisionEngine.pickRichestEnemyRegion(state, playerId);
+    const targetRegionId = this.decisionEngine.pickRichestEnemyRegion(state, playerId, this.store.factions(), this.rules);
     const targetPlayerId = targetRegionId ? state.regions[targetRegionId]?.ownerId : null;
     if (!targetRegionId || !targetPlayerId) {
       return;
@@ -399,6 +401,7 @@ export class AiTurnService {
       playerId,
       effectiveAction,
       this.store.units(),
+      this.store.factions(),
       this.rules,
     );
     if (targetRegionId) {
@@ -426,6 +429,7 @@ export class AiTurnService {
       playerId,
       targetRegionId,
       this.store.units(),
+      this.store.factions(),
       this.rules,
     );
     const shouldAttack =
@@ -457,7 +461,13 @@ export class AiTurnService {
     conditionsData: AiAttackConditionsData,
     bypassConditions = false,
   ): void {
-    const plan = this.decisionEngine.pickNavalAssaultPlan(state, playerId, this.store.units(), this.rules);
+    const plan = this.decisionEngine.pickNavalAssaultPlan(
+      state,
+      playerId,
+      this.store.units(),
+      this.store.factions(),
+      this.rules,
+    );
     if (!plan) {
       return;
     }
@@ -506,7 +516,7 @@ export class AiTurnService {
   private runAttackPhase(playerId: string): void {
     const state = this.store.state();
     if (state) {
-      for (const regionId of this.rules.getContestedRegionIds(state, playerId)) {
+      for (const regionId of this.rules.getContestedRegionIds(state, playerId, this.store.factions())) {
         this.resolveCombatInRegion(playerId, regionId);
       }
     }
@@ -590,7 +600,13 @@ export class AiTurnService {
         if (!freshState || !unit || unit.movesRemaining <= 0) {
           continue;
         }
-        const destination = this.decisionEngine.pickTacticalDestination(freshState, unit, this.store.units(), this.rules);
+        const destination = this.decisionEngine.pickTacticalDestination(
+          freshState,
+          unit,
+          this.store.units(),
+          this.store.factions(),
+          this.rules,
+        );
         if (destination) {
           this.store.moveUnit(playerId, unitInstanceId, destination);
         }
