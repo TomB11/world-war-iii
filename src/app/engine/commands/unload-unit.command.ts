@@ -4,6 +4,7 @@ import { GameEngineEvent } from '../../interfaces/game-events';
 import { UnitDefinition } from '../../models/unit.model';
 import { UnitInstance } from '../../models/unit-instance.model';
 import { EconomyConfig } from '../../models/economy-config.model';
+import { Faction } from '../../models/faction.model';
 import { RulesEngine } from '../rules-engine';
 import { applyForceCaptureSatisfactionPenalty } from './shared/capture-penalties';
 
@@ -29,6 +30,7 @@ export class UnloadUnitCommand implements Command {
     private readonly destinationRegionId: string,
     private readonly unitCatalog: Readonly<Record<string, UnitDefinition>>,
     private readonly economyConfig: EconomyConfig,
+    private readonly factions: Readonly<Record<string, Faction>>,
     private readonly rules: RulesEngine = new RulesEngine(),
   ) {}
 
@@ -59,7 +61,7 @@ export class UnloadUnitCommand implements Command {
       return reject('This unit has no movement remaining to disembark this turn');
     }
 
-    if (!this.rules.getUnloadDestinations(state, unit).includes(this.destinationRegionId)) {
+    if (!this.rules.getUnloadDestinations(state, unit, this.factions).includes(this.destinationRegionId)) {
       return reject('This unit has no valid landing here');
     }
 
@@ -69,7 +71,9 @@ export class UnloadUnitCommand implements Command {
     }
 
     const defenders = state.units.filter(
-      (candidate) => candidate.regionId === this.destinationRegionId && candidate.ownerId !== this.playerId,
+      (candidate) =>
+        candidate.regionId === this.destinationRegionId &&
+        this.rules.isHostileTo(state, candidate.ownerId, this.playerId, this.factions),
     );
     const isAmphibiousAssault = state.phase === 'attackMoves';
 

@@ -1,11 +1,11 @@
 import { pickHackTarget, pickInfluenceTarget, pickRichestEnemyRegion } from './ai-cyber-targets.util';
 import { RulesEngine } from '../rules-engine';
-import { player, region, testState } from '../test-fixtures';
+import { faction, player, region, testState } from '../test-fixtures';
 
 describe('pickHackTarget', () => {
   it('returns null when there are no other players', () => {
     const state = testState({ players: [player({ id: 'p1' })] });
-    expect(pickHackTarget(state, 'p1')).toBeNull();
+    expect(pickHackTarget(state, 'p1', {}, new RulesEngine())).toBeNull();
   });
 
   it('picks the richest non-eliminated rival', () => {
@@ -16,7 +16,7 @@ describe('pickHackTarget', () => {
         player({ id: 'p3', treasury: 50 }),
       ],
     });
-    expect(pickHackTarget(state, 'p1')).toBe('p3');
+    expect(pickHackTarget(state, 'p1', {}, new RulesEngine())).toBe('p3');
   });
 
   it('excludes eliminated rivals', () => {
@@ -27,7 +27,23 @@ describe('pickHackTarget', () => {
         player({ id: 'p3', treasury: 20 }),
       ],
     });
-    expect(pickHackTarget(state, 'p1')).toBe('p3');
+    expect(pickHackTarget(state, 'p1', {}, new RulesEngine())).toBe('p3');
+  });
+
+  it('never targets a teammate, even if they are the richest rival (PROJECT_RULES.md section 2 — hacking an ally is not allowed)', () => {
+    const factions = {
+      p1: faction({ id: 'p1', teamId: 'team-east' }),
+      p2: faction({ id: 'p2', teamId: 'team-east' }),
+      p3: faction({ id: 'p3', teamId: 'team-west' }),
+    };
+    const state = testState({
+      players: [
+        player({ id: 'p1', treasury: 5 }),
+        player({ id: 'p2', treasury: 100 }),
+        player({ id: 'p3', treasury: 20 }),
+      ],
+    });
+    expect(pickHackTarget(state, 'p1', factions, new RulesEngine())).toBe('p3');
   });
 });
 
@@ -36,7 +52,7 @@ describe('pickRichestEnemyRegion', () => {
     const state = testState({
       regions: { home: region({ id: 'home', ownerId: 'p1' }), neutral: region({ id: 'neutral', ownerId: null }) },
     });
-    expect(pickRichestEnemyRegion(state, 'p1')).toBeNull();
+    expect(pickRichestEnemyRegion(state, 'p1', {}, new RulesEngine())).toBeNull();
   });
 
   it('picks the highest-value region owned by any rival', () => {
@@ -47,7 +63,24 @@ describe('pickRichestEnemyRegion', () => {
         'enemy-rich': region({ id: 'enemy-rich', ownerId: 'p3', value: 6 }),
       },
     });
-    expect(pickRichestEnemyRegion(state, 'p1')).toBe('enemy-rich');
+    expect(pickRichestEnemyRegion(state, 'p1', {}, new RulesEngine())).toBe('enemy-rich');
+  });
+
+  it('never targets a teammate\'s region, even if it is the richest (sabotage/free-missile-strike are attacks)', () => {
+    const factions = {
+      p1: faction({ id: 'p1', teamId: 'team-east' }),
+      p2: faction({ id: 'p2', teamId: 'team-east' }),
+      p3: faction({ id: 'p3', teamId: 'team-west' }),
+    };
+    const state = testState({
+      players: [player({ id: 'p1' }), player({ id: 'p2' }), player({ id: 'p3' })],
+      regions: {
+        home: region({ id: 'home', ownerId: 'p1', value: 10 }),
+        ally: region({ id: 'ally', ownerId: 'p2', value: 50 }),
+        'enemy-rich': region({ id: 'enemy-rich', ownerId: 'p3', value: 6 }),
+      },
+    });
+    expect(pickRichestEnemyRegion(state, 'p1', factions, new RulesEngine())).toBe('enemy-rich');
   });
 });
 

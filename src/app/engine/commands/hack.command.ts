@@ -2,6 +2,7 @@ import { Command, CommandResult } from '../../interfaces/command';
 import { GameState } from '../../models/game-state.model';
 import { GameEngineEvent } from '../../interfaces/game-events';
 import { EconomyConfig } from '../../models/economy-config.model';
+import { Faction } from '../../models/faction.model';
 import { RulesEngine } from '../rules-engine';
 import { resolveHack } from './shared/hack-resolution';
 
@@ -20,6 +21,7 @@ export class HackCommand implements Command {
     private readonly playerId: string,
     private readonly targetPlayerId: string,
     private readonly economyConfig: EconomyConfig,
+    private readonly factions: Readonly<Record<string, Faction>>,
     private readonly rules: RulesEngine = new RulesEngine(),
   ) {}
 
@@ -49,6 +51,9 @@ export class HackCommand implements Command {
     const target = this.rules.getPlayer(state, this.targetPlayerId);
     if (!target) {
       return reject(`Unknown target "${this.targetPlayerId}"`);
+    }
+    if (!this.rules.isHostileTo(state, this.targetPlayerId, this.playerId, this.factions)) {
+      return reject('You cannot hack a teammate (PROJECT_RULES.md section 2)');
     }
     if (attacker.treasury < this.economyConfig.cyberAttackCost) {
       return reject(`Not enough treasury (have ${attacker.treasury}, need ${this.economyConfig.cyberAttackCost})`);

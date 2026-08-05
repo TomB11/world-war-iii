@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { GameStore } from '../../../state/store';
+import { GameCoreStore } from '../../../state/core/game-core.store';
 
 /** Active player's Hack Level (PROJECT_RULES.md section 6), shown in the header next to the Citizen Satisfaction track. */
 @Component({
@@ -10,5 +10,5 @@ import { GameStore } from '../../../state/store';
   styleUrl: './hack-level-indicator.component.scss',
 })
 export class HackLevelIndicatorComponent {
-  protected readonly store = inject(GameStore);
+  protected readonly gameCoreStore = inject(GameCoreStore);
 }

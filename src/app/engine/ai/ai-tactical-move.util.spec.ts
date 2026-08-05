@@ -17,7 +17,7 @@ describe('chooseTacticalDestination', () => {
     });
     const unit = unitInstance({ id: 'u1', unitId: 'infantry', ownerId: 'p1', regionId: 'home', movesRemaining: 1 });
 
-    expect(chooseTacticalDestination(state, unit, catalog, rules)).toBeNull();
+    expect(chooseTacticalDestination(state, unit, catalog, {}, rules)).toBeNull();
   });
 
   it('moves toward the reachable region with more hostile neighbors (the frontline)', () => {
@@ -33,7 +33,7 @@ describe('chooseTacticalDestination', () => {
     });
     const unit = unitInstance({ id: 'u1', unitId: 'infantry', ownerId: 'p1', regionId: 'home', movesRemaining: 1 });
 
-    expect(chooseTacticalDestination(state, unit, catalog, rules)).toBe('frontier');
+    expect(chooseTacticalDestination(state, unit, catalog, {}, rules)).toBe('frontier');
   });
 
   it('returns null when nothing reachable improves on the unit\'s current frontline exposure', () => {
@@ -49,7 +49,7 @@ describe('chooseTacticalDestination', () => {
     // Already standing at the frontline itself — its only reachable move (home) is strictly worse.
     const unit = unitInstance({ id: 'u1', unitId: 'infantry', ownerId: 'p1', regionId: 'frontier', movesRemaining: 1 });
 
-    expect(chooseTacticalDestination(state, unit, catalog, rules)).toBeNull();
+    expect(chooseTacticalDestination(state, unit, catalog, {}, rules)).toBeNull();
   });
 });
 

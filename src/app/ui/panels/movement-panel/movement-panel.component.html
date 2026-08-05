@@ -1,4 +1,4 @@
-@if (hasContent() && store.activePlayer()) {
+@if (hasContent() && gameCoreStore.activePlayer()) {
   <div class="wwiii-panel">
     @if (isDeployPhase()) {
       <h2>Deploy Units</h2>
@@ -57,7 +57,7 @@
       </div>
     }
 
-    @if (store.movementRejectionReason(); as reason) {
+    @if (movementStore.movementRejectionReason(); as reason) {
       <p class="rejection">{{ reason }}</p>
     }
   </div>

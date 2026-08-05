@@ -1,6 +1,7 @@
 import { GameState } from '../../models/game-state.model';
 import { UnitDefinition } from '../../models/unit.model';
 import { UnitInstance } from '../../models/unit-instance.model';
+import { Faction } from '../../models/faction.model';
 import { RulesEngine } from '../rules-engine';
 
 /** How many of a region's neighbors are NOT owned by `ownerId` — "frontline exposure," shared by the Tactical Moves heuristic below and the Fortress doctrine's reinforcement priority. */
@@ -20,9 +21,10 @@ export function chooseTacticalDestination(
   state: GameState,
   unit: UnitInstance,
   unitCatalog: Readonly<Record<string, UnitDefinition>>,
+  factions: Readonly<Record<string, Faction>>,
   rules: RulesEngine,
 ): string | null {
-  const destinations = rules.getTacticalMoveDestinations(state, unit, unitCatalog);
+  const destinations = rules.getTacticalMoveDestinations(state, unit, unitCatalog, factions);
   if (destinations.length === 0) {
     return null;
   }

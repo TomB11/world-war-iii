@@ -9,15 +9,15 @@
 
   <div class="game-screen__body">
     <main class="game-screen__map">
-      @if (store.loadError(); as error) {
+      @if (gameCoreStore.loadError(); as error) {
         <div class="game-screen__error">
           Failed to load game data: {{ error }}
         </div>
-      } @else if (!store.isLoaded()) {
+      } @else if (!gameCoreStore.isLoaded()) {
         <div class="game-screen__loading">Loading world map…</div>
       } @else {
         <wwiii-world-map />
-        @if (store.state()?.phase === 'buyUnits') {
+        @if (gameCoreStore.state()?.phase === 'buyUnits') {
           <wwiii-economy-panel />
         }
       }
@@ -25,7 +25,7 @@
 
     <aside class="game-screen__sidebar">
       <wwiii-turn-panel />
-      @if (store.state()?.phase; as phase) {
+      @if (gameCoreStore.state()?.phase; as phase) {
         @if (phase === 'cyberAttack') {
           <wwiii-cyber-attack-panel />
         }

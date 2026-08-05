@@ -1,20 +1,20 @@
-@if (store.state(); as state) {
+@if (gameCoreStore.state(); as state) {
   <div class="wwiii-panel turn-panel">
     @if (capitalImagePath(); as capitalImage) {
       <div class="turn-panel__capital">
-        <img class="turn-panel__capital-img" [src]="capitalImage" alt="{{ store.activePlayer()?.displayName }} capital" />
+        <img class="turn-panel__capital-img" [src]="capitalImage" alt="{{ gameCoreStore.activePlayer()?.displayName }} capital" />
       </div>
     }
 
-    <h2 class="turn-panel__name">{{ store.activePlayer()?.displayName }}</h2>
+    <h2 class="turn-panel__name">{{ gameCoreStore.activePlayer()?.displayName }}</h2>
     <p class="phase-label"><b>Turn {{ state.turnNumber }}</b> — {{ phaseLabel() }}</p>
 
-    @if (store.activePlayer(); as player) {
+    @if (gameCoreStore.activePlayer(); as player) {
       <dl>
         <dt>Treasury</dt>
         <dd>{{ treasury() }}</dd>
         <dt>Income</dt>
-        <dd>+{{ store.projectedIncome() }} / turn</dd>
+        <dd>+{{ gameCoreStore.projectedIncome() }} / turn</dd>
         <dt>Regions</dt>
         <dd>{{ ownedRegionCount() }}</dd>
         <dt>Victory Stars</dt>

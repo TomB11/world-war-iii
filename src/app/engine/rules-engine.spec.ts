@@ -1,6 +1,7 @@
 import { RulesEngine } from './rules-engine';
-import { player, region, unitDef, unitInstance, testState } from './test-fixtures';
+import { faction, player, region, unitDef, unitInstance, testState } from './test-fixtures';
 import { UnitDefinition } from '../models/unit.model';
+import { Faction } from '../models/faction.model';
 
 describe('RulesEngine movement/attack reach (computeReach)', () => {
   const rules = new RulesEngine();
@@ -22,7 +23,7 @@ describe('RulesEngine movement/attack reach (computeReach)', () => {
     });
     const unit = state.units[0];
 
-    const moves = rules.getReachableMoves(state, unit, catalog);
+    const moves = rules.getReachableMoves(state, unit, catalog, {});
 
     expect(moves.get('b')).toBe(1);
     expect(moves.get('c')).toBe(2);
@@ -39,7 +40,7 @@ describe('RulesEngine movement/attack reach (computeReach)', () => {
     });
     const unit = state.units[0];
 
-    const moves = rules.getReachableMoves(state, unit, catalog);
+    const moves = rules.getReachableMoves(state, unit, catalog, {});
 
     expect(moves.has('b')).toBe(true);
     expect(moves.has('c')).toBe(false);
@@ -55,8 +56,8 @@ describe('RulesEngine movement/attack reach (computeReach)', () => {
     });
     const unit = state.units[0];
 
-    const moves = rules.getReachableMoves(state, unit, catalog);
-    const attacks = rules.getReachableAttacks(state, unit, catalog);
+    const moves = rules.getReachableMoves(state, unit, catalog, {});
+    const attacks = rules.getReachableAttacks(state, unit, catalog, {});
 
     expect(moves.has('b')).toBe(false);
     expect(attacks.get('b')).toBe(1);
@@ -73,8 +74,8 @@ describe('RulesEngine movement/attack reach (computeReach)', () => {
     });
     const unit = state.units[0];
 
-    const moves = rules.getReachableMoves(state, unit, catalog);
-    const attacks = rules.getReachableAttacks(state, unit, catalog);
+    const moves = rules.getReachableMoves(state, unit, catalog, {});
+    const attacks = rules.getReachableAttacks(state, unit, catalog, {});
 
     expect(attacks.get('b')).toBe(1);
     expect(moves.has('c')).toBe(false);
@@ -92,7 +93,7 @@ describe('RulesEngine movement/attack reach (computeReach)', () => {
     });
     const unit = state.units[0];
 
-    const moves = rules.getReachableMoves(state, unit, catalog);
+    const moves = rules.getReachableMoves(state, unit, catalog, {});
 
     expect(moves.get('c')).toBe(2);
   });
@@ -107,7 +108,7 @@ describe('RulesEngine movement/attack reach (computeReach)', () => {
     });
     const unit = state.units[0];
 
-    const moves = rules.getReachableMoves(state, unit, catalog);
+    const moves = rules.getReachableMoves(state, unit, catalog, {});
 
     expect(moves.get('s2')).toBe(1);
   });
@@ -129,8 +130,8 @@ describe('RulesEngine movement/attack reach (computeReach)', () => {
       },
     });
 
-    const blockedMoves = rules.getReachableMoves(withoutBothSides, withoutBothSides.units[0], catalog);
-    const allowedMoves = rules.getReachableMoves(withBothSides, withBothSides.units[0], catalog);
+    const blockedMoves = rules.getReachableMoves(withoutBothSides, withoutBothSides.units[0], catalog, {});
+    const allowedMoves = rules.getReachableMoves(withBothSides, withBothSides.units[0], catalog, {});
 
     expect(blockedMoves.has('b')).toBe(false);
     expect(allowedMoves.get('b')).toBe(1);
@@ -149,8 +150,8 @@ describe('RulesEngine movement/attack reach (computeReach)', () => {
     });
     const unit = state.units[0];
 
-    const moves = rules.getReachableMoves(state, unit, catalog);
-    const attacks = rules.getReachableAttacks(state, unit, catalog);
+    const moves = rules.getReachableMoves(state, unit, catalog, {});
+    const attacks = rules.getReachableAttacks(state, unit, catalog, {});
 
     expect(moves.has('b')).toBe(false);
     expect(attacks.get('b')).toBe(1);
@@ -169,8 +170,8 @@ describe('RulesEngine movement/attack reach (computeReach)', () => {
     });
     const unit = state.units[0];
 
-    const moves = rules.getReachableMoves(state, unit, catalog);
-    const attacks = rules.getReachableAttacks(state, unit, catalog);
+    const moves = rules.getReachableMoves(state, unit, catalog, {});
+    const attacks = rules.getReachableAttacks(state, unit, catalog, {});
 
     expect(moves.has('s2')).toBe(false);
     expect(attacks.get('s2')).toBe(1);
@@ -186,11 +187,103 @@ describe('RulesEngine movement/attack reach (computeReach)', () => {
     });
     const unit = state.units[0];
 
-    const moves = rules.getReachableMoves(state, unit, catalog);
-    const attacks = rules.getReachableAttacks(state, unit, catalog);
+    const moves = rules.getReachableMoves(state, unit, catalog, {});
+    const attacks = rules.getReachableAttacks(state, unit, catalog, {});
 
     expect(moves.get('s2')).toBe(1);
     expect(attacks.has('s2')).toBe(false);
+  });
+});
+
+describe('RulesEngine team alliance (PROJECT_RULES.md section 2 — teammates never fight each other)', () => {
+  const rules = new RulesEngine();
+  const catalog: Readonly<Record<string, UnitDefinition>> = {
+    infantry: unitDef({ id: 'infantry', category: 'land', movement: 2 }),
+    destroyer: unitDef({ id: 'destroyer', category: 'naval', movement: 2 }),
+  };
+  const factions: Readonly<Record<string, Faction>> = {
+    p1: faction({ id: 'p1', teamId: 'team-east' }),
+    p2: faction({ id: 'p2', teamId: 'team-east' }),
+    p3: faction({ id: 'p3', teamId: 'team-west' }),
+  };
+
+  it('never lists a teammate-owned region as an attack target, even though it lists a non-teammate identically-shaped neighbor as one', () => {
+    const state = testState({
+      players: [player({ id: 'p1' }), player({ id: 'p2' }), player({ id: 'p3' })],
+      regions: {
+        a: region({ id: 'a', ownerId: 'p1', neighbors: ['ally', 'enemy'] }),
+        ally: region({ id: 'ally', ownerId: 'p2', neighbors: ['a'] }),
+        enemy: region({ id: 'enemy', ownerId: 'p3', neighbors: ['a'] }),
+      },
+      units: [unitInstance({ id: 'u1', unitId: 'infantry', ownerId: 'p1', regionId: 'a', movesRemaining: 1 })],
+    });
+    const unit = state.units[0];
+
+    const attacks = rules.getReachableAttacks(state, unit, catalog, factions);
+
+    expect(attacks.has('ally')).toBe(false);
+    expect(attacks.get('enemy')).toBe(1);
+  });
+
+  it('a teammate\'s garrison in a neutral region is never an attack target, and does not block pathing through it to reach farther regions', () => {
+    const state = testState({
+      players: [player({ id: 'p1' }), player({ id: 'p2' }), player({ id: 'p3' })],
+      regions: {
+        a: region({ id: 'a', ownerId: 'p1', neighbors: ['b'] }),
+        b: region({ id: 'b', ownerId: null, neighbors: ['a', 'c'] }),
+        c: region({ id: 'c', ownerId: null, neighbors: ['b'] }),
+      },
+      units: [
+        unitInstance({ id: 'u1', unitId: 'infantry', ownerId: 'p1', regionId: 'a', movesRemaining: 2 }),
+        unitInstance({ id: 'ally-garrison', unitId: 'infantry', ownerId: 'p2', regionId: 'b' }),
+      ],
+    });
+    const unit = state.units[0];
+
+    const moves = rules.getReachableMoves(state, unit, catalog, factions);
+    const attacks = rules.getReachableAttacks(state, unit, catalog, factions);
+
+    // 'b' itself isn't a legal move destination (it isn't empty — an
+    // ally's garrison sits there — nor owned by this player), but it's
+    // never an attack target either (a teammate's garrison isn't hostile),
+    // and the path through it to the empty 'c' beyond stays open.
+    expect(attacks.has('b')).toBe(false);
+    expect(moves.has('b')).toBe(false);
+    expect(moves.get('c')).toBe(2);
+  });
+
+  it('two teammates\' ships may share a sea zone without it ever counting as contested', () => {
+    const state = testState({
+      phase: 'attack',
+      activePlayerId: 'p1',
+      players: [player({ id: 'p1' }), player({ id: 'p2' }), player({ id: 'p3' })],
+      seaZones: {
+        's1': { id: 's1', label: '1', position: { x: 0, y: 0 }, neighbors: [], adjacentRegionIds: [] },
+      },
+      units: [
+        unitInstance({ id: 'u1', unitId: 'destroyer', ownerId: 'p1', regionId: 's1' }),
+        unitInstance({ id: 'u2', unitId: 'destroyer', ownerId: 'p2', regionId: 's1' }),
+      ],
+    });
+
+    expect(rules.getContestedRegionIds(state, 'p1', factions)).toEqual([]);
+  });
+
+  it('still reports a region contested when a true (non-allied) rival shares it', () => {
+    const state = testState({
+      phase: 'attack',
+      activePlayerId: 'p1',
+      players: [player({ id: 'p1' }), player({ id: 'p2' }), player({ id: 'p3' })],
+      regions: {
+        front: region({ id: 'front', ownerId: 'p1', neighbors: [] }),
+      },
+      units: [
+        unitInstance({ id: 'u1', unitId: 'infantry', ownerId: 'p1', regionId: 'front' }),
+        unitInstance({ id: 'u2', unitId: 'infantry', ownerId: 'p3', regionId: 'front' }),
+      ],
+    });
+
+    expect(rules.getContestedRegionIds(state, 'p1', factions)).toEqual(['front']);
   });
 });
 
@@ -288,28 +381,28 @@ describe('RulesEngine.getMissileStrikeTargets / getLegalAttackTargets (PROJECT_R
   it('only reaches 1 hop with an empty Reserve', () => {
     const state = twoHopState([]);
     const launcher = state.units[0];
-    expect([...rules.getMissileStrikeTargets(state, launcher, catalog).keys()]).toEqual([]);
-    expect(rules.getLegalAttackTargets(state, launcher, catalog)).toEqual([]);
+    expect([...rules.getMissileStrikeTargets(state, launcher, catalog, {}).keys()]).toEqual([]);
+    expect(rules.getLegalAttackTargets(state, launcher, catalog, {})).toEqual([]);
   });
 
   it('only reaches 1 hop while holding just a Missile A', () => {
     const state = twoHopState([{ unitId: 'missile-a', quantity: 1 }]);
     const launcher = state.units[0];
-    expect([...rules.getMissileStrikeTargets(state, launcher, catalog).keys()]).toEqual([]);
+    expect([...rules.getMissileStrikeTargets(state, launcher, catalog, {}).keys()]).toEqual([]);
   });
 
   it('reaches the 2-hop hostile region while holding a Missile B', () => {
     const state = twoHopState([{ unitId: 'missile-b', quantity: 1 }]);
     const launcher = state.units[0];
-    expect([...rules.getMissileStrikeTargets(state, launcher, catalog).keys()]).toEqual(['far']);
-    expect(rules.getLegalAttackTargets(state, launcher, catalog)).toEqual(['far']);
+    expect([...rules.getMissileStrikeTargets(state, launcher, catalog, {}).keys()]).toEqual(['far']);
+    expect(rules.getLegalAttackTargets(state, launcher, catalog, {})).toEqual(['far']);
   });
 
   it('leaves an ordinary (non-canDeclareMissile) unit on its normal movement-based reach, unaffected by missile logic', () => {
     const state = twoHopState([]);
     const infantryAttacker = unitInstance({ id: 'inf-1', unitId: 'infantry', ownerId: 'p1', regionId: 'mid', movesRemaining: 1 });
     // An ordinary unit at 'mid' (1 hop from 'far') reaches it via normal reach, missile range never enters into it.
-    expect(rules.getLegalAttackTargets(state, infantryAttacker, catalog)).toEqual(['far']);
+    expect(rules.getLegalAttackTargets(state, infantryAttacker, catalog, {})).toEqual(['far']);
   });
 });
 

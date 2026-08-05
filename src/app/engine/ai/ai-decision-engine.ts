@@ -27,9 +27,10 @@ export class AiDecisionEngine {
     playerId: string,
     action: AiOrderAction,
     unitCatalog: Readonly<Record<string, UnitDefinition>>,
+    factions: Readonly<Record<string, Faction>>,
     rules: RulesEngine,
   ): string | null {
-    return pickAttackTargetRegion(state, playerId, action, unitCatalog, rules);
+    return pickAttackTargetRegion(state, playerId, action, unitCatalog, factions, rules);
   }
 
   getCommittingUnitIds(
@@ -37,9 +38,10 @@ export class AiDecisionEngine {
     playerId: string,
     targetRegionId: string,
     unitCatalog: Readonly<Record<string, UnitDefinition>>,
+    factions: Readonly<Record<string, Faction>>,
     rules: RulesEngine,
   ): readonly string[] {
-    return getCommittingUnitIds(state, playerId, targetRegionId, unitCatalog, rules);
+    return getCommittingUnitIds(state, playerId, targetRegionId, unitCatalog, factions, rules);
   }
 
   evaluateAttackConditions(
@@ -68,9 +70,10 @@ export class AiDecisionEngine {
     state: GameState,
     unit: UnitInstance,
     unitCatalog: Readonly<Record<string, UnitDefinition>>,
+    factions: Readonly<Record<string, Faction>>,
     rules: RulesEngine,
   ): string | null {
-    return chooseTacticalDestination(state, unit, unitCatalog, rules);
+    return chooseTacticalDestination(state, unit, unitCatalog, factions, rules);
   }
 
   pickCasualtyUnit(candidates: readonly UnitInstance[], unitCatalog: Readonly<Record<string, UnitDefinition>>): string {
@@ -81,21 +84,32 @@ export class AiDecisionEngine {
     state: GameState,
     playerId: string,
     unitCatalog: Readonly<Record<string, UnitDefinition>>,
+    factions: Readonly<Record<string, Faction>>,
     rules: RulesEngine,
   ): NavalAssaultPlan | null {
-    return pickNavalAssaultPlan(state, playerId, unitCatalog, rules);
+    return pickNavalAssaultPlan(state, playerId, unitCatalog, factions, rules);
   }
 
-  pickHackTarget(state: GameState, playerId: string): string | null {
-    return pickHackTarget(state, playerId);
+  pickHackTarget(
+    state: GameState,
+    playerId: string,
+    factions: Readonly<Record<string, Faction>>,
+    rules: RulesEngine,
+  ): string | null {
+    return pickHackTarget(state, playerId, factions, rules);
   }
 
   pickInfluenceTarget(state: GameState, playerId: string, rules: RulesEngine): string | null {
     return pickInfluenceTarget(state, playerId, rules);
   }
 
-  pickRichestEnemyRegion(state: GameState, playerId: string): string | null {
-    return pickRichestEnemyRegion(state, playerId);
+  pickRichestEnemyRegion(
+    state: GameState,
+    playerId: string,
+    factions: Readonly<Record<string, Faction>>,
+    rules: RulesEngine,
+  ): string | null {
+    return pickRichestEnemyRegion(state, playerId, factions, rules);
   }
 
   pickMostThreatenedDestination(

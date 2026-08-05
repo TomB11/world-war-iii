@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { GameStore } from '../../../state/store';
+import { GameCoreStore } from '../../../state/core/game-core.store';
+import { MapUiStore } from '../../../state/map/map-ui.store';
+import { MovementStore } from '../../../state/movement/movement.store';
 import { UnitInstance } from '../../../models/unit-instance.model';
 import { UnitCardComponent } from '../../shared/unit-card/unit-card.component';
 import { MOVEMENT_PHASES } from '../../../core/constants/game.constants';
@@ -22,16 +24,18 @@ interface UnitGroup {
   styleUrl: './region-info-panel.component.scss',
 })
 export class RegionInfoPanelComponent {
-  private readonly store = inject(GameStore);
+  private readonly gameCoreStore = inject(GameCoreStore);
+  private readonly mapUiStore = inject(MapUiStore);
+  private readonly movementStore = inject(MovementStore);
 
-  protected readonly region = this.store.selectedRegion;
-  protected readonly seaZone = this.store.selectedSeaZone;
+  protected readonly region = this.mapUiStore.selectedRegion;
+  protected readonly seaZone = this.mapUiStore.selectedSeaZone;
 
   protected close(): void {
-    this.store.clearSelection();
+    this.mapUiStore.setSelected(null);
   }
 
-  protected readonly activePlayerId = computed(() => this.store.state()?.activePlayerId ?? null);
+  protected readonly activePlayerId = computed(() => this.gameCoreStore.state()?.activePlayerId ?? null);
 
   /**
    * Lets a unit shown here be picked up the same way its map icon would be
@@ -40,19 +44,19 @@ export class RegionInfoPanelComponent {
    * it's safe to wire on every unit-card unconditionally.
    */
   protected startDrag(entry: UnitGroup, event: PointerEvent): void {
-    const state = this.store.state();
-    const regionId = this.store.selectedRegionId();
+    const state = this.gameCoreStore.state();
+    const regionId = this.mapUiStore.selectedRegionId();
     if (!state || !regionId || entry.ownerId !== state.activePlayerId || !MOVEMENT_PHASES.includes(state.phase)) {
       return;
     }
-    const candidate = (this.store.unitsByRegion()[regionId] ?? []).find(
+    const candidate = (this.gameCoreStore.unitsByRegion()[regionId] ?? []).find(
       (u) => u.unitId === entry.unitId && u.ownerId === entry.ownerId && u.transportedBy === null && u.movesRemaining > 0,
     );
     if (!candidate) {
       return;
     }
     event.preventDefault();
-    this.store.startExternalUnitDrag(candidate.id);
+    this.movementStore.startExternalUnitDrag(candidate.id);
   }
 
   protected readonly ownerName = computed(() => {
@@ -60,15 +64,15 @@ export class RegionInfoPanelComponent {
     if (!region || !region.ownerId) {
       return 'Unclaimed';
     }
-    return this.store.factions()[region.ownerId]?.name ?? region.ownerId;
+    return this.gameCoreStore.factions()[region.ownerId]?.name ?? region.ownerId;
   });
 
   protected readonly unitsHere = computed<readonly UnitGroup[]>(() => {
-    const id = this.store.selectedRegionId();
+    const id = this.mapUiStore.selectedRegionId();
     if (!id) {
       return [];
     }
-    return this.groupUnits(this.store.unitsByRegion()[id] ?? []);
+    return this.groupUnits(this.gameCoreStore.unitsByRegion()[id] ?? []);
   });
 
   /**
@@ -83,20 +87,20 @@ export class RegionInfoPanelComponent {
     defenders: readonly UnitGroup[];
     attackers: readonly UnitGroup[];
   }>(() => {
-    const id = this.store.selectedRegionId();
-    const activeId = this.store.state()?.activePlayerId;
+    const id = this.mapUiStore.selectedRegionId();
+    const activeId = this.gameCoreStore.state()?.activePlayerId;
     if (!id || !activeId) {
       return { contested: false, defenders: [], attackers: [] };
     }
-    const units = this.store.unitsByRegion()[id] ?? [];
+    const units = this.gameCoreStore.unitsByRegion()[id] ?? [];
     const attackers = this.groupUnits(units.filter((u) => u.ownerId === activeId));
     const defenders = this.groupUnits(units.filter((u) => u.ownerId !== activeId));
     return { contested: attackers.length > 0 && defenders.length > 0, defenders, attackers };
   });
 
   private groupUnits(units: readonly UnitInstance[]): UnitGroup[] {
-    const catalog = this.store.units();
-    const factions = this.store.factions();
+    const catalog = this.gameCoreStore.units();
+    const factions = this.gameCoreStore.factions();
     const groups = new Map<string, UnitGroup>();
     for (const unit of units) {
       const key = `${unit.ownerId}:${unit.unitId}`;
@@ -125,7 +129,7 @@ export class RegionInfoPanelComponent {
     if (!tokens) {
       return [];
     }
-    const factions = this.store.factions();
+    const factions = this.gameCoreStore.factions();
     return Object.entries(tokens)
       .filter(([, count]) => count > 0)
       .map(([factionId, count]) => ({

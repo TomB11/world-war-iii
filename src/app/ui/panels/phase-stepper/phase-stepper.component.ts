@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { GameStore } from '../../../state/store';
+import { GameCoreStore } from '../../../state/core/game-core.store';
 import { GamePhase } from '../../../models/game-state.model';
 import { TURN_PHASE_ORDER } from '../../../core/constants/game.constants';
 import { PHASE_LABELS } from '../../../core/constants/phase-labels.constants';
@@ -20,10 +20,10 @@ interface PhaseStep {
   styleUrl: './phase-stepper.component.scss',
 })
 export class PhaseStepperComponent {
-  protected readonly store = inject(GameStore);
+  protected readonly gameCoreStore = inject(GameCoreStore);
 
   protected readonly steps = computed<readonly PhaseStep[]>(() => {
-    const current = this.store.state()?.phase;
+    const current = this.gameCoreStore.state()?.phase;
     const currentIndex = current ? TURN_PHASE_ORDER.indexOf(current) : -1;
     return TURN_PHASE_ORDER.map((phase, index) => ({
       phase,

@@ -29,9 +29,17 @@ src/app/
   screens/      Top-level routed screens (currently just game-screen).
   services/     Angular services that talk to the outside world (HTTP data
                 loading, the deterministic RNG). Never gameplay rules.
-  state/        The Signal Store layer — GameStateSignal (raw state),
-                MapUiState (selection/hover), GameStore (the only facade
-                components are allowed to inject) — see CODING_STANDARDS.md §11.
+  state/        The Signal Store layer, built on @ngrx/signals — one small
+                feature store per gameplay concern instead of one facade:
+                core/ (GameCoreStore — authoritative GameState + dispatch),
+                map/ (MapUiStore — selection/hover/drag + animation queues),
+                combat/, movement/, economy/, cyber/, ai/ (Solo Command
+                Mode), solo-setup/. Components inject only the store(s) that
+                own what they need — see CODING_STANDARDS.md §11. Every
+                store's action methods call `GameCoreStore.dispatch(command)`
+                and react to the *returned* events for their own concern
+                (`shared/rejection-event-routing.ts` holds the shared
+                "clear stale rejection banners" convention).
   ui/           Angular components. See section 3 below for the required
                 per-component file layout.
 ```

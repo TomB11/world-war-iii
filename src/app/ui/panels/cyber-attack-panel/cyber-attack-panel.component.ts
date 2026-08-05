@@ -1,49 +1,57 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { GameStore } from '../../../state/store';
+import { GameCoreStore } from '../../../state/core/game-core.store';
+import { CyberAttackStore } from '../../../state/cyber/cyber-attack.store';
 import { PlayerState } from '../../../models/player.model';
 import { Region } from '../../../models/region.model';
 
 @Component({
   selector: 'wwiii-cyber-attack-panel',
   standalone: true,
-  imports: [FormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './cyber-attack-panel.component.html',
   styleUrl: './cyber-attack-panel.component.scss',
 })
 export class CyberAttackPanelComponent {
-  protected readonly store = inject(GameStore);
+  protected readonly gameCoreStore = inject(GameCoreStore);
+  protected readonly cyberAttackStore = inject(CyberAttackStore);
 
   protected readonly hackTargetId = signal<string>('');
   protected readonly influenceTargetId = signal<string>('');
 
-  protected readonly isCyberAttackPhase = computed(() => this.store.state()?.phase === 'cyberAttack');
-  protected readonly cost = computed(() => this.store.economyConfig()?.cyberAttackCost ?? 0);
-  protected readonly hackUpgradeCost = computed(() => this.store.economyConfig()?.hackLevelUpgradeCost ?? 0);
-  protected readonly hackLevelMax = computed(() => this.store.economyConfig()?.hackLevelMax ?? 0);
+  protected readonly isCyberAttackPhase = computed(() => this.gameCoreStore.state()?.phase === 'cyberAttack');
+  protected readonly cost = computed(() => this.gameCoreStore.economyConfig()?.cyberAttackCost ?? 0);
+  protected readonly hackUpgradeCost = computed(() => this.gameCoreStore.economyConfig()?.hackLevelUpgradeCost ?? 0);
+  protected readonly hackLevelMax = computed(() => this.gameCoreStore.economyConfig()?.hackLevelMax ?? 0);
 
-  /** Every other non-eliminated player, as possible Hack targets. */
+  /** 1..hackLevelMax, for rendering the Hack Level progress track as discrete pips. */
+  protected readonly hackLevelSteps = computed(() => {
+    const max = this.hackLevelMax();
+    return Array.from({ length: max }, (_, index) => index + 1);
+  });
+
+  /** Every other non-eliminated, non-allied player, as possible Hack targets — a teammate (PROJECT_RULES.md section 2) is never a legal target, hacking is an attack. */
   protected readonly hackTargets = computed<readonly PlayerState[]>(() => {
-    const state = this.store.state();
+    const state = this.gameCoreStore.state();
     const activeId = state?.activePlayerId;
-    if (!state) {
+    if (!state || !activeId) {
       return [];
     }
-    return state.players.filter((player) => player.id !== activeId && !player.isEliminated);
+    return state.players.filter(
+      (player) => player.id !== activeId && !player.isEliminated && this.gameCoreStore.isHostileTo(player.id, activeId),
+    );
   });
 
   /** Every neutral (unowned) region, as possible Political Influence targets. */
   protected readonly neutralRegions = computed<readonly Region[]>(() =>
-    Object.values(this.store.regions()).filter((region) => region.ownerId === null),
+    Object.values(this.gameCoreStore.regions()).filter((region) => region.ownerId === null),
   );
 
   protected factionName(playerId: string): string {
-    return this.store.factions()[playerId]?.name ?? playerId;
+    return this.gameCoreStore.factions()[playerId]?.name ?? playerId;
   }
 
   protected influenceTokensForId(regionId: string): string {
-    const tokens = this.store.regions()[regionId]?.influenceTokens;
+    const tokens = this.gameCoreStore.regions()[regionId]?.influenceTokens;
     if (!tokens || Object.keys(tokens).length === 0) {
       return 'no tokens yet';
     }
@@ -57,7 +65,7 @@ export class CyberAttackPanelComponent {
     if (!targetId) {
       return;
     }
-    this.store.hack(playerId, targetId);
+    this.cyberAttackStore.hack(playerId, targetId);
   }
 
   protected attemptPoliticalInfluence(playerId: string): void {
@@ -65,10 +73,10 @@ export class CyberAttackPanelComponent {
     if (!regionId) {
       return;
     }
-    this.store.politicalInfluence(playerId, regionId);
+    this.cyberAttackStore.politicalInfluence(playerId, regionId);
   }
 
   protected attemptUpgradeHackLevel(playerId: string): void {
-    this.store.upgradeHackLevel(playerId);
+    this.cyberAttackStore.upgradeHackLevel(playerId);
   }
 }

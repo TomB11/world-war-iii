@@ -1,4 +1,4 @@
-@if (store.victoryStatus(); as status) {
+@if (gameCoreStore.victoryStatus(); as status) {
   <div class="victory-banner">
     <div class="victory-banner__card">
       <p class="victory-banner__kicker">{{ status.type === 'solo' ? 'Solo Victory' : 'Team Victory' }}</p>
@@ -6,6 +6,7 @@
       <p class="victory-banner__detail">
         Captured {{ status.starCount }} white-star region{{ status.starCount === 1 ? '' : 's' }}
       </p>
+      <button type="button" class="victory-banner__menu-btn" (click)="returnToMenu()">Return to Menu</button>
     </div>
   </div>
 }

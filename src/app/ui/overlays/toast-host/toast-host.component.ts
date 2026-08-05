@@ -1,5 +1,9 @@
 import { ChangeDetectionStrategy, Component, Signal, effect, inject, signal } from '@angular/core';
-import { GameStore } from '../../../state/store';
+import { GameCoreStore } from '../../../state/core/game-core.store';
+import { MovementStore } from '../../../state/movement/movement.store';
+import { EconomyStore } from '../../../state/economy/economy.store';
+import { CyberAttackStore } from '../../../state/cyber/cyber-attack.store';
+import { CombatStore } from '../../../state/combat/combat.store';
 import { TOAST_DURATION_MS } from './toast-host.constants';
 
 type ToastTone = 'error' | 'info';
@@ -27,19 +31,23 @@ interface ToastEntry {
   styleUrl: './toast-host.component.scss',
 })
 export class ToastHostComponent {
-  private readonly store = inject(GameStore);
+  private readonly gameCoreStore = inject(GameCoreStore);
+  private readonly movementStore = inject(MovementStore);
+  private readonly economyStore = inject(EconomyStore);
+  private readonly cyberAttackStore = inject(CyberAttackStore);
+  private readonly combatStore = inject(CombatStore);
   private nextId = 0;
   protected readonly toasts = signal<readonly ToastEntry[]>([]);
 
   constructor() {
-    this.watch(this.store.movementRejectionReason, 'error');
-    this.watch(this.store.purchaseRejectionReason, 'error');
-    this.watch(this.store.publicSpendingRejectionReason, 'error');
-    this.watch(this.store.cyberAttackRejectionReason, 'error');
-    this.watch(this.store.combatRejectionReason, 'error');
-    this.watch(this.store.phaseAdvanceRejectionReason, 'error');
-    this.watch(this.store.cyberAttackResultMessage, 'info');
-    this.watch(this.store.missileStrikeMessage, 'info');
+    this.watch(this.movementStore.movementRejectionReason, 'error');
+    this.watch(this.economyStore.purchaseRejectionReason, 'error');
+    this.watch(this.economyStore.publicSpendingRejectionReason, 'error');
+    this.watch(this.cyberAttackStore.cyberAttackRejectionReason, 'error');
+    this.watch(this.combatStore.combatRejectionReason, 'error');
+    this.watch(this.gameCoreStore.phaseAdvanceRejectionReason, 'error');
+    this.watch(this.cyberAttackStore.cyberAttackResultMessage, 'info');
+    this.watch(this.combatStore.missileStrikeMessage, 'info');
   }
 
   protected dismiss(id: number): void {

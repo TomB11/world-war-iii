@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { GameStore } from '../../../state/store';
+import { GameCoreStore } from '../../../state/core/game-core.store';
+import { EconomyStore } from '../../../state/economy/economy.store';
 import { UnitIconComponent } from '../../shared/unit-icon/unit-icon.component';
 
 @Component({
@@ -12,28 +13,29 @@ import { UnitIconComponent } from '../../shared/unit-icon/unit-icon.component';
   styleUrl: './economy-panel.component.scss',
 })
 export class EconomyPanelComponent {
-  protected readonly store = inject(GameStore);
+  protected readonly gameCoreStore = inject(GameCoreStore);
+  protected readonly economyStore = inject(EconomyStore);
 
   protected readonly selectedUnitId = signal<string>('');
   protected readonly quantity = signal<number>(1);
   protected readonly spendAmount = signal<number>(5);
 
-  protected readonly unitList = () => Object.values(this.store.units());
+  protected readonly unitList = () => Object.values(this.gameCoreStore.units());
 
-  protected readonly decayPerTurn = computed(() => this.store.economyConfig()?.citizenSatisfactionDecayPerTurn ?? 0);
+  protected readonly decayPerTurn = computed(() => this.gameCoreStore.economyConfig()?.citizenSatisfactionDecayPerTurn ?? 0);
 
   protected readonly activePlayerColor = computed(() => {
-    const player = this.store.activePlayer();
+    const player = this.gameCoreStore.activePlayer();
     if (!player) {
       return '#888888';
     }
-    return this.store.factions()[player.factionId]?.color ?? '#888888';
+    return this.gameCoreStore.factions()[player.factionId]?.color ?? '#888888';
   });
 
-  protected readonly activePlayerFactionId = computed(() => this.store.activePlayer()?.factionId ?? null);
+  protected readonly activePlayerFactionId = computed(() => this.gameCoreStore.activePlayer()?.factionId ?? null);
 
   protected unitName(unitId: string): string {
-    return this.store.units()[unitId]?.name ?? unitId;
+    return this.gameCoreStore.units()[unitId]?.name ?? unitId;
   }
 
   /** Selecting a different unit resets the quantity stepper back to 1 (re-clicking the already-selected unit leaves it as-is). */
@@ -61,7 +63,7 @@ export class EconomyPanelComponent {
     if (!unitId) {
       return;
     }
-    this.store.purchaseUnit(playerId, unitId, this.quantity());
+    this.economyStore.purchaseUnit(playerId, unitId, this.quantity());
   }
 
   protected spendOnSatisfaction(playerId: string): void {
@@ -69,6 +71,6 @@ export class EconomyPanelComponent {
     if (!amount || amount <= 0) {
       return;
     }
-    this.store.raiseCitizenSatisfaction(playerId, amount);
+    this.economyStore.raiseCitizenSatisfaction(playerId, amount);
   }
 }

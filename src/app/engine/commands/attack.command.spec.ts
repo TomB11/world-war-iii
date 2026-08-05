@@ -17,7 +17,7 @@ describe('AttackCommand — Rocket System missile declaration (PROJECT_RULES.md 
       players: [player({ id: 'attacker' }), player({ id: 'defender' })],
       ...overrides,
     });
-    const command = new AttackCommand('attacker', unitInstanceId, targetRegionId, catalog, TEST_ECONOMY_CONFIG);
+    const command = new AttackCommand('attacker', unitInstanceId, targetRegionId, catalog, TEST_ECONOMY_CONFIG, {});
     return { state, result: command.execute(state) };
   }
 
@@ -210,7 +210,7 @@ describe('AttackCommand — undefended capture stamps capturedOnTurn (PROJECT_RU
       units: [unitInstance({ id: 'atk-1', unitId: 'tank', ownerId: 'attacker', regionId: 'home' })],
     });
 
-    const result = new AttackCommand('attacker', 'atk-1', 'front', catalog, TEST_ECONOMY_CONFIG).execute(state);
+    const result = new AttackCommand('attacker', 'atk-1', 'front', catalog, TEST_ECONOMY_CONFIG, {}).execute(state);
 
     const capturedFront = result.state.regions['front'];
     expect(capturedFront.ownerId).toBe('attacker');
@@ -245,7 +245,7 @@ describe('AttackCommand — naval attacks (PROJECT_RULES.md section 30 extension
       ],
     });
 
-    const result = new AttackCommand('attacker', 'atk-ship', 'sea-2', catalog, TEST_ECONOMY_CONFIG).execute(state);
+    const result = new AttackCommand('attacker', 'atk-ship', 'sea-2', catalog, TEST_ECONOMY_CONFIG, {}).execute(state);
 
     expect(result.events).toEqual([
       { type: 'RegionContested', playerId: 'attacker', regionId: 'sea-2' },
@@ -260,7 +260,7 @@ describe('AttackCommand — naval attacks (PROJECT_RULES.md section 30 extension
     const state = seaZoneState({
       units: [unitInstance({ id: 'atk-ship', unitId: 'destroyer', ownerId: 'attacker', regionId: 'sea-1', movesRemaining: 2 })],
     });
-    const result = new AttackCommand('attacker', 'atk-ship', 'sea-2', catalog, TEST_ECONOMY_CONFIG).execute(state);
+    const result = new AttackCommand('attacker', 'atk-ship', 'sea-2', catalog, TEST_ECONOMY_CONFIG, {}).execute(state);
     expect(result.events).toEqual([
       { type: 'MovementRejected', playerId: 'attacker', reason: '"sea-2" is not a legal attack target for this unit' },
     ]);

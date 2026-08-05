@@ -19,7 +19,7 @@ describe('MoveUnitCommand', () => {
       units: [unitInstance({ id: 'inf-1', unitId: 'infantry', ownerId: 'p1', regionId: 'home', movesRemaining: 2 })],
     });
 
-    const result = new MoveUnitCommand('p1', 'inf-1', 'friendly', catalog).execute(state);
+    const result = new MoveUnitCommand('p1', 'inf-1', 'friendly', catalog, {}).execute(state);
 
     expect(result.events).toEqual([
       {
@@ -45,7 +45,7 @@ describe('MoveUnitCommand', () => {
       ],
     });
 
-    const result = new MoveUnitCommand('p1', 'ship-1', 'sea-2', catalog).execute(state);
+    const result = new MoveUnitCommand('p1', 'ship-1', 'sea-2', catalog, {}).execute(state);
 
     expect(result.events).toEqual([{ type: 'UnitMoved', unitInstanceId: 'ship-1', fromRegionId: 'sea-1', toRegionId: 'sea-2' }]);
     const ship = result.state.units.find((u) => u.id === 'ship-1');
@@ -74,7 +74,7 @@ describe('MoveUnitCommand', () => {
       ],
     });
 
-    const result = new MoveUnitCommand('p1', 'ship-1', 'sea-2', catalog).execute(state);
+    const result = new MoveUnitCommand('p1', 'ship-1', 'sea-2', catalog, {}).execute(state);
 
     const cargo = result.state.units.find((u) => u.id === 'cargo-1');
     expect(cargo?.regionId).toBe('sea-2');
@@ -96,7 +96,7 @@ describe('MoveUnitCommand', () => {
       ],
     });
 
-    const result = new MoveUnitCommand('p1', 'ship-1', 'sea-3', catalog).execute(state);
+    const result = new MoveUnitCommand('p1', 'ship-1', 'sea-3', catalog, {}).execute(state);
 
     expect(result.events).toEqual([
       { type: 'MovementRejected', playerId: 'p1', reason: '"sea-3" is not a legal destination for this unit' },
@@ -116,7 +116,7 @@ describe('MoveUnitCommand', () => {
       ],
     });
 
-    const result = new MoveUnitCommand('p1', 'ship-1', 'sea-2', catalog).execute(state);
+    const result = new MoveUnitCommand('p1', 'ship-1', 'sea-2', catalog, {}).execute(state);
 
     expect(result.state.units.find((u) => u.id === 'ship-1')?.regionId).toBe('sea-2');
   });

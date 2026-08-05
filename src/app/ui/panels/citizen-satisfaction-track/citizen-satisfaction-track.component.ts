@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { GameStore } from '../../../state/store';
+import { GameCoreStore } from '../../../state/core/game-core.store';
 import { ZONE_COLORS } from './citizen-satisfaction-track.constants';
 
 interface TrackZone {
@@ -16,14 +16,14 @@ interface TrackZone {
   styleUrl: './citizen-satisfaction-track.component.scss',
 })
 export class CitizenSatisfactionTrackComponent {
-  protected readonly store = inject(GameStore);
+  protected readonly gameCoreStore = inject(GameCoreStore);
 
-  protected readonly satisfaction = computed(() => this.store.activePlayer()?.citizenSatisfaction ?? 0);
-  protected readonly rebellionLevel = computed(() => this.store.activePlayer()?.rebellionLevel ?? 0);
-  protected readonly victoryPoints = computed(() => this.store.activePlayer()?.victoryPoints ?? 0);
+  protected readonly satisfaction = computed(() => this.gameCoreStore.activePlayer()?.citizenSatisfaction ?? 0);
+  protected readonly rebellionLevel = computed(() => this.gameCoreStore.activePlayer()?.rebellionLevel ?? 0);
+  protected readonly victoryPoints = computed(() => this.gameCoreStore.activePlayer()?.victoryPoints ?? 0);
 
   protected readonly zones = computed<readonly TrackZone[]>(() => {
-    const config = this.store.economyConfig();
+    const config = this.gameCoreStore.economyConfig();
     if (!config) {
       return [];
     }
@@ -38,7 +38,7 @@ export class CitizenSatisfactionTrackComponent {
   });
 
   protected readonly markerPercent = computed(() => {
-    const config = this.store.economyConfig();
+    const config = this.gameCoreStore.economyConfig();
     if (!config) {
       return 0;
     }

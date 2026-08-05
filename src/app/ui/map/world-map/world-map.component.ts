@@ -8,7 +8,10 @@ import {
   inject,
   viewChild,
 } from '@angular/core';
-import { GameStore } from '../../../state/store';
+import { GameCoreStore } from '../../../state/core/game-core.store';
+import { MapUiStore } from '../../../state/map/map-ui.store';
+import { CombatStore } from '../../../state/combat/combat.store';
+import { MovementStore } from '../../../state/movement/movement.store';
 import { GAME_CONFIG } from '../../../config/game.config';
 import { RegionPoint } from '../../../models/region.model';
 import { MOVEMENT_PHASES } from '../../../core/constants/game.constants';
@@ -45,7 +48,10 @@ export class WorldMapComponent implements AfterViewInit, OnDestroy {
   private readonly canvasRef = viewChild.required<ElementRef<HTMLCanvasElement>>('mapCanvas');
 
   protected readonly config = GAME_CONFIG;
-  protected readonly store = inject(GameStore);
+  private readonly gameCoreStore = inject(GameCoreStore);
+  private readonly mapUiStore = inject(MapUiStore);
+  private readonly combatStore = inject(CombatStore);
+  private readonly movementStore = inject(MovementStore);
 
   private readonly geometry = new MapGeometry(this.config);
   private readonly renderer = new MapRenderer(this.config, this.geometry);
@@ -95,24 +101,24 @@ export class WorldMapComponent implements AfterViewInit, OnDestroy {
     // Redraw whenever any signal this reads changes: regions, flags,
     // selection, hover. This is the only place engine state becomes pixels.
     effect(() => {
-      this.store.regions();
-      this.store.regionFlagPaths();
-      this.store.selectedRegionId();
-      this.store.neighborIds();
-      this.store.hoveredRegionId();
-      this.store.seaZones();
-      this.store.unitsByRegion();
-      this.store.factions();
-      this.store.movableUnitIds();
-      this.store.contestedRegionIds();
-      this.store.missileStrikePreviews();
-      this.store.externalDrag();
-      this.store.pendingAction();
+      this.gameCoreStore.regions();
+      this.gameCoreStore.regionFlagPaths();
+      this.mapUiStore.selectedRegionId();
+      this.mapUiStore.neighborIds();
+      this.mapUiStore.hoveredRegionId();
+      this.gameCoreStore.seaZones();
+      this.gameCoreStore.unitsByRegion();
+      this.gameCoreStore.factions();
+      this.mapUiStore.movableUnitIds();
+      this.mapUiStore.contestedRegionIds();
+      this.mapUiStore.missileStrikePreviews();
+      this.mapUiStore.externalDrag();
+      this.mapUiStore.pendingAction();
       this.redrawCurrentState();
       // A contested region's border animates continuously (marching ants) —
       // keep the loop alive for as long as any exist, independent of the
       // one-shot effect/move/projectile/flag queues below.
-      if (this.store.contestedRegionIds().size > 0) {
+      if (this.mapUiStore.contestedRegionIds().size > 0) {
         this.ensureAnimationLoopRunning();
       }
     });
@@ -122,7 +128,7 @@ export class WorldMapComponent implements AfterViewInit, OnDestroy {
     // already consumed (ids only ever grow), and make sure the repaint loop
     // is running for as long as any of them is still live.
     effect(() => {
-      const events = this.store.mapEffectEvents();
+      const events = this.mapUiStore.mapEffectEvents();
       let spawnedAny = false;
       for (const mapEvent of events) {
         if (mapEvent.id <= this.lastConsumedMapEffectId) {
@@ -140,7 +146,7 @@ export class WorldMapComponent implements AfterViewInit, OnDestroy {
     // New unit moves queued by GameStore — slide each one from its previous
     // location to its new one instead of popping instantly.
     effect(() => {
-      const events = this.store.unitMoveEvents();
+      const events = this.mapUiStore.unitMoveEvents();
       let spawnedAny = false;
       for (const moveEvent of events) {
         if (moveEvent.id <= this.lastConsumedUnitMoveId) {
@@ -166,7 +172,7 @@ export class WorldMapComponent implements AfterViewInit, OnDestroy {
     // explosion effect RollCombatCommand/FireMissileCommand's events already
     // queued separately above.
     effect(() => {
-      const events = this.store.missileFiredEvents();
+      const events = this.mapUiStore.missileFiredEvents();
       let spawnedAny = false;
       for (const missileEvent of events) {
         if (missileEvent.id <= this.lastConsumedMissileFiredId) {
@@ -189,7 +195,7 @@ export class WorldMapComponent implements AfterViewInit, OnDestroy {
     // New region captures queued by GameStore — crossfade that region's flag
     // instead of swapping it instantly.
     effect(() => {
-      const events = this.store.flagTransitionEvents();
+      const events = this.mapUiStore.flagTransitionEvents();
       let spawnedAny = false;
       for (const flagEvent of events) {
         if (flagEvent.id <= this.lastConsumedFlagTransitionId) {
@@ -217,7 +223,7 @@ export class WorldMapComponent implements AfterViewInit, OnDestroy {
     // delivering move/up events, so this component takes over tracking at
     // the window level for as long as GameStore reports one in progress.
     effect(() => {
-      if (this.store.externalDrag()) {
+      if (this.mapUiStore.externalDrag()) {
         this.attachExternalDragListeners();
       } else {
         this.detachExternalDragListeners();
@@ -256,44 +262,44 @@ export class WorldMapComponent implements AfterViewInit, OnDestroy {
     // over the very next canvas click, wherever it lands — a hit on one of
     // its highlighted destinations commits the action, anything else just
     // cancels it quietly (see resolvePendingActionAt).
-    if (this.store.pendingAction()) {
-      this.store.resolvePendingActionAt(this.hitTestAt(event.clientX, event.clientY));
+    if (this.mapUiStore.pendingAction()) {
+      this.movementStore.resolvePendingActionAt(this.hitTestAt(event.clientX, event.clientY));
       return;
     }
 
     const point = this.toWorldPoint(event.clientX, event.clientY);
-    const region = this.geometry.hitTestRegion(Object.values(this.store.regions()), point);
+    const region = this.geometry.hitTestRegion(Object.values(this.gameCoreStore.regions()), point);
 
     // During the Attack Phase, only regions/sea zones with a pending battle
     // respond to clicks — clicking one opens the combat board; everything
     // else on the map (other regions, sea zones, empty space) is a no-op,
     // since there's nothing to select or move (PROJECT_RULES.md sections 9-14).
-    if (this.store.state()?.phase === 'attack') {
-      if (region && this.store.contestedRegionIds().has(region.id)) {
-        this.store.openCombat(region.id);
+    if (this.gameCoreStore.state()?.phase === 'attack') {
+      if (region && this.mapUiStore.contestedRegionIds().has(region.id)) {
+        this.combatStore.openCombat(region.id);
         return;
       }
       const contestedSeaZone = this.geometry.hitTestSeaZone(
-        Object.values(this.store.seaZones()),
+        Object.values(this.gameCoreStore.seaZones()),
         point,
         this.view.scale,
       );
-      if (contestedSeaZone && this.store.contestedRegionIds().has(contestedSeaZone.id)) {
-        this.store.openCombat(contestedSeaZone.id);
+      if (contestedSeaZone && this.mapUiStore.contestedRegionIds().has(contestedSeaZone.id)) {
+        this.combatStore.openCombat(contestedSeaZone.id);
       }
       return;
     }
 
     if (region) {
-      this.store.selectRegion(region.id);
+      this.mapUiStore.selectRegion(region.id);
       return;
     }
-    const seaZone = this.geometry.hitTestSeaZone(Object.values(this.store.seaZones()), point, this.view.scale);
+    const seaZone = this.geometry.hitTestSeaZone(Object.values(this.gameCoreStore.seaZones()), point, this.view.scale);
     if (seaZone) {
-      this.store.selectRegion(seaZone.id);
+      this.mapUiStore.selectRegion(seaZone.id);
       return;
     }
-    this.store.clearSelection();
+    this.mapUiStore.clearSelection();
   }
 
   protected onCanvasWheel(event: WheelEvent): void {
@@ -348,12 +354,12 @@ export class WorldMapComponent implements AfterViewInit, OnDestroy {
 
     if (!this.isPointerDown) {
       const point = this.toWorldPoint(event.clientX, event.clientY);
-      const region = this.geometry.hitTestRegion(Object.values(this.store.regions()), point);
+      const region = this.geometry.hitTestRegion(Object.values(this.gameCoreStore.regions()), point);
       if (region) {
-        this.store.setHoveredRegion(region.id);
+        this.mapUiStore.setHovered(region.id);
       } else {
-        const seaZone = this.geometry.hitTestSeaZone(Object.values(this.store.seaZones()), point, this.view.scale);
-        this.store.setHoveredRegion(seaZone ? seaZone.id : null);
+        const seaZone = this.geometry.hitTestSeaZone(Object.values(this.gameCoreStore.seaZones()), point, this.view.scale);
+        this.mapUiStore.setHovered(seaZone ? seaZone.id : null);
       }
       return;
     }
@@ -381,22 +387,22 @@ export class WorldMapComponent implements AfterViewInit, OnDestroy {
   protected onPointerUp(event: PointerEvent): void {
     if (this.draggingUnit) {
       const point = this.toWorldPoint(event.clientX, event.clientY);
-      const regionHit = this.geometry.hitTestRegion(Object.values(this.store.regions()), point);
+      const regionHit = this.geometry.hitTestRegion(Object.values(this.gameCoreStore.regions()), point);
       const seaZoneHit = regionHit
         ? null
-        : this.geometry.hitTestSeaZone(Object.values(this.store.seaZones()), point, this.view.scale);
+        : this.geometry.hitTestSeaZone(Object.values(this.gameCoreStore.seaZones()), point, this.view.scale);
       const dropTarget = regionHit?.id ?? seaZoneHit?.id ?? null;
-      const activePlayerId = this.store.state()?.activePlayerId;
+      const activePlayerId = this.gameCoreStore.state()?.activePlayerId;
       if (dropTarget && activePlayerId) {
         const loadTransportId = this.draggingUnit.loadTargets.get(dropTarget);
         if (loadTransportId) {
-          this.store.loadUnit(activePlayerId, this.draggingUnit.unitInstanceId, loadTransportId);
+          this.movementStore.loadUnit(activePlayerId, this.draggingUnit.unitInstanceId, loadTransportId);
         } else if (this.draggingUnit.attackTargets.includes(dropTarget)) {
-          this.store.attackRegion(activePlayerId, this.draggingUnit.unitInstanceId, dropTarget);
+          this.movementStore.attackRegion(activePlayerId, this.draggingUnit.unitInstanceId, dropTarget);
         } else if (this.draggingUnit.moveDestinations.includes(dropTarget)) {
-          this.store.moveUnit(activePlayerId, this.draggingUnit.unitInstanceId, dropTarget);
+          this.movementStore.moveUnit(activePlayerId, this.draggingUnit.unitInstanceId, dropTarget);
         } else {
-          this.store.reportInvalidDestination();
+          this.movementStore.reportInvalidDestination();
         }
       }
       this.draggingUnit = null;
@@ -422,7 +428,7 @@ export class WorldMapComponent implements AfterViewInit, OnDestroy {
       this.canvasRef().nativeElement.classList.remove('unit-dragging');
       this.redrawCurrentState();
     }
-    this.store.setHoveredRegion(null);
+    this.mapUiStore.setHovered(null);
   }
 
   /**
@@ -435,15 +441,15 @@ export class WorldMapComponent implements AfterViewInit, OnDestroy {
    * Returns the drag state or null if nothing pickable is there.
    */
   private tryPickUpUnit(point: RegionPoint): UnitDragState | null {
-    const state = this.store.state();
+    const state = this.gameCoreStore.state();
     if (!state || !MOVEMENT_PHASES.includes(state.phase)) {
       return null;
     }
     const hit = this.geometry.hitTestUnitIcon(
       point,
-      this.store.unitsByRegion(),
-      this.store.regions(),
-      this.store.seaZones(),
+      this.gameCoreStore.unitsByRegion(),
+      this.gameCoreStore.regions(),
+      this.gameCoreStore.seaZones(),
       this.view.scale,
     );
     if (!hit) {
@@ -459,11 +465,11 @@ export class WorldMapComponent implements AfterViewInit, OnDestroy {
     if (!candidate) {
       return null;
     }
-    const moveDestinations = this.store.legalMoveDestinations(candidate.id);
+    const moveDestinations = this.movementStore.legalMoveDestinations(candidate.id);
     const attackTargets =
-      state.phase === 'attackMoves' ? this.store.legalAttackTargets(candidate.id) : [];
+      state.phase === 'attackMoves' ? this.movementStore.legalAttackTargets(candidate.id) : [];
     const loadTargets = new Map<string, string>();
-    for (const target of this.store.loadableTransportTargets(candidate.id)) {
+    for (const target of this.movementStore.loadableTransportTargets(candidate.id)) {
       loadTargets.set(target.seaZoneId, target.transportId);
     }
     return {
@@ -485,11 +491,11 @@ export class WorldMapComponent implements AfterViewInit, OnDestroy {
   /** Resolves a client-space point to whichever region or sea zone (if any) is under it. */
   private hitTestAt(clientX: number, clientY: number): string | null {
     const point = this.toWorldPoint(clientX, clientY);
-    const region = this.geometry.hitTestRegion(Object.values(this.store.regions()), point);
+    const region = this.geometry.hitTestRegion(Object.values(this.gameCoreStore.regions()), point);
     if (region) {
       return region.id;
     }
-    const seaZone = this.geometry.hitTestSeaZone(Object.values(this.store.seaZones()), point, this.view.scale);
+    const seaZone = this.geometry.hitTestSeaZone(Object.values(this.gameCoreStore.seaZones()), point, this.view.scale);
     return seaZone?.id ?? null;
   }
 
@@ -504,10 +510,10 @@ export class WorldMapComponent implements AfterViewInit, OnDestroy {
           x: point.x * this.config.mapViewBoxWidth,
           y: point.y * this.config.mapViewBoxHeight,
         };
-        this.store.setHoveredRegion(this.hitTestAt(event.clientX, event.clientY));
+        this.mapUiStore.setHovered(this.hitTestAt(event.clientX, event.clientY));
       } else {
         this.externalDragPointerPoint = null;
-        this.store.setHoveredRegion(null);
+        this.mapUiStore.setHovered(null);
       }
       this.redrawCurrentState();
     };
@@ -515,8 +521,8 @@ export class WorldMapComponent implements AfterViewInit, OnDestroy {
       const dropTarget = this.isPointWithinCanvas(event.clientX, event.clientY)
         ? this.hitTestAt(event.clientX, event.clientY)
         : null;
-      this.store.resolveExternalDrop(dropTarget);
-      this.store.setHoveredRegion(null);
+      this.movementStore.resolveExternalDrop(dropTarget);
+      this.mapUiStore.setHovered(null);
     };
     window.addEventListener('pointermove', this.windowPointerMoveHandler);
     window.addEventListener('pointerup', this.windowPointerUpHandler);
@@ -593,7 +599,7 @@ export class WorldMapComponent implements AfterViewInit, OnDestroy {
         this.activeUnitMoves.length > 0 ||
         this.activeProjectiles.length > 0 ||
         Object.keys(this.activeFlagTransitions).length > 0 ||
-        this.store.contestedRegionIds().size > 0;
+        this.mapUiStore.contestedRegionIds().size > 0;
       this.animationRafHandle = stillAnimating ? requestAnimationFrame(tick) : null;
     };
     this.animationRafHandle = requestAnimationFrame(tick);
@@ -604,9 +610,9 @@ export class WorldMapComponent implements AfterViewInit, OnDestroy {
     if (!context) {
       return;
     }
-    const regionsById = this.store.regions();
-    const seaZonesById = this.store.seaZones();
-    const draggingUnit = this.draggingUnit ?? this.store.externalDrag();
+    const regionsById = this.gameCoreStore.regions();
+    const seaZonesById = this.gameCoreStore.seaZones();
+    const draggingUnit = this.draggingUnit ?? this.mapUiStore.externalDrag();
     const dragPointerPoint = this.draggingUnit ? this.dragPointerPoint : this.externalDragPointerPoint;
     this.renderer.draw({
       context,
@@ -615,21 +621,21 @@ export class WorldMapComponent implements AfterViewInit, OnDestroy {
       mapImageLoaded: this.mapImageLoaded,
       regions: Object.values(regionsById),
       regionsById,
-      flagPaths: this.store.regionFlagPaths(),
-      selectedId: this.store.selectedRegionId(),
-      neighborIds: this.store.neighborIds(),
-      hoveredId: this.store.hoveredRegionId(),
+      flagPaths: this.gameCoreStore.regionFlagPaths(),
+      selectedId: this.mapUiStore.selectedRegionId(),
+      neighborIds: this.mapUiStore.neighborIds(),
+      hoveredId: this.mapUiStore.hoveredRegionId(),
       seaZones: Object.values(seaZonesById),
       seaZonesById,
-      unitsByRegion: this.store.unitsByRegion(),
-      factions: this.store.factions(),
+      unitsByRegion: this.gameCoreStore.unitsByRegion(),
+      factions: this.gameCoreStore.factions(),
       draggingUnit,
       dragPointerPoint,
-      pendingActionTargets: this.store.pendingAction()?.destinations ?? [],
-      activePlayerId: this.store.activePlayer()?.id ?? null,
-      movableUnitIds: this.store.movableUnitIds(),
-      contestedRegionIds: this.store.contestedRegionIds(),
-      missileStrikePreviews: this.store.missileStrikePreviews(),
+      pendingActionTargets: this.mapUiStore.pendingAction()?.destinations ?? [],
+      activePlayerId: this.gameCoreStore.activePlayer()?.id ?? null,
+      movableUnitIds: this.mapUiStore.movableUnitIds(),
+      contestedRegionIds: this.mapUiStore.contestedRegionIds(),
+      missileStrikePreviews: this.mapUiStore.missileStrikePreviews(),
       activeEffects: this.activeEffects,
       activeProjectiles: this.activeProjectiles,
       activeUnitMoves: this.activeUnitMoves,

@@ -1,5 +1,12 @@
 import { Injectable, effect, inject } from '@angular/core';
-import { GameStore } from '../state/store';
+import { GameCoreStore } from '../state/core/game-core.store';
+import { MapUiStore } from '../state/map/map-ui.store';
+import { CombatStore } from '../state/combat/combat.store';
+import { MovementStore } from '../state/movement/movement.store';
+import { EconomyStore } from '../state/economy/economy.store';
+import { CyberAttackStore } from '../state/cyber/cyber-attack.store';
+import { AiStore } from '../state/ai/ai.store';
+import { routeTurnCycleEvents } from '../state/shared/route-turn-cycle-events';
 import { GamePhase, GameState } from '../models/game-state.model';
 import { AiOrderAction } from '../models/ai-order.model';
 import { AiAttackConditionsData } from '../models/ai-attack-conditions.model';
@@ -8,7 +15,7 @@ import { RulesEngine } from '../engine/rules-engine';
 
 /**
  * Hard bailout against an AI faction with no legal action anywhere in some
- * phase (should never happen, but CODING_STANDARDS.md section 13 — never
+ * phase (should never happen, but CODING_STANDARTS.md section 13 — never
  * crash or hang silently). Comfortably above a worst-case turn: 6 factions x
  * 7 phases would be ~42 dispatches even with nothing happening, so this
  * covers many consecutive AI factions' turns before tripping.
@@ -21,12 +28,12 @@ const MAX_COMBAT_STEPS_PER_REGION = 200;
 
 /**
  * Solo Command Mode orchestrator: drives every AI-controlled faction's full
- * turn using ONLY GameStore's existing public dispatch methods — never
- * bypassing the Command pattern, exactly like a human UI action would.
- * GameStore.dispatch() is fully synchronous, so a whole back-to-back run of
- * AI factions completes within one JS task: near-instant, then presented to
- * the human as a single dismissable per-faction summary
- * (GameStore.narrateAiAction / beginAiTurnLog / finishAiTurnLog /
+ * turn using ONLY each feature store's existing public dispatch methods —
+ * never bypassing the Command pattern, exactly like a human UI action would.
+ * GameCoreStore.dispatch() is fully synchronous, so a whole back-to-back run
+ * of AI factions completes within one JS task: near-instant, then presented
+ * to the human as a single dismissable per-faction summary
+ * (AiStore.narrateAiAction / beginAiTurnLog / finishAiTurnLog /
  * AiTurnSummaryComponent) they review at their own pace before continuing —
  * not transient toasts, and not animated step-by-step.
  *
@@ -36,7 +43,13 @@ const MAX_COMBAT_STEPS_PER_REGION = 200;
  */
 @Injectable({ providedIn: 'root' })
 export class AiTurnService {
-  private readonly store = inject(GameStore);
+  private readonly gameCoreStore = inject(GameCoreStore);
+  private readonly mapUiStore = inject(MapUiStore);
+  private readonly combatStore = inject(CombatStore);
+  private readonly movementStore = inject(MovementStore);
+  private readonly economyStore = inject(EconomyStore);
+  private readonly cyberAttackStore = inject(CyberAttackStore);
+  private readonly aiStore = inject(AiStore);
   private readonly decisionEngine = new AiDecisionEngine();
   private readonly rules = new RulesEngine();
   private running = false;
@@ -51,8 +64,8 @@ export class AiTurnService {
 
   constructor() {
     effect(() => {
-      this.store.state();
-      if (!this.running && this.store.isActivePlayerAiControlled()) {
+      this.gameCoreStore.state();
+      if (!this.running && this.aiStore.isActivePlayerAiControlled()) {
         this.runAiTurns();
       }
     });
@@ -61,29 +74,51 @@ export class AiTurnService {
   /** Drives consecutive AI factions' turns back-to-back until control reaches a human player, then hands the human a single dismissable summary of everything every AI faction just did. */
   private runAiTurns(): void {
     this.running = true;
-    this.store.beginAiTurnLog();
+    this.aiStore.beginAiTurnLog();
     try {
       let dispatches = 0;
       while (dispatches < MAX_DISPATCHES_PER_TRIGGER) {
-        const state = this.store.state();
-        if (!state || !this.store.isActivePlayerAiControlled()) {
+        const state = this.gameCoreStore.state();
+        if (!state || !this.aiStore.isActivePlayerAiControlled()) {
           return;
         }
         this.runPhaseStep(state.activePlayerId, state.phase);
         dispatches += 1;
       }
-      const stuckState = this.store.state();
+      const stuckState = this.gameCoreStore.state();
       if (stuckState) {
         // eslint-disable-next-line no-console
         console.error(
           `[AiTurnService] Hit the ${MAX_DISPATCHES_PER_TRIGGER}-dispatch cap for player "${stuckState.activePlayerId}" without reaching a human turn — forcing endTurn.`,
         );
-        this.store.endTurn(stuckState.activePlayerId);
+        this.endTurn(stuckState.activePlayerId);
       }
     } finally {
-      this.store.finishAiTurnLog();
+      this.aiStore.finishAiTurnLog();
       this.running = false;
     }
+  }
+
+  /** Runs `playerId` through GameCoreStore.advancePhase() and forwards the resulting events to every store whose reactToEvents cares — mirrors what a UI-driven AdvancePhaseBarComponent click does. */
+  private advancePhase(playerId: string): void {
+    routeTurnCycleEvents(this.gameCoreStore.advancePhase(playerId), {
+      mapUiStore: this.mapUiStore,
+      combatStore: this.combatStore,
+      movementStore: this.movementStore,
+      economyStore: this.economyStore,
+      cyberAttackStore: this.cyberAttackStore,
+    });
+  }
+
+  /** Runs `playerId` through GameCoreStore.endTurn() and forwards the resulting events — see advancePhase. */
+  private endTurn(playerId: string): void {
+    routeTurnCycleEvents(this.gameCoreStore.endTurn(playerId), {
+      mapUiStore: this.mapUiStore,
+      combatStore: this.combatStore,
+      movementStore: this.movementStore,
+      economyStore: this.economyStore,
+      cyberAttackStore: this.cyberAttackStore,
+    });
   }
 
   private runPhaseStep(playerId: string, phase: GamePhase): void {
@@ -107,7 +142,7 @@ export class AiTurnService {
         this.runCyberAttack(playerId);
         return;
       case 'collectIncome':
-        this.store.endTurn(playerId);
+        this.endTurn(playerId);
         return;
     }
   }
@@ -124,30 +159,30 @@ export class AiTurnService {
     this.applyThreatIncrement(playerId);
     this.applyDifficultyPerTurnBonus(playerId);
 
-    this.store.rollAiOrder(playerId);
-    this.pendingOrderAction = this.store.lastAiOrderAction();
+    this.aiStore.rollAiOrder(playerId);
+    this.pendingOrderAction = this.aiStore.lastAiOrderAction();
 
-    this.store.rollAiPurchaseChart(playerId);
-    const rolledUnitIds = this.store.lastAiPurchaseChartUnitIds();
+    this.aiStore.rollAiPurchaseChart(playerId);
+    const rolledUnitIds = this.aiStore.lastAiPurchaseChartUnitIds();
 
     const bought: string[] = [];
     for (const unitId of rolledUnitIds) {
-      const player = this.store.activePlayer();
-      const cost = this.store.units()[unitId]?.cost ?? 0;
+      const player = this.gameCoreStore.activePlayer();
+      const cost = this.gameCoreStore.units()[unitId]?.cost ?? 0;
       if (!player || cost <= 0 || player.treasury < cost) {
         continue;
       }
-      this.store.purchaseUnit(playerId, unitId, 1);
+      this.economyStore.purchaseUnit(playerId, unitId, 1);
       bought.push(unitId);
     }
 
     if (bought.length > 0) {
-      const playerName = this.store.activePlayer()?.displayName ?? playerId;
-      const names = bought.map((unitId) => this.store.unitDisplayName(unitId)).join(', ');
-      this.store.narrateAiAction(playerId, `${playerName} bought ${names}.`);
+      const playerName = this.gameCoreStore.activePlayer()?.displayName ?? playerId;
+      const names = bought.map((unitId) => this.gameCoreStore.units()[unitId]?.name ?? unitId).join(', ');
+      this.aiStore.narrateAiAction(playerId, `${playerName} bought ${names}.`);
     }
 
-    this.store.advancePhase(playerId);
+    this.advancePhase(playerId);
   }
 
   /**
@@ -157,39 +192,43 @@ export class AiTurnService {
    * aiConfig.totalWarActive flag, read later by runAttackMoves.
    */
   private applyThreatIncrement(playerId: string): void {
-    this.store.incrementThreat(playerId);
-    const threshold = this.store.lastThreatCrossedThreshold();
+    this.aiStore.incrementThreat(playerId);
+    const threshold = this.aiStore.lastThreatCrossedThreshold();
     if (!threshold) {
       return;
     }
-    const playerName = this.store.activePlayer()?.displayName ?? playerId;
+    const playerName = this.gameCoreStore.activePlayer()?.displayName ?? playerId;
     switch (threshold.bonus) {
       case 'treasury':
-        this.store.grantFreeTreasury(playerId, threshold.amount ?? 0, 'Threat Track');
-        this.store.narrateAiAction(playerId, `${playerName}'s Threat Track grants +${threshold.amount ?? 0} treasury.`);
+        this.aiStore.grantFreeTreasury(playerId, threshold.amount ?? 0, 'Threat Track');
+        this.aiStore.narrateAiAction(playerId, `${playerName}'s Threat Track grants +${threshold.amount ?? 0} treasury.`);
         return;
       case 'freeCyberAttack': {
-        const state = this.store.state();
-        const targetPlayerId = state ? this.decisionEngine.pickHackTarget(state, playerId) : null;
+        const state = this.gameCoreStore.state();
+        const targetPlayerId = state
+          ? this.decisionEngine.pickHackTarget(state, playerId, this.gameCoreStore.factions(), this.rules)
+          : null;
         if (targetPlayerId) {
-          this.store.freeCyberAttack(playerId, targetPlayerId);
-          this.store.narrateAiAction(playerId, `${playerName}'s Threat Track triggers a free cyber attack.`);
+          this.aiStore.freeCyberAttack(playerId, targetPlayerId);
+          this.aiStore.narrateAiAction(playerId, `${playerName}'s Threat Track triggers a free cyber attack.`);
         }
         return;
       }
       case 'freeInfantry':
         if (threshold.unitId && threshold.quantity) {
-          this.store.grantFreeUnits(playerId, threshold.unitId, threshold.quantity);
-          this.store.narrateAiAction(playerId, `${playerName}'s Threat Track grants ${threshold.quantity}x free units.`);
+          this.aiStore.grantFreeUnits(playerId, threshold.unitId, threshold.quantity);
+          this.aiStore.narrateAiAction(playerId, `${playerName}'s Threat Track grants ${threshold.quantity}x free units.`);
         }
         return;
       case 'freeMissileStrike': {
-        const state = this.store.state();
-        const targetRegionId = state ? this.decisionEngine.pickRichestEnemyRegion(state, playerId) : null;
+        const state = this.gameCoreStore.state();
+        const targetRegionId = state
+          ? this.decisionEngine.pickRichestEnemyRegion(state, playerId, this.gameCoreStore.factions(), this.rules)
+          : null;
         if (targetRegionId) {
-          this.store.applyFreeMissileStrike(playerId, targetRegionId);
-          const regionName = this.store.regions()[targetRegionId]?.name ?? targetRegionId;
-          this.store.narrateAiAction(playerId, `${playerName}'s Threat Track triggers a free missile strike on ${regionName}.`);
+          this.aiStore.applyFreeMissileStrike(playerId, targetRegionId);
+          const regionName = this.gameCoreStore.regions()[targetRegionId]?.name ?? targetRegionId;
+          this.aiStore.narrateAiAction(playerId, `${playerName}'s Threat Track triggers a free missile strike on ${regionName}.`);
         }
         return;
       }
@@ -206,24 +245,26 @@ export class AiTurnService {
    * above via IncrementThreatCommand).
    */
   private applyDifficultyPerTurnBonus(playerId: string): void {
-    const preset = this.store.aiDifficultyPreset();
+    const preset = this.aiStore.aiDifficultyPreset();
     if (!preset) {
       return;
     }
 
     if (preset.treasuryPerTurn !== 0) {
-      this.store.grantFreeTreasury(playerId, preset.treasuryPerTurn, 'Difficulty');
+      this.aiStore.grantFreeTreasury(playerId, preset.treasuryPerTurn, 'Difficulty');
     }
 
     if (preset.freeCyberAttackEveryNTurns > 0) {
-      const aiTurnCounter = this.store.activePlayer()?.aiTurnCounter ?? 0;
+      const aiTurnCounter = this.gameCoreStore.activePlayer()?.aiTurnCounter ?? 0;
       if (aiTurnCounter > 0 && aiTurnCounter % preset.freeCyberAttackEveryNTurns === 0) {
-        const state = this.store.state();
-        const targetPlayerId = state ? this.decisionEngine.pickHackTarget(state, playerId) : null;
+        const state = this.gameCoreStore.state();
+        const targetPlayerId = state
+          ? this.decisionEngine.pickHackTarget(state, playerId, this.gameCoreStore.factions(), this.rules)
+          : null;
         if (targetPlayerId) {
-          this.store.freeCyberAttack(playerId, targetPlayerId);
-          const playerName = this.store.activePlayer()?.displayName ?? playerId;
-          this.store.narrateAiAction(playerId, `${playerName}'s Nightmare difficulty triggers a free cyber attack.`);
+          this.aiStore.freeCyberAttack(playerId, targetPlayerId);
+          const playerName = this.gameCoreStore.activePlayer()?.displayName ?? playerId;
+          this.aiStore.narrateAiAction(playerId, `${playerName}'s Nightmare difficulty triggers a free cyber attack.`);
         }
       }
     }
@@ -240,18 +281,18 @@ export class AiTurnService {
    * doctrine-special roll.
    */
   private runCyberAttack(playerId: string): void {
-    const economyConfig = this.store.economyConfig();
-    const player = this.store.activePlayer();
+    const economyConfig = this.gameCoreStore.economyConfig();
+    const player = this.gameCoreStore.activePlayer();
     if (!economyConfig || !player) {
-      this.store.advancePhase(playerId);
+      this.advancePhase(playerId);
       return;
     }
 
     if (this.pendingOrderAction === 'pressureNeutral') {
       this.attemptInfluence(playerId);
     } else if (player.treasury >= economyConfig.cyberAttackCost) {
-      this.store.rollAiCyberAction(playerId);
-      switch (this.store.lastAiCyberAction()) {
+      this.aiStore.rollAiCyberAction(playerId);
+      switch (this.aiStore.lastAiCyberAction()) {
         case 'hack':
           this.attemptHack(playerId);
           break;
@@ -268,7 +309,7 @@ export class AiTurnService {
     }
 
     this.applyCyberStateDoctrineSpecial(playerId);
-    this.store.advancePhase(playerId);
+    this.advancePhase(playerId);
   }
 
   /**
@@ -280,36 +321,36 @@ export class AiTurnService {
    * hasUsedCyberAttackThisTurn is already set once the action above runs.
    */
   private applyCyberStateDoctrineSpecial(playerId: string): void {
-    const state = this.store.state();
+    const state = this.gameCoreStore.state();
     if (this.pendingOrderAction !== 'doctrineSpecial' || state?.aiConfig?.doctrine !== 'cyberState') {
       return;
     }
-    const targetPlayerId = this.decisionEngine.pickHackTarget(state, playerId);
+    const targetPlayerId = this.decisionEngine.pickHackTarget(state, playerId, this.gameCoreStore.factions(), this.rules);
     if (!targetPlayerId) {
       return;
     }
-    this.store.freeCyberAttack(playerId, targetPlayerId);
-    const playerName = this.store.activePlayer()?.displayName ?? playerId;
-    this.store.narrateAiAction(playerId, `${playerName}'s Cyber State doctrine triggers a shadow cyber attack.`);
+    this.aiStore.freeCyberAttack(playerId, targetPlayerId);
+    const playerName = this.gameCoreStore.activePlayer()?.displayName ?? playerId;
+    this.aiStore.narrateAiAction(playerId, `${playerName}'s Cyber State doctrine triggers a shadow cyber attack.`);
   }
 
   private attemptHack(playerId: string): void {
-    const state = this.store.state();
+    const state = this.gameCoreStore.state();
     if (!state) {
       return;
     }
-    const targetPlayerId = this.decisionEngine.pickHackTarget(state, playerId);
+    const targetPlayerId = this.decisionEngine.pickHackTarget(state, playerId, this.gameCoreStore.factions(), this.rules);
     if (!targetPlayerId) {
       return;
     }
-    this.store.hack(playerId, targetPlayerId);
-    const playerName = this.store.activePlayer()?.displayName ?? playerId;
+    this.cyberAttackStore.hack(playerId, targetPlayerId);
+    const playerName = this.gameCoreStore.activePlayer()?.displayName ?? playerId;
     const targetName = state.players.find((candidate) => candidate.id === targetPlayerId)?.displayName ?? targetPlayerId;
-    this.store.narrateAiAction(playerId, `${playerName} attempts to hack ${targetName}.`);
+    this.aiStore.narrateAiAction(playerId, `${playerName} attempts to hack ${targetName}.`);
   }
 
   private attemptInfluence(playerId: string): void {
-    const state = this.store.state();
+    const state = this.gameCoreStore.state();
     if (!state) {
       return;
     }
@@ -317,26 +358,26 @@ export class AiTurnService {
     if (!targetRegionId) {
       return;
     }
-    this.store.politicalInfluence(playerId, targetRegionId);
-    const playerName = this.store.activePlayer()?.displayName ?? playerId;
-    const regionName = this.store.regions()[targetRegionId]?.name ?? targetRegionId;
-    this.store.narrateAiAction(playerId, `${playerName} attempts Political Influence on ${regionName}.`);
+    this.cyberAttackStore.politicalInfluence(playerId, targetRegionId);
+    const playerName = this.gameCoreStore.activePlayer()?.displayName ?? playerId;
+    const regionName = this.gameCoreStore.regions()[targetRegionId]?.name ?? targetRegionId;
+    this.aiStore.narrateAiAction(playerId, `${playerName} attempts Political Influence on ${regionName}.`);
   }
 
   private attemptSabotage(playerId: string): void {
-    const state = this.store.state();
+    const state = this.gameCoreStore.state();
     if (!state) {
       return;
     }
-    const targetRegionId = this.decisionEngine.pickRichestEnemyRegion(state, playerId);
+    const targetRegionId = this.decisionEngine.pickRichestEnemyRegion(state, playerId, this.gameCoreStore.factions(), this.rules);
     const targetPlayerId = targetRegionId ? state.regions[targetRegionId]?.ownerId : null;
     if (!targetRegionId || !targetPlayerId) {
       return;
     }
-    this.store.aiSabotage(playerId, targetPlayerId, targetRegionId);
-    const playerName = this.store.activePlayer()?.displayName ?? playerId;
+    this.aiStore.aiSabotage(playerId, targetPlayerId, targetRegionId);
+    const playerName = this.gameCoreStore.activePlayer()?.displayName ?? playerId;
     const targetName = state.players.find((candidate) => candidate.id === targetPlayerId)?.displayName ?? targetPlayerId;
-    this.store.narrateAiAction(playerId, `${playerName} sabotages ${targetName}.`);
+    this.aiStore.narrateAiAction(playerId, `${playerName} sabotages ${targetName}.`);
   }
 
   /**
@@ -362,22 +403,22 @@ export class AiTurnService {
    * whatever the first one changed.
    */
   private runAttackMoves(playerId: string): void {
-    const conditionsData = this.store.aiAttackConditionsData();
+    const conditionsData = this.aiStore.aiAttackConditions();
     if (!this.pendingOrderAction || !conditionsData) {
-      this.store.advancePhase(playerId);
+      this.advancePhase(playerId);
       return;
     }
 
-    const attackAttempts = this.store.state()?.aiConfig?.totalWarActive ? 2 : 1;
+    const attackAttempts = this.gameCoreStore.state()?.aiConfig?.totalWarActive ? 2 : 1;
     for (let attempt = 0; attempt < attackAttempts; attempt += 1) {
-      const state = this.store.state();
+      const state = this.gameCoreStore.state();
       if (!state) {
         break;
       }
       this.attemptOneAttack(playerId, state, this.pendingOrderAction, conditionsData);
     }
 
-    this.store.advancePhase(playerId);
+    this.advancePhase(playerId);
   }
 
   private attemptOneAttack(
@@ -398,7 +439,8 @@ export class AiTurnService {
       state,
       playerId,
       effectiveAction,
-      this.store.units(),
+      this.gameCoreStore.units(),
+      this.gameCoreStore.factions(),
       this.rules,
     );
     if (targetRegionId) {
@@ -408,7 +450,7 @@ export class AiTurnService {
     // Re-read state fresh — commitLandAttack above may have just changed it
     // (units moved, a region captured) — before independently attempting a
     // naval assault this same attack attempt.
-    const freshState = this.store.state();
+    const freshState = this.gameCoreStore.state();
     if (freshState) {
       this.attemptNavalAssault(playerId, freshState, conditionsData, isAggressorSpecial);
     }
@@ -425,7 +467,8 @@ export class AiTurnService {
       state,
       playerId,
       targetRegionId,
-      this.store.units(),
+      this.gameCoreStore.units(),
+      this.gameCoreStore.factions(),
       this.rules,
     );
     const shouldAttack =
@@ -435,8 +478,8 @@ export class AiTurnService {
         playerId,
         targetRegionId,
         committingUnitIds,
-        this.store.units(),
-        this.store.factions(),
+        this.gameCoreStore.units(),
+        this.gameCoreStore.factions(),
         conditionsData,
         this.rules,
       );
@@ -446,7 +489,7 @@ export class AiTurnService {
     const isDefended = this.rules.getUnitsInRegion(state, targetRegionId).some((unit) => unit.ownerId !== playerId);
     const unitsToSend = isDefended ? committingUnitIds : committingUnitIds.slice(0, 1);
     for (const unitInstanceId of unitsToSend) {
-      this.store.attackRegion(playerId, unitInstanceId, targetRegionId);
+      this.movementStore.attackRegion(playerId, unitInstanceId, targetRegionId);
     }
     this.narrateAttack(playerId, targetRegionId);
   }
@@ -457,7 +500,13 @@ export class AiTurnService {
     conditionsData: AiAttackConditionsData,
     bypassConditions = false,
   ): void {
-    const plan = this.decisionEngine.pickNavalAssaultPlan(state, playerId, this.store.units(), this.rules);
+    const plan = this.decisionEngine.pickNavalAssaultPlan(
+      state,
+      playerId,
+      this.gameCoreStore.units(),
+      this.gameCoreStore.factions(),
+      this.rules,
+    );
     if (!plan) {
       return;
     }
@@ -468,8 +517,8 @@ export class AiTurnService {
         playerId,
         plan.targetRegionId,
         [plan.passengerUnitId],
-        this.store.units(),
-        this.store.factions(),
+        this.gameCoreStore.units(),
+        this.gameCoreStore.factions(),
         conditionsData,
         this.rules,
       );
@@ -477,19 +526,19 @@ export class AiTurnService {
       return;
     }
 
-    this.store.loadUnit(playerId, plan.passengerUnitId, plan.transportUnitId);
-    const transportNow = this.store.state()?.units.find((unit) => unit.id === plan.transportUnitId);
+    this.movementStore.loadUnit(playerId, plan.passengerUnitId, plan.transportUnitId);
+    const transportNow = this.gameCoreStore.state()?.units.find((unit) => unit.id === plan.transportUnitId);
     if (transportNow && transportNow.regionId !== plan.sailToSeaZoneId) {
-      this.store.moveUnit(playerId, plan.transportUnitId, plan.sailToSeaZoneId);
+      this.movementStore.moveUnit(playerId, plan.transportUnitId, plan.sailToSeaZoneId);
     }
-    this.store.unloadUnit(playerId, plan.passengerUnitId, plan.targetRegionId);
+    this.movementStore.unloadUnit(playerId, plan.passengerUnitId, plan.targetRegionId);
     this.narrateAttack(playerId, plan.targetRegionId);
   }
 
   private narrateAttack(playerId: string, targetRegionId: string): void {
-    const playerName = this.store.activePlayer()?.displayName ?? playerId;
-    const regionName = this.store.regions()[targetRegionId]?.name ?? targetRegionId;
-    this.store.narrateAiAction(playerId, `${playerName} attacks ${regionName}.`);
+    const playerName = this.gameCoreStore.activePlayer()?.displayName ?? playerId;
+    const regionName = this.gameCoreStore.regions()[targetRegionId]?.name ?? targetRegionId;
+    this.aiStore.narrateAiAction(playerId, `${playerName} attacks ${regionName}.`);
   }
 
   /**
@@ -504,19 +553,19 @@ export class AiTurnService {
    * looping forever if one is ever encountered.
    */
   private runAttackPhase(playerId: string): void {
-    const state = this.store.state();
+    const state = this.gameCoreStore.state();
     if (state) {
-      for (const regionId of this.rules.getContestedRegionIds(state, playerId)) {
+      for (const regionId of this.rules.getContestedRegionIds(state, playerId, this.gameCoreStore.factions())) {
         this.resolveCombatInRegion(playerId, regionId);
       }
     }
-    this.store.advancePhase(playerId);
+    this.advancePhase(playerId);
   }
 
   private resolveCombatInRegion(playerId: string, regionId: string): void {
-    const unitCatalog = this.store.units();
+    const unitCatalog = this.gameCoreStore.units();
     for (let step = 0; step < MAX_COMBAT_STEPS_PER_REGION; step += 1) {
-      const state = this.store.state();
+      const state = this.gameCoreStore.state();
       if (!state) {
         return;
       }
@@ -556,14 +605,14 @@ export class AiTurnService {
       switch (combatStep) {
         case 'attackerRoll':
         case 'defenderRoll':
-          this.store.rollCombat(playerId, regionId);
+          this.combatStore.rollCombat(playerId, regionId);
           break;
         case 'missileCasualty':
         case 'defenderCasualty':
-          this.store.removeCasualty(playerId, regionId, this.decisionEngine.pickCasualtyUnit(defenders, unitCatalog));
+          this.combatStore.removeCasualty(playerId, regionId, this.decisionEngine.pickCasualtyUnit(defenders, unitCatalog));
           break;
         case 'attackerCasualty':
-          this.store.removeCasualty(playerId, regionId, this.decisionEngine.pickCasualtyUnit(attackers, unitCatalog));
+          this.combatStore.removeCasualty(playerId, regionId, this.decisionEngine.pickCasualtyUnit(attackers, unitCatalog));
           break;
         case 'missileChoice':
         case 'missileRoll':
@@ -578,25 +627,31 @@ export class AiTurnService {
 
   /** Rulebook "Tactical Moves": relocate every unit that didn't fight this turn toward the nearest high-value front, skipping any unit the heuristic has no improvement for. */
   private runTacticalMoves(playerId: string): void {
-    const state = this.store.state();
+    const state = this.gameCoreStore.state();
     if (state) {
       const eligibleUnitIds = state.units
         .filter((unit) => unit.ownerId === playerId && !unit.hasFoughtThisTurn && unit.movesRemaining > 0)
         .map((unit) => unit.id);
 
       for (const unitInstanceId of eligibleUnitIds) {
-        const freshState = this.store.state();
+        const freshState = this.gameCoreStore.state();
         const unit = freshState?.units.find((candidate) => candidate.id === unitInstanceId);
         if (!freshState || !unit || unit.movesRemaining <= 0) {
           continue;
         }
-        const destination = this.decisionEngine.pickTacticalDestination(freshState, unit, this.store.units(), this.rules);
+        const destination = this.decisionEngine.pickTacticalDestination(
+          freshState,
+          unit,
+          this.gameCoreStore.units(),
+          this.gameCoreStore.factions(),
+          this.rules,
+        );
         if (destination) {
-          this.store.moveUnit(playerId, unitInstanceId, destination);
+          this.movementStore.moveUnit(playerId, unitInstanceId, destination);
         }
       }
     }
-    this.store.advancePhase(playerId);
+    this.advancePhase(playerId);
   }
 
   /**
@@ -609,7 +664,7 @@ export class AiTurnService {
    * among the legal options instead of just the first.
    */
   private runPlaceNewUnits(playerId: string): void {
-    const entryState = this.store.state();
+    const entryState = this.gameCoreStore.state();
     const entryPlayer = entryState?.players.find((candidate) => candidate.id === playerId);
     const unitIds = entryPlayer?.reserve.map((entry) => entry.unitId) ?? [];
     const fortressSpecialActive =
@@ -617,13 +672,13 @@ export class AiTurnService {
 
     for (const unitId of unitIds) {
       for (let deployed = 0; deployed < MAX_DEPLOYS_PER_UNIT_TYPE; deployed += 1) {
-        const state = this.store.state();
+        const state = this.gameCoreStore.state();
         const player = state?.players.find((candidate) => candidate.id === playerId);
         const quantity = player?.reserve.find((entry) => entry.unitId === unitId)?.quantity ?? 0;
         if (quantity <= 0) {
           break;
         }
-        const destinations = this.store.deployDestinations(unitId);
+        const destinations = this.movementStore.deployDestinations(unitId);
         if (destinations.length === 0) {
           break;
         }
@@ -631,10 +686,10 @@ export class AiTurnService {
           fortressSpecialActive && state
             ? (this.decisionEngine.pickMostThreatenedDestination(state, playerId, destinations, this.rules) ?? destinations[0])
             : destinations[0];
-        this.store.deployUnit(playerId, unitId, destination);
+        this.movementStore.deployUnit(playerId, unitId, destination);
       }
     }
 
-    this.store.advancePhase(playerId);
+    this.advancePhase(playerId);
   }
 }
