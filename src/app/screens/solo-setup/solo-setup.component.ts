@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { AiDifficulty, AiDoctrine } from '../../models/ai-config.model';
-import { SoloSetupState } from '../../state/solo-setup.state';
+import { SoloSetupStore } from '../../state/solo-setup/solo-setup.store';
 
 interface DoctrineOption {
   readonly id: AiDoctrine;
@@ -45,7 +45,7 @@ const DIFFICULTY_OPTIONS: readonly DifficultyOption[] = [
 })
 export class SoloSetupComponent {
   private readonly router = inject(Router);
-  private readonly soloSetup = inject(SoloSetupState);
+  private readonly soloSetup = inject(SoloSetupStore);
 
   protected readonly doctrines = DOCTRINE_OPTIONS;
   protected readonly difficulties = DIFFICULTY_OPTIONS;

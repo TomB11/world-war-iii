@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { GameStore } from '../../../state/store';
+import { GameCoreStore } from '../../../state/core/game-core.store';
+import { CombatStore } from '../../../state/combat/combat.store';
 import { UnitInstance } from '../../../models/unit-instance.model';
 import { CombatCasualty, CombatDieRoll, CombatStep } from '../../../models/region-combat.model';
 import { CombatUnitSlotComponent } from './combat-unit-slot/combat-unit-slot.component';
@@ -35,35 +36,36 @@ interface CombatUnit {
   styleUrl: './combat-board.component.scss',
 })
 export class CombatBoardComponent {
-  protected readonly store = inject(GameStore);
+  protected readonly gameCoreStore = inject(GameCoreStore);
+  protected readonly combatStore = inject(CombatStore);
   protected readonly columns = COMBAT_COLUMNS;
 
   /** The battle's location name — a Region for a land fight, or a SeaZone's label for a naval one (combatRegionId is a sea zone id there). */
   protected readonly regionLabel = computed(() => {
-    const id = this.store.combatRegionId();
+    const id = this.combatStore.combatRegionId();
     if (!id) {
       return '';
     }
-    return this.store.regions()[id]?.name ?? this.store.seaZones()[id]?.label ?? '';
+    return this.gameCoreStore.regions()[id]?.name ?? this.gameCoreStore.seaZones()[id]?.label ?? '';
   });
 
-  protected readonly attackerId = computed(() => this.store.activePlayer()?.id ?? null);
-  protected readonly attackerName = computed(() => this.store.activePlayer()?.displayName ?? '');
+  protected readonly attackerId = computed(() => this.gameCoreStore.activePlayer()?.id ?? null);
+  protected readonly attackerName = computed(() => this.gameCoreStore.activePlayer()?.displayName ?? '');
   protected readonly defenderName = computed(() => {
     const defender = this.defenderUnits()[0];
-    return defender ? (this.store.factions()[this.defenderOwnerId() ?? '']?.name ?? 'Defender') : 'Defender';
+    return defender ? (this.gameCoreStore.factions()[this.defenderOwnerId() ?? '']?.name ?? 'Defender') : 'Defender';
   });
 
   /** Faction colors driving the board's per-side accents (columns, badges, glow) — falls back to the generic theme colors if a side has no units yet. */
   protected readonly attackerColor = computed(
-    () => this.store.factions()[this.attackerId() ?? '']?.color ?? '#4fb8e0',
+    () => this.gameCoreStore.factions()[this.attackerId() ?? '']?.color ?? '#4fb8e0',
   );
   protected readonly defenderColor = computed(
-    () => this.store.factions()[this.defenderOwnerId() ?? '']?.color ?? '#b8433f',
+    () => this.gameCoreStore.factions()[this.defenderOwnerId() ?? '']?.color ?? '#b8433f',
   );
 
-  private readonly combat = this.store.activeCombat;
-  protected readonly resolved = computed(() => this.store.combatOutcomeMessage() !== null);
+  private readonly combat = this.combatStore.activeCombat;
+  protected readonly resolved = computed(() => this.combatStore.combatOutcomeMessage() !== null);
   protected readonly step = computed<CombatStep>(() => this.combat()?.step ?? 'attackerRoll');
   protected readonly round = computed(() => this.combat()?.round ?? 1);
   protected readonly pendingDefenderCasualties = computed(() => this.combat()?.pendingDefenderCasualties ?? 0);
@@ -95,28 +97,28 @@ export class CombatBoardComponent {
   /** Which attacker column (its own Attack value — Missile A under 2, Missile B under 4) the armed missile sits in while awaiting its roll. */
   private readonly armedMissileColumnValue = computed(() => {
     const unitId = this.armedMissileUnitId();
-    return unitId ? (this.store.units()[unitId]?.attack ?? null) : null;
+    return unitId ? (this.gameCoreStore.units()[unitId]?.attack ?? null) : null;
   });
 
   /** The active player's Reserve missiles available to select, for the missile-choice buttons. */
   protected readonly reserveMissiles = computed<readonly { unitId: string; name: string; quantity: number }[]>(() => {
-    const player = this.store.activePlayer();
+    const player = this.gameCoreStore.activePlayer();
     if (!player) {
       return [];
     }
-    const catalog = this.store.units();
+    const catalog = this.gameCoreStore.units();
     return player.reserve
       .filter((entry) => entry.quantity > 0 && catalog[entry.unitId]?.category === 'missile')
       .map((entry) => ({ unitId: entry.unitId, name: catalog[entry.unitId]?.name ?? entry.unitId, quantity: entry.quantity }));
   });
 
-  /** Units actually IN this battle — excludes embarked land/support cargo riding along on a transport in a naval fight (they never roll, see GameStore.isCombatParticipant). */
+  /** Units actually IN this battle — excludes embarked land/support cargo riding along on a transport in a naval fight (they never roll, see GameCoreStore.isCombatParticipant). */
   private readonly regionUnits = computed<readonly UnitInstance[]>(() => {
-    const id = this.store.combatRegionId();
+    const id = this.combatStore.combatRegionId();
     if (!id) {
       return [];
     }
-    return (this.store.unitsByRegion()[id] ?? []).filter((unit) => this.store.isCombatParticipant(unit));
+    return (this.gameCoreStore.unitsByRegion()[id] ?? []).filter((unit) => this.gameCoreStore.isCombatParticipant(unit));
   });
 
   private readonly defenderOwnerId = computed(() => {
@@ -195,59 +197,59 @@ export class CombatBoardComponent {
 
   protected roll(): void {
     const playerId = this.attackerId();
-    const regionId = this.store.combatRegionId();
+    const regionId = this.combatStore.combatRegionId();
     if (playerId && regionId) {
-      this.store.rollCombat(playerId, regionId);
+      this.combatStore.rollCombat(playerId, regionId);
     }
   }
 
   protected missileName(unitId: string): string {
-    return this.store.units()[unitId]?.name ?? unitId;
+    return this.gameCoreStore.units()[unitId]?.name ?? unitId;
   }
 
   protected selectMissile(missileUnitId: string): void {
     const playerId = this.attackerId();
-    const regionId = this.store.combatRegionId();
+    const regionId = this.combatStore.combatRegionId();
     if (playerId && regionId) {
-      this.store.selectMissile(playerId, regionId, missileUnitId);
+      this.combatStore.selectMissile(playerId, regionId, missileUnitId);
     }
   }
 
   protected rollMissile(): void {
     const playerId = this.attackerId();
-    const regionId = this.store.combatRegionId();
+    const regionId = this.combatStore.combatRegionId();
     if (playerId && regionId) {
-      this.store.fireMissile(playerId, regionId);
+      this.combatStore.fireMissile(playerId, regionId);
     }
   }
 
   protected removeCasualty(unit: CombatUnit): void {
     const playerId = this.attackerId();
-    const regionId = this.store.combatRegionId();
+    const regionId = this.combatStore.combatRegionId();
     if (playerId && regionId) {
-      this.store.removeCasualty(playerId, regionId, unit.instanceId);
+      this.combatStore.removeCasualty(playerId, regionId, unit.instanceId);
     }
   }
 
   protected close(): void {
-    this.store.closeCombat();
+    this.combatStore.closeCombat();
   }
 
   private attackValue(unitId: string): number {
-    return this.store.units()[unitId]?.attack ?? 0;
+    return this.gameCoreStore.units()[unitId]?.attack ?? 0;
   }
 
   private defenseValue(unitId: string): number {
-    return this.store.units()[unitId]?.defense ?? 0;
+    return this.gameCoreStore.units()[unitId]?.defense ?? 0;
   }
 
   private toCombatUnit(unit: UnitInstance): CombatUnit {
     return {
       instanceId: unit.id,
       unitId: unit.unitId,
-      unitName: this.store.units()[unit.unitId]?.name ?? unit.unitId,
+      unitName: this.gameCoreStore.units()[unit.unitId]?.name ?? unit.unitId,
       ownerId: unit.ownerId,
-      color: this.store.factions()[unit.ownerId]?.color ?? '#888888',
+      color: this.gameCoreStore.factions()[unit.ownerId]?.color ?? '#888888',
     };
   }
 
@@ -255,9 +257,9 @@ export class CombatBoardComponent {
     return {
       instanceId: casualty.instanceId,
       unitId: casualty.unitId,
-      unitName: this.store.units()[casualty.unitId]?.name ?? casualty.unitId,
+      unitName: this.gameCoreStore.units()[casualty.unitId]?.name ?? casualty.unitId,
       ownerId,
-      color: this.store.factions()[ownerId ?? '']?.color ?? '#888888',
+      color: this.gameCoreStore.factions()[ownerId ?? '']?.color ?? '#888888',
     };
   }
 }

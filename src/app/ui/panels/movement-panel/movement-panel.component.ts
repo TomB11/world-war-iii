@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { GameStore } from '../../../state/store';
+import { GameCoreStore } from '../../../state/core/game-core.store';
+import { MapUiStore } from '../../../state/map/map-ui.store';
+import { MovementStore } from '../../../state/movement/movement.store';
 import { UnitInstance } from '../../../models/unit-instance.model';
 import { UnitIconComponent } from '../../shared/unit-icon/unit-icon.component';
 
@@ -24,14 +26,16 @@ import { UnitIconComponent } from '../../shared/unit-icon/unit-icon.component';
   styleUrl: './movement-panel.component.scss',
 })
 export class MovementPanelComponent {
-  protected readonly store = inject(GameStore);
+  protected readonly gameCoreStore = inject(GameCoreStore);
+  protected readonly mapUiStore = inject(MapUiStore);
+  protected readonly movementStore = inject(MovementStore);
 
-  protected readonly isDeployPhase = computed(() => this.store.state()?.phase === 'placeNewUnits');
+  protected readonly isDeployPhase = computed(() => this.gameCoreStore.state()?.phase === 'placeNewUnits');
 
   /** The active player's transports (in a sea zone) that currently carry cargo, for the Unload list. */
   protected readonly loadedTransports = computed<readonly UnitInstance[]>(() => {
-    const units = this.store.activePlayerUnits();
-    const catalog = this.store.units();
+    const units = this.gameCoreStore.activePlayerUnits();
+    const catalog = this.gameCoreStore.units();
     return units.filter(
       (unit) =>
         (catalog[unit.unitId]?.transportCapacity ?? 0) > 0 &&
@@ -51,25 +55,25 @@ export class MovementPanelComponent {
    * so it has no business in this list at all.
    */
   protected readonly reserveEntries = computed(() => {
-    const catalog = this.store.units();
-    return (this.store.activePlayer()?.reserve ?? []).filter(
+    const catalog = this.gameCoreStore.units();
+    return (this.gameCoreStore.activePlayer()?.reserve ?? []).filter(
       (entry) => catalog[entry.unitId]?.category !== 'missile',
     );
   });
 
-  protected readonly activePlayerFactionId = computed(() => this.store.activePlayer()?.factionId ?? null);
+  protected readonly activePlayerFactionId = computed(() => this.gameCoreStore.activePlayer()?.factionId ?? null);
 
   protected readonly activePlayerColor = computed(() => {
-    const player = this.store.activePlayer();
+    const player = this.gameCoreStore.activePlayer();
     if (!player) {
       return '#888888';
     }
-    return this.store.factions()[player.factionId]?.color ?? '#888888';
+    return this.gameCoreStore.factions()[player.factionId]?.color ?? '#888888';
   });
 
   /** Hint shown while a deploy/unload is armed — what to do next, or why nothing is highlighted. */
   protected readonly pendingActionHint = computed<string | null>(() => {
-    const pending = this.store.pendingAction();
+    const pending = this.mapUiStore.pendingAction();
     if (!pending) {
       return null;
     }
@@ -84,37 +88,37 @@ export class MovementPanelComponent {
   });
 
   protected isArmedForDeploy(unitId: string): boolean {
-    const pending = this.store.pendingAction();
+    const pending = this.mapUiStore.pendingAction();
     return pending !== null && pending.kind === 'deploy' && pending.subjectId === unitId;
   }
 
   protected isArmedForUnload(unitInstanceId: string): boolean {
-    const pending = this.store.pendingAction();
+    const pending = this.mapUiStore.pendingAction();
     return pending !== null && pending.kind === 'unload' && pending.subjectId === unitInstanceId;
   }
 
   protected armDeploy(unitId: string): void {
-    this.store.armDeployUnit(unitId);
+    this.movementStore.armDeployUnit(unitId);
   }
 
   protected armUnload(unitInstanceId: string): void {
-    this.store.armUnloadUnit(unitInstanceId);
+    this.movementStore.armUnloadUnit(unitInstanceId);
   }
 
   protected cancelPendingAction(): void {
-    this.store.cancelPendingAction();
+    this.mapUiStore.clearPendingAction();
   }
 
   protected unitName(unitId: string): string {
-    return this.store.units()[unitId]?.name ?? unitId;
+    return this.gameCoreStore.units()[unitId]?.name ?? unitId;
   }
 
   protected regionName(regionId: string): string {
-    const region = this.store.regions()[regionId];
+    const region = this.gameCoreStore.regions()[regionId];
     if (region) {
       return region.name;
     }
-    const seaZone = this.store.seaZones()[regionId];
+    const seaZone = this.gameCoreStore.seaZones()[regionId];
     if (seaZone) {
       return `Sea Zone ${seaZone.label}`;
     }
@@ -122,10 +126,10 @@ export class MovementPanelComponent {
   }
 
   protected embarkedUnits(transportInstanceId: string): readonly UnitInstance[] {
-    return this.store.activePlayerUnits().filter((unit) => unit.transportedBy === transportInstanceId);
+    return this.gameCoreStore.activePlayerUnits().filter((unit) => unit.transportedBy === transportInstanceId);
   }
 
   protected unloadDestinations(unitInstanceId: string): readonly string[] {
-    return this.store.unloadDestinations(unitInstanceId);
+    return this.movementStore.unloadDestinations(unitInstanceId);
   }
 }

@@ -1,4 +1,4 @@
-@if (store.state()?.aiConfig; as aiConfig) {
+@if (gameCoreStore.state()?.aiConfig; as aiConfig) {
   <div class="d-flex align-items-center gap-2" [title]="'Threat Track: ' + threatLevel() + ' / ' + maxLevel()">
     <span class="threat-track__label">Threat</span>
 

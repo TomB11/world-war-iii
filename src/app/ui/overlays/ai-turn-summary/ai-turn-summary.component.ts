@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { GameStore } from '../../../state/store';
+import { AiStore } from '../../../state/ai/ai.store';
 
 /** Milliseconds between each faction section's staggered entrance. */
 const FACTION_STAGGER_MS = 110;
@@ -12,7 +12,7 @@ const MAX_STAGGER_DELAY_MS = 900;
  * Solo Command Mode: a calm, dismissable review of what every AI faction did
  * on the turn(s) just played — shown once control is about to return to the
  * human, instead of the individual actions flashing by as transient toasts
- * (GameStore.aiTurnSummary, populated by AiTurnService.finishAiTurnLog).
+ * (AiStore.aiTurnSummary, populated by AiTurnService.finishAiTurnLog).
  * Reading it and clicking Continue is the only way past it, matching
  * VictoryBannerComponent/CombatBoardComponent's full-screen overlay pattern.
  */
@@ -24,10 +24,10 @@ const MAX_STAGGER_DELAY_MS = 900;
   styleUrl: './ai-turn-summary.component.scss',
 })
 export class AiTurnSummaryComponent {
-  protected readonly store = inject(GameStore);
+  protected readonly aiStore = inject(AiStore);
 
   protected continue(): void {
-    this.store.dismissAiTurnSummary();
+    this.aiStore.dismissAiTurnSummary();
   }
 
   protected factionDelayMs(factionIndex: number): number {

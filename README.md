@@ -26,7 +26,10 @@ Then open http://localhost:4200.
   `AdvancePhaseCommand`, `EndTurnCommand`, `DeployUnitCommand`,
   `MoveUnitCommand`, `LoadUnitCommand`, `UnloadUnitCommand`) and an event
   system, completely independent of Angular
-- Signal Store (`src/app/state`) that is the *only* bridge between UI and Engine
+- Signal Store layer (`src/app/state`, built on @ngrx/signals) split into one
+  small feature store per gameplay concern (core state/dispatch, map UI,
+  combat, movement, economy, cyber attacks, Solo Command Mode AI) — the only
+  bridge between UI and Engine
 - JSON data loading (`src/app/data/countries.json`, `factions.json`,
   `economy.json`, `units.json`, `straits.json`, `sea-zones.json`,
   `starting-deployment.json`) — no hardcoded gameplay values

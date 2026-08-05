@@ -1,4 +1,4 @@
-@if (store.combatRegionId()) {
+@if (combatStore.combatRegionId()) {
   <div class="combat-board">
     <div class="combat-board__card" [style.--attacker-color]="attackerColor()" [style.--defender-color]="defenderColor()">
       <button type="button" class="combat-board__close" title="Close and return to the map" (click)="close()">
@@ -77,7 +77,7 @@
         }
 
         @if (resolved()) {
-          <p class="combat-board__outcome">{{ store.combatOutcomeMessage() }}</p>
+          <p class="combat-board__outcome">{{ combatStore.combatOutcomeMessage() }}</p>
           <button type="button" class="combat-board__btn" (click)="close()">Back to Map</button>
         } @else if (pendingMissileChoice()) {
           <p class="combat-board__prompt">
@@ -92,7 +92,7 @@
             }
           </div>
 
-          @if (store.combatRejectionReason(); as reason) {
+          @if (combatStore.combatRejectionReason(); as reason) {
             <p class="combat-board__rejection">{{ reason }}</p>
           }
         } @else if (pendingMissileRoll()) {
@@ -101,7 +101,7 @@
           </p>
           <button type="button" class="combat-board__btn" (click)="rollMissile()">Roll Missile Dice</button>
 
-          @if (store.combatRejectionReason(); as reason) {
+          @if (combatStore.combatRejectionReason(); as reason) {
             <p class="combat-board__rejection">{{ reason }}</p>
           }
         } @else {
@@ -133,7 +133,7 @@
             }
           }
 
-          @if (store.combatRejectionReason(); as reason) {
+          @if (combatStore.combatRejectionReason(); as reason) {
             <p class="combat-board__rejection">{{ reason }}</p>
             <button type="button" class="combat-board__btn" (click)="close()">Back to Map</button>
           }

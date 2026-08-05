@@ -14,7 +14,8 @@ import { VictoryBannerComponent } from '../../ui/overlays/victory-banner/victory
 import { CombatBoardComponent } from '../../ui/overlays/combat-board/combat-board.component';
 import { ToastHostComponent } from '../../ui/overlays/toast-host/toast-host.component';
 import { AiTurnSummaryComponent } from '../../ui/overlays/ai-turn-summary/ai-turn-summary.component';
-import { GameStore } from '../../state/store';
+import { GameCoreStore } from '../../state/core/game-core.store';
+import { AiStore } from '../../state/ai/ai.store';
 import { AiTurnService } from '../../services/ai-turn.service';
 
 @Component({
@@ -42,11 +43,15 @@ import { AiTurnService } from '../../services/ai-turn.service';
   styleUrl: './game-screen.component.scss',
 })
 export class GameScreenComponent implements OnInit {
-  protected readonly store = inject(GameStore);
-  /** Unused directly — injecting forces AiTurnService's constructor (and its state-watching effect) to run for the lifetime of a game, exactly like GameStore itself is force-instantiated here. */
+  protected readonly gameCoreStore = inject(GameCoreStore);
+  private readonly aiStore = inject(AiStore);
+  /** Unused directly — injecting forces AiTurnService's constructor (and its state-watching effect) to run for the lifetime of a game, exactly like GameCoreStore itself is force-instantiated here. */
   private readonly aiTurnService = inject(AiTurnService);
 
-  ngOnInit(): void {
-    void this.store.initialize();
+  async ngOnInit(): Promise<void> {
+    const data = await this.gameCoreStore.initialize();
+    if (data) {
+      this.aiStore.setStaticAiData(data);
+    }
   }
 }

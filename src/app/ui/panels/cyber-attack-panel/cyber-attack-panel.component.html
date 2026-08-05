@@ -1,4 +1,4 @@
-@if (store.activePlayer(); as player) {
+@if (gameCoreStore.activePlayer(); as player) {
   <div class="wwiii-panel cyber-panel">
     <div class="cyber-panel__header">
       <h2>Cyber Attack</h2>
@@ -109,10 +109,10 @@
       <p class="hint">Available during the Cyber Attack Phase.</p>
     }
 
-    @if (store.cyberAttackRejectionReason(); as reason) {
+    @if (cyberAttackStore.cyberAttackRejectionReason(); as reason) {
       <p class="rejection">{{ reason }}</p>
     }
-    @if (store.cyberAttackResultMessage(); as message) {
+    @if (cyberAttackStore.cyberAttackResultMessage(); as message) {
       <p class="result">{{ message }}</p>
     }
   </div>

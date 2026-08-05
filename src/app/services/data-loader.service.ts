@@ -38,7 +38,7 @@ import { AiThreatTrackData } from '../models/ai-threat-track.model';
 import { AiDifficultyData } from '../models/ai-difficulty.model';
 import { AiSabotageEffectsData } from '../models/ai-sabotage.model';
 import { RulesEngine } from '../engine/rules-engine';
-import { SoloSelection } from '../state/solo-setup.state';
+import { SoloSelection } from '../state/solo-setup/solo-setup.store';
 
 interface CountriesDataFile {
   readonly regions: readonly Region[];

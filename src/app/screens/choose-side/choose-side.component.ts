@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { SoloSetupState } from '../../state/solo-setup.state';
+import { SoloSetupStore } from '../../state/solo-setup/solo-setup.store';
 
 export type AllianceSide = 'west' | 'east';
 
@@ -15,7 +15,7 @@ const TEAM_ID_BY_SIDE: Readonly<Record<AllianceSide, string>> = {
  * click zones — left picks the Western Allies (EUTO/USA/SEATO, teamId
  * 'team-west' in data/factions.json), right picks the Eurasian Pact
  * (Russia/China/Arabia League, 'team-east'). This is the human's alliance
- * for Solo Command Mode — the pick is handed to SoloSetupState and the next
+ * for Solo Command Mode — the pick is handed to SoloSetupStore and the next
  * screen ('solo-setup') lets the player choose an AI Doctrine/Difficulty for
  * the opposing alliance, or skip straight into today's full hotseat play.
  */
@@ -28,7 +28,7 @@ const TEAM_ID_BY_SIDE: Readonly<Record<AllianceSide, string>> = {
 })
 export class ChooseSideComponent {
   private readonly router = inject(Router);
-  private readonly soloSetup = inject(SoloSetupState);
+  private readonly soloSetup = inject(SoloSetupStore);
 
   protected readonly backgroundImage = 'assets/menu/choose.jpg';
   protected readonly selectedSide = signal<AllianceSide | null>(null);

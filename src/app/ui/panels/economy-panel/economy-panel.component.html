@@ -1,4 +1,4 @@
-@if (store.activePlayer(); as player) {
+@if (gameCoreStore.activePlayer(); as player) {
   <div class="panel">
     <h2>Economy — {{ player.displayName }}</h2>
 
@@ -10,7 +10,7 @@
       <div class="stat-divider"></div>
       <div class="stat">
         <span class="stat__label">Income</span>
-        <span class="stat__value">+{{ store.projectedIncome() }}<span class="stat__unit">/turn</span></span>
+        <span class="stat__value">+{{ gameCoreStore.projectedIncome() }}<span class="stat__unit">/turn</span></span>
       </div>
       <div class="stat-divider"></div>
       <div class="stat">
@@ -27,7 +27,7 @@
 
     <section class="section">
       <h3 class="section__title">Public Spending</h3>
-      @if (store.state()?.phase === 'buyUnits') {
+      @if (gameCoreStore.state()?.phase === 'buyUnits') {
         <div class="d-flex align-items-center flex-wrap gap-3">
           <input
             type="number"
@@ -44,14 +44,14 @@
       } @else {
         <p class="hint">Available during the Buy Units Phase.</p>
       }
-      @if (store.publicSpendingRejectionReason(); as reason) {
+      @if (economyStore.publicSpendingRejectionReason(); as reason) {
         <p class="rejection">{{ reason }}</p>
       }
     </section>
 
     <section class="section">
       <h3 class="section__title">Purchase Unit</h3>
-      @if (store.state()?.phase === 'buyUnits') {
+      @if (gameCoreStore.state()?.phase === 'buyUnits') {
         <div class="unit-grid">
           @for (unit of unitList(); track unit.id) {
             <div class="unit-card" [class.unit-card--selected]="selectedUnitId() === unit.id">
@@ -87,7 +87,7 @@
       } @else {
         <p class="hint">Available during the Buy Units Phase.</p>
       }
-      @if (store.purchaseRejectionReason(); as reason) {
+      @if (economyStore.purchaseRejectionReason(); as reason) {
         <p class="rejection">{{ reason }}</p>
       }
     </section>
