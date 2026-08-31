@@ -1,0 +1,10 @@
+<div class="save-load-panel">
+  <button type="button" (click)="save()">Save</button>
+  <button type="button" (click)="exportSave()">Export…</button>
+  <button type="button" (click)="triggerImport()">Import…</button>
+  <input #fileInput type="file" accept="application/json" class="save-load-panel__file-input" (change)="onFileSelected($event)" />
+
+  @if (message(); as text) {
+    <p [class]="messageIsError() ? 'rejection' : 'result'">{{ text }}</p>
+  }
+</div>

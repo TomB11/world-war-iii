@@ -1,6 +1,7 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, inject, signal, viewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { BackgroundCarouselComponent } from '../../ui/shared/background-carousel/background-carousel.component';
+import { SaveGameService } from '../../services/save-game.service';
 import { MANUAL_PAGES, BACKGROUND_IMAGES } from './main-menu.constants';
 
 /**
@@ -29,11 +30,51 @@ export class MainMenuComponent {
   protected readonly manualZoomed = signal(false);
   protected readonly showPrologue = signal(false);
   protected readonly showExitMessage = signal(false);
+  protected readonly importError = signal<string | null>(null);
 
   private readonly router = inject(Router);
+  private readonly saveGameService = inject(SaveGameService);
+
+  /** Whether a localStorage quick-save exists — computed once, since MainMenuComponent is re-instantiated every time the route navigates back here. */
+  protected readonly hasSavedGame = signal(this.saveGameService.hasLocalStorageSave());
+
+  private readonly saveFileInput = viewChild.required<ElementRef<HTMLInputElement>>('saveFileInput');
 
   protected startGame(): void {
     void this.router.navigateByUrl('/choose-side');
+  }
+
+  protected continueGame(): void {
+    const savedState = this.saveGameService.loadFromLocalStorage();
+    if (!savedState) {
+      return;
+    }
+    this.saveGameService.setPendingLoad(savedState);
+    void this.router.navigateByUrl('/game');
+  }
+
+  protected triggerImport(): void {
+    this.saveFileInput().nativeElement.click();
+  }
+
+  protected async onSaveFileSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+    input.value = '';
+    if (!file) {
+      return;
+    }
+    try {
+      const savedState = await this.saveGameService.importFromFile(file);
+      this.saveGameService.setPendingLoad(savedState);
+      void this.router.navigateByUrl('/game');
+    } catch (error) {
+      this.importError.set(error instanceof Error ? error.message : 'Failed to load save file.');
+    }
+  }
+
+  protected dismissImportError(): void {
+    this.importError.set(null);
   }
 
   protected openPrologue(): void {

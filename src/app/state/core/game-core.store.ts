@@ -17,8 +17,18 @@ import { EndTurnCommand } from '../../engine/commands/end-turn.command';
 import { GrantFreeTreasuryCommand } from '../../engine/commands/grant-free-treasury.command';
 import { DataLoaderService, InitialGameData } from '../../services/data-loader.service';
 import { RandomService } from '../../services/random.service';
+import { SaveGameService } from '../../services/save-game.service';
 import { SoloSetupStore } from '../solo-setup/solo-setup.store';
 import { clearsAllRejectionBanners } from '../shared/rejection-event-routing';
+
+/** Shared by initialize() and loadGame() — both need a factionId -> Faction lookup built from freshly-loaded static data. */
+function buildFactionMap(factions: readonly Faction[]): Record<string, Faction> {
+  const factionMap: Record<string, Faction> = {};
+  for (const faction of factions) {
+    factionMap[faction.id] = faction;
+  }
+  return factionMap;
+}
 
 interface GameCoreSlice {
   readonly state: GameState | null;
@@ -178,6 +188,7 @@ export const GameCoreStore = signalStore(
     const dataLoader = inject(DataLoaderService);
     const randomService = inject(RandomService);
     const soloSetup = inject(SoloSetupStore);
+    const saveGameService = inject(SaveGameService);
     return {
       /** Whether this unit actually fights in combat (embarked land/support cargo rides along but never rolls dice — see RulesEngine.isCombatParticipant). */
       isCombatParticipant(unit: UnitInstance): boolean {
@@ -217,10 +228,7 @@ export const GameCoreStore = signalStore(
           const data = await dataLoader.loadInitialGameData(soloSetup.selection());
           randomService.seed(data.gameState.randomSeed);
 
-          const factionMap: Record<string, Faction> = {};
-          for (const faction of data.factions) {
-            factionMap[faction.id] = faction;
-          }
+          const factionMap = buildFactionMap(data.factions);
 
           patchState(store, {
             state: data.gameState,
@@ -253,6 +261,53 @@ export const GameCoreStore = signalStore(
           patchState(store, { loadError: message });
           return null;
         }
+      },
+      /**
+       * Restores a previously saved GameState (PROJECT_RULES.txt section 40)
+       * in place of building a fresh one. Static data (factions, unit
+       * definitions, economy config, Solo Command Mode tables) is always
+       * reloaded from JSON rather than saved — only actual gameplay state is
+       * persisted (CODING_STANDARTS.txt section 12). Mirrors initialize()'s
+       * direct `state` patch; loading isn't a gameplay action, so it never
+       * goes through the Game Engine.
+       */
+      async loadGame(savedState: GameState): Promise<InitialGameData | null> {
+        try {
+          const data = await dataLoader.loadInitialGameData();
+          randomService.seed(savedState.randomSeed);
+
+          patchState(store, {
+            state: savedState,
+            factions: buildFactionMap(data.factions),
+            units: data.units,
+            economyConfig: data.economyConfig,
+            loadError: null,
+          });
+
+          return data;
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Failed to load saved game';
+          patchState(store, { loadError: message });
+          return null;
+        }
+      },
+      /** Quick-saves the current GameState to localStorage. No-op (returns false) before the game has loaded. */
+      saveGame(): boolean {
+        const state = store.state();
+        if (!state) {
+          return false;
+        }
+        saveGameService.saveToLocalStorage(state);
+        return true;
+      },
+      /** Downloads the current GameState as a JSON file. No-op (returns false) before the game has loaded. */
+      exportSave(): boolean {
+        const state = store.state();
+        if (!state) {
+          return false;
+        }
+        saveGameService.exportToFile(state);
+        return true;
       },
     };
   }),

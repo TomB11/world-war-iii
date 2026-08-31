@@ -9,6 +9,17 @@
       <button type="button" class="main-menu__btn main-menu__btn--primary" (click)="startGame()">
         Začať hru
       </button>
+      <button type="button" class="main-menu__btn" [disabled]="!hasSavedGame()" (click)="continueGame()">
+        Pokračovať
+      </button>
+      <button type="button" class="main-menu__btn" (click)="triggerImport()">Načítať zo súboru…</button>
+      <input
+        #saveFileInput
+        type="file"
+        accept="application/json"
+        class="main-menu__file-input"
+        (change)="onSaveFileSelected($event)"
+      />
       <button type="button" class="main-menu__btn" (click)="openPrologue()">Prológ</button>
       <button type="button" class="main-menu__btn" (click)="openManual()">Manuál</button>
       <button type="button" class="main-menu__btn main-menu__btn--danger" (click)="exit()">Ukončiť</button>
@@ -72,6 +83,16 @@
         alt="Manuál strana {{ manualPageIndex() + 1 }} — zväčšené"
         (click)="$event.stopPropagation()"
       />
+    </div>
+  }
+
+  @if (importError(); as message) {
+    <div class="main-menu__overlay" (click)="dismissImportError()">
+      <div class="main-menu__modal" (click)="$event.stopPropagation()">
+        <button type="button" class="main-menu__modal-close" (click)="dismissImportError()">✕</button>
+        <h2>Načítanie zlyhalo</h2>
+        <p>{{ message }}</p>
+      </div>
     </div>
   }
 

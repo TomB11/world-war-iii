@@ -14,9 +14,11 @@ import { VictoryBannerComponent } from '../../ui/overlays/victory-banner/victory
 import { CombatBoardComponent } from '../../ui/overlays/combat-board/combat-board.component';
 import { ToastHostComponent } from '../../ui/overlays/toast-host/toast-host.component';
 import { AiTurnSummaryComponent } from '../../ui/overlays/ai-turn-summary/ai-turn-summary.component';
+import { SaveLoadPanelComponent } from '../../ui/panels/save-load-panel/save-load-panel.component';
 import { GameCoreStore } from '../../state/core/game-core.store';
 import { AiStore } from '../../state/ai/ai.store';
 import { AiTurnService } from '../../services/ai-turn.service';
+import { SaveGameService } from '../../services/save-game.service';
 
 @Component({
   selector: 'wwiii-game-screen',
@@ -37,6 +39,7 @@ import { AiTurnService } from '../../services/ai-turn.service';
     CombatBoardComponent,
     ToastHostComponent,
     AiTurnSummaryComponent,
+    SaveLoadPanelComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './game-screen.component.html',
@@ -45,11 +48,14 @@ import { AiTurnService } from '../../services/ai-turn.service';
 export class GameScreenComponent implements OnInit {
   protected readonly gameCoreStore = inject(GameCoreStore);
   private readonly aiStore = inject(AiStore);
+  private readonly saveGameService = inject(SaveGameService);
   /** Unused directly — injecting forces AiTurnService's constructor (and its state-watching effect) to run for the lifetime of a game, exactly like GameCoreStore itself is force-instantiated here. */
   private readonly aiTurnService = inject(AiTurnService);
 
+  /** A save handed off from the main menu (Continue / Import) takes priority over building a fresh GameState. */
   async ngOnInit(): Promise<void> {
-    const data = await this.gameCoreStore.initialize();
+    const pendingLoad = this.saveGameService.consumePendingLoad();
+    const data = pendingLoad ? await this.gameCoreStore.loadGame(pendingLoad) : await this.gameCoreStore.initialize();
     if (data) {
       this.aiStore.setStaticAiData(data);
     }
