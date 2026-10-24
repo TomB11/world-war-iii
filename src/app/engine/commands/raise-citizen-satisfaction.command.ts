@@ -35,22 +35,25 @@ export class RaiseCitizenSatisfactionCommand implements Command {
     if (state.activePlayerId !== this.playerId) {
       return reject('It is not your turn');
     }
-    if (!Number.isFinite(this.amount) || this.amount <= 0) {
-      return reject('Amount must be a positive number');
+    if (!Number.isInteger(this.amount) || this.amount <= 0) {
+      return reject('Amount must be a positive whole number');
     }
 
     const player = this.rules.getPlayer(state, this.playerId);
     if (!player) {
       return reject(`Unknown player "${this.playerId}"`);
     }
-    if (player.treasury < this.amount) {
-      return reject(`Not enough treasury (have ${player.treasury}, need ${this.amount})`);
+
+    // Only the points that actually fit under the track's max are charged.
+    const spent = Math.min(this.amount, this.economyConfig.citizenSatisfactionMax - player.citizenSatisfaction);
+    if (spent <= 0) {
+      return reject('Citizen Satisfaction is already at its maximum');
+    }
+    if (player.treasury < spent) {
+      return reject(`Not enough treasury (have ${player.treasury}, need ${spent})`);
     }
 
-    const newSatisfaction = Math.min(
-      this.economyConfig.citizenSatisfactionMax,
-      player.citizenSatisfaction + this.amount,
-    );
+    const newSatisfaction = player.citizenSatisfaction + spent;
     const rebellionZone = this.economyConfig.citizenSatisfactionZones['rebellion'];
     const clearsRebellion = rebellionZone !== undefined && newSatisfaction > rebellionZone.max;
     const nextRebellionLevel = clearsRebellion ? 0 : player.rebellionLevel;
@@ -59,7 +62,7 @@ export class RaiseCitizenSatisfactionCommand implements Command {
       candidate.id === this.playerId
         ? {
             ...candidate,
-            treasury: candidate.treasury - this.amount,
+            treasury: candidate.treasury - spent,
             citizenSatisfaction: newSatisfaction,
             rebellionLevel: nextRebellionLevel,
           }

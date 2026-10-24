@@ -1,4 +1,5 @@
 import { AiConfig } from './ai-config.model';
+import { AttackRecord } from './attack-record.model';
 import { PlayerState } from './player.model';
 import { Region } from './region.model';
 import { RegionCombat } from './region-combat.model';
@@ -64,4 +65,6 @@ export interface GameState {
    * victim's own turn, not be blanket-cleared like unitsDeployedThisTurn.
    */
   readonly sabotagedRegionIds: readonly string[];
+  /** This turn's Attack Moves Phase attacks, oldest first — see models/attack-record.model.ts. Cleared when Tactical Moves begins. */
+  readonly attackRecords: readonly AttackRecord[];
 }

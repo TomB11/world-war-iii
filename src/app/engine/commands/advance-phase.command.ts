@@ -81,6 +81,9 @@ export class AdvancePhaseCommand implements Command {
           )
         : state.players;
     const nextUnitsDeployedThisTurn = nextPhase === 'placeNewUnits' ? {} : state.unitsDeployedThisTurn;
+    // Attack trajectories stay visible through the Attack phase, then go away.
+    const nextAttackRecords =
+      nextPhase === 'attackMoves' || nextPhase === 'tacticalMoves' ? [] : state.attackRecords;
     // Solo Command Mode: a Sabotage "spawn block" only lasts until the
     // victim's own next Place New Units phase ends — clear entries for
     // regions THIS departing player owns (regardless of who sabotaged them),
@@ -100,6 +103,7 @@ export class AdvancePhaseCommand implements Command {
         players: nextPlayers,
         unitsDeployedThisTurn: nextUnitsDeployedThisTurn,
         sabotagedRegionIds: nextSabotagedRegionIds,
+        attackRecords: nextAttackRecords,
       },
       events,
     };

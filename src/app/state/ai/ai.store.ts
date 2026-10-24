@@ -163,7 +163,8 @@ export const AiStore = signalStore(
         if (!purchaseChart) {
           return;
         }
-        dispatchAndHandle(new RollAiPurchaseChartCommand(playerId, purchaseChart, rules));
+        patchState(store, { lastAiPurchaseChartUnitIds: [] });
+        dispatchAndHandle(new RollAiPurchaseChartCommand(playerId, purchaseChart));
       },
       /** Solo Command Mode only. Rolls this turn's AI Order; the result is read via lastAiOrderAction() immediately after. */
       rollAiOrder(playerId: string): void {
@@ -171,7 +172,8 @@ export const AiStore = signalStore(
         if (!orderTable) {
           return;
         }
-        dispatchAndHandle(new RollAiOrderCommand(playerId, orderTable, rules));
+        patchState(store, { lastAiOrderAction: null });
+        dispatchAndHandle(new RollAiOrderCommand(playerId, orderTable));
       },
       /** Solo Command Mode only. Rolls this turn's Cyber & Political Action; the result is read via lastAiCyberAction() immediately after. */
       rollAiCyberAction(playerId: string): void {
@@ -179,7 +181,8 @@ export const AiStore = signalStore(
         if (!cyberActionTable) {
           return;
         }
-        dispatchAndHandle(new RollAiCyberActionCommand(playerId, cyberActionTable, rules));
+        patchState(store, { lastAiCyberAction: null });
+        dispatchAndHandle(new RollAiCyberActionCommand(playerId, cyberActionTable));
       },
       /** Solo Command Mode only. Increments the shared AI Threat Track by 1; any newly-crossed threshold is read via lastThreatCrossedThreshold() immediately after. */
       incrementThreat(playerId: string): void {
@@ -187,7 +190,8 @@ export const AiStore = signalStore(
         if (!threatTrackData) {
           return;
         }
-        dispatchAndHandle(new IncrementThreatCommand(playerId, threatTrackData, rules));
+        patchState(store, { lastThreatCrossedThreshold: null });
+        dispatchAndHandle(new IncrementThreatCommand(playerId, threatTrackData));
       },
       /** Solo Command Mode only. Credits treasury with no cost (Threat Track bonus / difficulty preset). */
       grantFreeTreasury(playerId: string, amount: number, reason: string): void {
@@ -222,7 +226,9 @@ export const AiStore = signalStore(
       },
       /** Solo Command Mode only. Threat Track's free missile strike bonus — a stand-alone bombardment of targetRegionId. */
       applyFreeMissileStrike(playerId: string, targetRegionId: string): void {
-        dispatchAndHandle(new ApplyFreeMissileStrikeCommand(playerId, targetRegionId, gameCoreStore.units(), rules));
+        dispatchAndHandle(
+          new ApplyFreeMissileStrikeCommand(playerId, targetRegionId, gameCoreStore.units(), rules, gameCoreStore.factions()),
+        );
       },
       /**
        * Solo Command Mode only: called by AiTurnService to record one AI

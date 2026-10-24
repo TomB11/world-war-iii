@@ -66,8 +66,8 @@ export const EconomyStore = signalStore(
       /**
        * Reacts to events fired by another store's dispatch (e.g.
        * PhaseAdvanced/TurnEnded from GameCoreStore.advancePhase()/endTurn())
-       * that should clear a stale banner here too. Called by GameStore's
-       * bridge alongside its own remaining applyEvents switch.
+       * that should clear a stale banner here too. Called by whichever store
+       * (or the turn-cycle routing helper) forwards those events.
        */
       reactToEvents(events: readonly GameEngineEvent[]): void {
         handleEvents(events);

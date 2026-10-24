@@ -2,7 +2,6 @@ import { Command, CommandResult } from '../../interfaces/command';
 import { GameState } from '../../models/game-state.model';
 import { GameEngineEvent } from '../../interfaces/game-events';
 import { AiPurchaseChartData } from '../../models/ai-purchase-chart.model';
-import { RulesEngine } from '../rules-engine';
 import { rollDie } from '../random';
 import { DICE_SIDES } from '../constants/dice.constants';
 
@@ -21,7 +20,6 @@ export class RollAiPurchaseChartCommand implements Command {
   constructor(
     private readonly playerId: string,
     private readonly purchaseChart: AiPurchaseChartData,
-    private readonly rules: RulesEngine = new RulesEngine(),
   ) {}
 
   execute(state: GameState): CommandResult {

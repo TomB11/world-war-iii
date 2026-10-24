@@ -83,11 +83,12 @@
                   (dragStart)="startDrag(entry, $event)"
                 />
               }
-            } @else {
+            } @else if (loadedTransports().length === 0) {
               <span class="panel__units-empty">None</span>
             }
           </div>
         }
+        <ng-container [ngTemplateOutlet]="loadedBlock" />
       </div>
     </div>
   </div>
@@ -117,11 +118,49 @@
                 (dragStart)="startDrag(entry, $event)"
               />
             }
-          } @else {
+          } @else if (loadedTransports().length === 0) {
             <span class="panel__units-empty">None</span>
           }
         </div>
+        <ng-container [ngTemplateOutlet]="loadedBlock" />
       </div>
     </div>
   </div>
 }
+
+<ng-template #loadedBlock>
+  @if (loadedTransports().length > 0) {
+    <h3 class="panel__units-title panel__units-title--cargo">⚓ Loaded transports</h3>
+    <div class="transport-list">
+      @for (transport of loadedTransports(); track transport.id) {
+        <div class="transport" [style.border-color]="transport.color">
+          <div class="transport__ship">
+            <wwiii-unit-card
+              [unitId]="transport.unitId"
+              [unitName]="transport.label"
+              [ownerId]="transport.ownerId"
+              [ownerName]="transport.ownerName"
+              [color]="transport.color"
+              [quantity]="1"
+              [draggable]="transport.ownerId === activePlayerId()"
+              (dragStart)="startTransportDrag(transport, $event)"
+            />
+          </div>
+          <span class="transport__arrow" title="carries">⮕</span>
+          <div class="unit-group">
+            @for (cargo of transport.cargo; track cargo.unitId) {
+              <wwiii-unit-card
+                [unitId]="cargo.unitId"
+                [unitName]="cargo.unitName"
+                [ownerId]="cargo.ownerId"
+                [ownerName]="cargo.ownerName"
+                [color]="cargo.color"
+                [quantity]="cargo.quantity"
+              />
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+</ng-template>

@@ -288,23 +288,25 @@ export class AiTurnService {
       return;
     }
 
-    if (this.pendingOrderAction === 'pressureNeutral') {
-      this.attemptInfluence(playerId);
-    } else if (player.treasury >= economyConfig.cyberAttackCost) {
-      this.aiStore.rollAiCyberAction(playerId);
-      switch (this.aiStore.lastAiCyberAction()) {
-        case 'hack':
-          this.attemptHack(playerId);
-          break;
-        case 'influence':
-          this.attemptInfluence(playerId);
-          break;
-        case 'sabotage':
-          this.attemptSabotage(playerId);
-          break;
-        case 'none':
-        case null:
-          break;
+    if (player.treasury >= economyConfig.cyberAttackCost) {
+      if (this.pendingOrderAction === 'pressureNeutral') {
+        this.attemptInfluence(playerId);
+      } else {
+        this.aiStore.rollAiCyberAction(playerId);
+        switch (this.aiStore.lastAiCyberAction()) {
+          case 'hack':
+            this.attemptHack(playerId);
+            break;
+          case 'influence':
+            this.attemptInfluence(playerId);
+            break;
+          case 'sabotage':
+            this.attemptSabotage(playerId);
+            break;
+          case 'none':
+          case null:
+            break;
+        }
       }
     }
 

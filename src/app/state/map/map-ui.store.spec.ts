@@ -2,7 +2,6 @@ import { TestBed } from '@angular/core/testing';
 import { MapUiStore } from './map-ui.store';
 import { GameCoreStore } from '../core/game-core.store';
 import { DataLoaderService, InitialGameData } from '../../services/data-loader.service';
-import { RandomService } from '../../services/random.service';
 import { faction, player, region, testState, unitDef, unitInstance, TEST_ECONOMY_CONFIG } from '../../engine/test-fixtures';
 
 function fakeInitialGameData(overrides: Partial<InitialGameData> = {}): InitialGameData {
@@ -38,7 +37,6 @@ describe('MapUiStore', () => {
     TestBed.configureTestingModule({
       providers: [
         { provide: DataLoaderService, useValue: { loadInitialGameData: () => Promise.resolve(fakeData) } },
-        { provide: RandomService, useValue: { seed: () => {} } },
       ],
     });
     return { mapUiStore: TestBed.inject(MapUiStore), gameCoreStore: TestBed.inject(GameCoreStore) };

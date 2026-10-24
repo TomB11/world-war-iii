@@ -23,31 +23,54 @@
         <p class="hint">Need Reserve units to deploy.</p>
       }
     } @else {
-      <h2>Transports</h2>
-      <ul class="unit-list">
-        @for (transport of loadedTransports(); track transport.id) {
-          <li class="unit-row">
-            <div class="unit-summary">{{ unitName(transport.unitId) }} @ {{ regionName(transport.regionId) }}</div>
-            @for (embarked of embarkedUnits(transport.id); track embarked.id) {
-              <div class="embarked-row">
-                {{ unitName(embarked.unitId) }}
-                @if (unloadDestinations(embarked.id).length > 0) {
-                  <button
-                    type="button"
-                    class="unload-btn"
-                    [class.unload-btn--armed]="isArmedForUnload(embarked.id)"
-                    (click)="armUnload(embarked.id)"
-                  >
-                    {{ isArmedForUnload(embarked.id) ? 'Click map…' : 'Unload' }}
-                  </button>
-                } @else {
-                  <span class="hint">no adjacent coast</span>
-                }
-              </div>
-            }
-          </li>
-        }
-      </ul>
+      @if (loadedTransports().length > 0) {
+        <h2>Transports</h2>
+        <ul class="unit-list">
+          @for (transport of loadedTransports(); track transport.id) {
+            <li class="unit-row">
+              <div class="unit-summary">{{ unitName(transport.unitId) }} @ {{ regionName(transport.regionId) }}</div>
+              @for (embarked of embarkedUnits(transport.id); track embarked.id) {
+                <div class="embarked-row">
+                  {{ unitName(embarked.unitId) }}
+                  @if (unloadDestinations(embarked.id).length > 0) {
+                    <button
+                      type="button"
+                      class="unload-btn"
+                      [class.unload-btn--armed]="isArmedForUnload(embarked.id)"
+                      (click)="armUnload(embarked.id)"
+                    >
+                      {{ isArmedForUnload(embarked.id) ? 'Click map…' : 'Unload' }}
+                    </button>
+                  } @else {
+                    <span class="hint">no adjacent coast</span>
+                  }
+                </div>
+              }
+            </li>
+          }
+        </ul>
+      }
+
+      @if (declaredAttacks().length > 0) {
+        <h2>Attacks this turn</h2>
+        <ul class="unit-list">
+          @for (attack of declaredAttacks(); track attack.unitInstanceId) {
+            <li class="unit-row attack-row">
+              <wwiii-unit-icon [unitId]="attack.unitId" [ownerId]="activePlayerFactionId()" [color]="activePlayerColor()" [size]="28" />
+              <span class="attack-row__label">{{ attack.label }}</span>
+              <button
+                type="button"
+                class="cancel-attack-btn"
+                [disabled]="!attack.canCancel"
+                [title]="attack.reason ?? 'Undo this attack and return the unit'"
+                (click)="cancelAttack(attack.unitInstanceId)"
+              >
+                Cancel
+              </button>
+            </li>
+          }
+        </ul>
+      }
     }
 
     @if (pendingActionHint(); as hint) {

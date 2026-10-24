@@ -26,6 +26,10 @@ import { MapPoint, UnitDragState, ViewTransform } from '../../../interfaces/map-
 import { clamp } from '../../../core/utils/math.util';
 import { CLICK_DRAG_THRESHOLD_PX } from './world-map.constants';
 
+function latestEventId(events: readonly { readonly id: number }[]): number {
+  return events.reduce((latest, entry) => Math.max(latest, entry.id), 0);
+}
+
 /**
  * Pure rendering + input component. It never mutates game state itself —
  * every click/drag is translated into a GameStore call, which is the only
@@ -83,17 +87,17 @@ export class WorldMapComponent implements AfterViewInit, OnDestroy {
 
   /** Currently-animating attack/casualty/cyber/deploy bursts (see ui/map/rendering/effects-renderer.ts); pruned as each one's duration elapses. */
   private activeEffects: ActiveMapEffect[] = [];
-  /** Highest GameStore.mapEffectEvents() id already turned into a local effect — everything at or below this id has already been spawned. */
-  private lastConsumedMapEffectId = 0;
+  /** Highest mapEffectEvents() id already turned into a local effect — everything at or below this id has already been spawned (events queued before this component existed, e.g. by a previous game, are treated as consumed). */
+  private lastConsumedMapEffectId = latestEventId(this.mapUiStore.mapEffectEvents());
   /** Units currently sliding between regions (see ui/map/rendering/unit-move-renderer.ts). */
   private activeUnitMoves: ActiveUnitMove[] = [];
-  private lastConsumedUnitMoveId = 0;
+  private lastConsumedUnitMoveId = latestEventId(this.mapUiStore.unitMoveEvents());
   /** Missiles currently in flight (see ui/map/rendering/projectile-renderer.ts). */
   private activeProjectiles: ActiveProjectile[] = [];
-  private lastConsumedMissileFiredId = 0;
+  private lastConsumedMissileFiredId = latestEventId(this.mapUiStore.missileFiredEvents());
   /** Regions currently crossfading their flag (see ui/map/rendering/flag-transition.ts) — keyed by regionId since only the latest transition for a given region ever matters. */
   private activeFlagTransitions: Record<string, ActiveFlagTransition> = {};
-  private lastConsumedFlagTransitionId = 0;
+  private lastConsumedFlagTransitionId = latestEventId(this.mapUiStore.flagTransitionEvents());
   /** Non-null while any animation above is running, or a contested region needs its marching-ants border kept moving: nothing else changes state frame-to-frame during those windows, so this drives its own continuous repaint loop. */
   private animationRafHandle: number | null = null;
 
@@ -112,13 +116,14 @@ export class WorldMapComponent implements AfterViewInit, OnDestroy {
       this.mapUiStore.movableUnitIds();
       this.mapUiStore.contestedRegionIds();
       this.mapUiStore.missileStrikePreviews();
+      this.mapUiStore.attackTrajectories();
       this.mapUiStore.externalDrag();
       this.mapUiStore.pendingAction();
       this.redrawCurrentState();
       // A contested region's border animates continuously (marching ants) —
       // keep the loop alive for as long as any exist, independent of the
       // one-shot effect/move/projectile/flag queues below.
-      if (this.mapUiStore.contestedRegionIds().size > 0) {
+      if (this.mapUiStore.contestedRegionIds().size > 0 || this.hasPulsingTargets()) {
         this.ensureAnimationLoopRunning();
       }
     });
@@ -332,6 +337,9 @@ export class WorldMapComponent implements AfterViewInit, OnDestroy {
       this.setPointerCaptureSafely(event.pointerId);
       this.canvasRef().nativeElement.classList.add('unit-dragging');
       this.redrawCurrentState();
+      if (this.hasPulsingTargets()) {
+        this.ensureAnimationLoopRunning();
+      }
       return;
     }
 
@@ -599,10 +607,23 @@ export class WorldMapComponent implements AfterViewInit, OnDestroy {
         this.activeUnitMoves.length > 0 ||
         this.activeProjectiles.length > 0 ||
         Object.keys(this.activeFlagTransitions).length > 0 ||
-        this.mapUiStore.contestedRegionIds().size > 0;
+        this.mapUiStore.contestedRegionIds().size > 0 ||
+        this.hasPulsingTargets();
       this.animationRafHandle = stillAnimating ? requestAnimationFrame(tick) : null;
     };
     this.animationRafHandle = requestAnimationFrame(tick);
+  }
+
+  /** Drag/placement targets and attack arrows are animated (see MapRenderer's target highlights and drawAttackTrajectory), which needs the repaint loop. */
+  private hasPulsingTargets(): boolean {
+    const drag = this.draggingUnit ?? this.mapUiStore.externalDrag();
+    if (drag !== null && (drag.attackTargets.length > 0 || drag.moveDestinations.length > 0)) {
+      return true;
+    }
+    if ((this.mapUiStore.pendingAction()?.destinations.length ?? 0) > 0) {
+      return true;
+    }
+    return this.mapUiStore.attackTrajectories().length > 0;
   }
 
   private redrawCurrentState(): void {
@@ -636,6 +657,7 @@ export class WorldMapComponent implements AfterViewInit, OnDestroy {
       movableUnitIds: this.mapUiStore.movableUnitIds(),
       contestedRegionIds: this.mapUiStore.contestedRegionIds(),
       missileStrikePreviews: this.mapUiStore.missileStrikePreviews(),
+      attackTrajectories: this.mapUiStore.attackTrajectories(),
       activeEffects: this.activeEffects,
       activeProjectiles: this.activeProjectiles,
       activeUnitMoves: this.activeUnitMoves,

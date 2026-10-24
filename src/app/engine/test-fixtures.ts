@@ -118,6 +118,7 @@ export function testState(overrides: Partial<GameState> = {}): GameState {
     unitsDeployedThisTurn: {},
     aiConfig: null,
     sabotagedRegionIds: [],
+    attackRecords: [],
     ...overrides,
   };
 }

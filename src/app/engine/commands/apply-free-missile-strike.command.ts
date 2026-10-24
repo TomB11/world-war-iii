@@ -2,6 +2,7 @@ import { Command, CommandResult } from '../../interfaces/command';
 import { GameState } from '../../models/game-state.model';
 import { GameEngineEvent } from '../../interfaces/game-events';
 import { UnitDefinition } from '../../models/unit.model';
+import { Faction } from '../../models/faction.model';
 import { RulesEngine } from '../rules-engine';
 import { hasInterceptor, resolveMissileStrike } from './shared/missile-resolution';
 import { chooseCasualtyUnit } from '../ai/ai-casualty-choice.util';
@@ -28,6 +29,7 @@ export class ApplyFreeMissileStrikeCommand implements Command {
     private readonly targetRegionId: string,
     private readonly unitCatalog: Readonly<Record<string, UnitDefinition>>,
     private readonly rules: RulesEngine = new RulesEngine(),
+    private readonly factions: Readonly<Record<string, Faction>> = {},
   ) {}
 
   execute(state: GameState): CommandResult {
@@ -45,12 +47,21 @@ export class ApplyFreeMissileStrikeCommand implements Command {
       return { state, events: [] };
     }
 
-    const defenders = this.rules.getUnitsInRegion(state, this.targetRegionId).filter((unit) => unit.ownerId !== this.playerId);
+    const defenders = this.rules
+      .getUnitsInRegion(state, this.targetRegionId)
+      .filter((unit) => this.rules.isHostileTo(state, unit.ownerId, this.playerId, this.factions));
     if (defenders.length === 0) {
       return { state, events: [] };
     }
 
-    const interceptorPresent = hasInterceptor(state, this.targetRegionId, this.playerId, this.unitCatalog);
+    const interceptorPresent = hasInterceptor(
+      state,
+      this.targetRegionId,
+      this.playerId,
+      this.unitCatalog,
+      this.rules,
+      this.factions,
+    );
     const resolution = resolveMissileStrike(state.randomSeed, missileDef.attack, interceptorPresent);
 
     const nextPlayers = state.players.map((candidate) =>

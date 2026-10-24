@@ -34,6 +34,11 @@ function isGameState(value: unknown): value is GameState {
   );
 }
 
+/** Saves written before a field existed lack it — fill in the empty default so the engine never sees `undefined`. */
+function withDefaults(state: GameState): GameState {
+  return Array.isArray(state.attackRecords) ? state : { ...state, attackRecords: [] };
+}
+
 /**
  * Persists/restores a whole GameState (PROJECT_RULES.txt section 40: "Entire
  * game state must be saved"). GameState is already plain JSON-serializable
@@ -76,7 +81,7 @@ export class SaveGameService {
     }
     try {
       const parsed: unknown = JSON.parse(raw);
-      return isGameState(parsed) ? parsed : null;
+      return isGameState(parsed) ? withDefaults(parsed) : null;
     } catch {
       return null;
     }
@@ -104,6 +109,6 @@ export class SaveGameService {
     if (!isGameState(parsed)) {
       throw new Error('Selected file is not a valid World War III save.');
     }
-    return parsed;
+    return withDefaults(parsed);
   }
 }

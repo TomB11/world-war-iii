@@ -16,7 +16,6 @@ import { AdvancePhaseCommand } from '../../engine/commands/advance-phase.command
 import { EndTurnCommand } from '../../engine/commands/end-turn.command';
 import { GrantFreeTreasuryCommand } from '../../engine/commands/grant-free-treasury.command';
 import { DataLoaderService, InitialGameData } from '../../services/data-loader.service';
-import { RandomService } from '../../services/random.service';
 import { SaveGameService } from '../../services/save-game.service';
 import { SoloSetupStore } from '../solo-setup/solo-setup.store';
 import { clearsAllRejectionBanners } from '../shared/rejection-event-routing';
@@ -50,7 +49,7 @@ const initialState: GameCoreSlice = {
 
 /** Shared by every computed/method below — pure, stateless query classes (CODING_STANDARTS.txt §5), safe to share across the whole store's lifetime. */
 const rules = new RulesEngine();
-const engine = new GameEngine(rules);
+const engine = new GameEngine();
 
 /**
  * The authoritative GameState + the turn-cycle primitives every other
@@ -186,7 +185,6 @@ export const GameCoreStore = signalStore(
   })),
   withMethods((store) => {
     const dataLoader = inject(DataLoaderService);
-    const randomService = inject(RandomService);
     const soloSetup = inject(SoloSetupStore);
     const saveGameService = inject(SaveGameService);
     return {
@@ -214,19 +212,17 @@ export const GameCoreStore = signalStore(
       },
       /**
        * Loads all static game data + builds the very first GameState (via
-       * DataLoaderService, seeded into RandomService for determinism),
+       * DataLoaderService),
        * applies Solo Command Mode's one-time difficulty starting-treasury
        * adjustment (e.g. Easy's -5) for each AI-controlled player, and
-       * returns the full load result so the caller (today: GameStore's
-       * bridge; eventually: a not-yet-built AiStore) can pick out whatever
-       * Solo Command Mode-only static data it still needs — this store only
+       * returns the full load result so the caller (GameScreenComponent) can
+       * hand the Solo Command Mode-only static data to AiStore — this store only
        * keeps the core slice (state/factions/units/economyConfig) for
        * itself. Returns null on failure (loadError is set either way).
        */
       async initialize(): Promise<InitialGameData | null> {
         try {
           const data = await dataLoader.loadInitialGameData(soloSetup.selection());
-          randomService.seed(data.gameState.randomSeed);
 
           const factionMap = buildFactionMap(data.factions);
 
@@ -235,6 +231,8 @@ export const GameCoreStore = signalStore(
             factions: factionMap,
             units: data.units,
             economyConfig: data.economyConfig,
+            loadError: null,
+            phaseAdvanceRejectionReason: null,
           });
 
           if (data.gameState.aiConfig) {
@@ -274,7 +272,6 @@ export const GameCoreStore = signalStore(
       async loadGame(savedState: GameState): Promise<InitialGameData | null> {
         try {
           const data = await dataLoader.loadInitialGameData();
-          randomService.seed(savedState.randomSeed);
 
           patchState(store, {
             state: savedState,
@@ -282,6 +279,7 @@ export const GameCoreStore = signalStore(
             units: data.units,
             economyConfig: data.economyConfig,
             loadError: null,
+            phaseAdvanceRejectionReason: null,
           });
 
           return data;

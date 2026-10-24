@@ -2,7 +2,6 @@ import { TestBed } from '@angular/core/testing';
 import { AiStore } from './ai.store';
 import { GameCoreStore } from '../core/game-core.store';
 import { DataLoaderService, InitialGameData } from '../../services/data-loader.service';
-import { RandomService } from '../../services/random.service';
 import { faction, player, testState, TEST_ECONOMY_CONFIG } from '../../engine/test-fixtures';
 import { AiThreatTrackData } from '../../models/ai-threat-track.model';
 import { AiOrderTableData } from '../../models/ai-order.model';
@@ -66,7 +65,6 @@ describe('AiStore', () => {
     TestBed.configureTestingModule({
       providers: [
         { provide: DataLoaderService, useValue: { loadInitialGameData: () => Promise.resolve(fakeData) } },
-        { provide: RandomService, useValue: { seed: () => {} } },
       ],
     });
     return { aiStore: TestBed.inject(AiStore), gameCoreStore: TestBed.inject(GameCoreStore) };

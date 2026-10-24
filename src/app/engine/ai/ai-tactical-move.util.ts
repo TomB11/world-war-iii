@@ -4,9 +4,16 @@ import { UnitInstance } from '../../models/unit-instance.model';
 import { Faction } from '../../models/faction.model';
 import { RulesEngine } from '../rules-engine';
 
-/** How many of a region's neighbors are NOT owned by `ownerId` — "frontline exposure," shared by the Tactical Moves heuristic below and the Fortress doctrine's reinforcement priority. */
+/** How many of a location's neighbors are NOT owned by `ownerId` — "frontline exposure," shared by the Tactical Moves heuristic below and the Fortress doctrine's reinforcement priority. A sea zone counts the coastal regions it borders. */
 export function scoreFrontlineExposure(state: GameState, rules: RulesEngine, regionId: string, ownerId: string): number {
-  return rules.getNeighborRegions(state, regionId).filter((neighbor) => neighbor.ownerId !== ownerId).length;
+  const seaZone = state.seaZones[regionId];
+  const neighbors = seaZone
+    ? seaZone.adjacentRegionIds.flatMap((id) => {
+        const region = state.regions[id];
+        return region ? [region] : [];
+      })
+    : rules.getNeighborRegions(state, regionId);
+  return neighbors.filter((neighbor) => neighbor.ownerId !== ownerId).length;
 }
 
 /**

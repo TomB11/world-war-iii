@@ -1,10 +1,9 @@
 /**
- * Pure, deterministic dice rolling for the engine — same mulberry32
- * algorithm as services/random.service.ts, but engine code may not depend
- * on Angular services (CODING_STANDARDS.md section 5), so commands roll by
- * threading GameState.randomSeed through this function and writing back
- * the returned nextSeed, keeping the whole game replayable from its seed
- * (PROJECT_RULES.md section 29).
+ * Pure, deterministic dice rolling for the engine (mulberry32). Engine code
+ * may not depend on Angular services (CODING_STANDARDS.md section 5), so
+ * commands roll by threading GameState.randomSeed through this function and
+ * writing back the returned nextSeed, keeping the whole game replayable
+ * from its seed (PROJECT_RULES.md section 29).
  */
 export interface DiceRoll {
   readonly result: number;

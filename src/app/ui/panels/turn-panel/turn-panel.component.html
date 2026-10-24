@@ -9,7 +9,7 @@
     <h2 class="turn-panel__name">{{ gameCoreStore.activePlayer()?.displayName }}</h2>
     <p class="phase-label"><b>Turn {{ state.turnNumber }}</b> — {{ phaseLabel() }}</p>
 
-    @if (gameCoreStore.activePlayer(); as player) {
+    @if (gameCoreStore.activePlayer()) {
       <dl>
         <dt>Treasury</dt>
         <dd>{{ treasury() }}</dd>

@@ -1,4 +1,5 @@
 import { GamePhase } from '../models/game-state.model';
+import { AttackRecordKind } from '../models/attack-record.model';
 import { AiOrderAction } from '../models/ai-order.model';
 import { AiCyberAction } from '../models/ai-cyber-action.model';
 import { ThreatThreshold } from '../models/ai-threat-track.model';
@@ -62,6 +63,16 @@ export interface UnitDeployedEvent {
 export interface UnitMovedEvent {
   readonly type: 'UnitMoved';
   readonly unitInstanceId: string;
+  readonly fromRegionId: string;
+  readonly toRegionId: string;
+}
+
+/** An Attack Moves Phase attack was undone before the phase ended; the unit is back at `fromRegionId`. */
+export interface AttackCancelledEvent {
+  readonly type: 'AttackCancelled';
+  readonly playerId: string;
+  readonly unitInstanceId: string;
+  readonly kind: AttackRecordKind;
   readonly fromRegionId: string;
   readonly toRegionId: string;
 }
@@ -280,6 +291,7 @@ export type GameEngineEvent =
   | TurnEndedEvent
   | UnitDeployedEvent
   | UnitMovedEvent
+  | AttackCancelledEvent
   | UnitLoadedEvent
   | UnitUnloadedEvent
   | MovementRejectedEvent

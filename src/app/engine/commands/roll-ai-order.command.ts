@@ -2,7 +2,6 @@ import { Command, CommandResult } from '../../interfaces/command';
 import { GameState } from '../../models/game-state.model';
 import { GameEngineEvent } from '../../interfaces/game-events';
 import { AiOrderTableData } from '../../models/ai-order.model';
-import { RulesEngine } from '../rules-engine';
 import { rollDie } from '../random';
 import { DICE_SIDES } from '../constants/dice.constants';
 
@@ -11,7 +10,7 @@ import { DICE_SIDES } from '../constants/dice.constants';
  * the AI's Buy Units phase to decide this turn's primary intent (attack
  * nearest/richest/weakest enemy region, reinforce, pressure a neutral, or a
  * doctrine special action). The caller (services/ai-turn.service.ts) reads
- * the resulting action back via GameStore.lastAiOrderAction() and acts on it
+ * the resulting action back via AiStore.lastAiOrderAction() and acts on it
  * later in the same turn (mainly during Attack Moves).
  */
 export class RollAiOrderCommand implements Command {
@@ -20,7 +19,6 @@ export class RollAiOrderCommand implements Command {
   constructor(
     private readonly playerId: string,
     private readonly orderTable: AiOrderTableData,
-    private readonly rules: RulesEngine = new RulesEngine(),
   ) {}
 
   execute(state: GameState): CommandResult {
