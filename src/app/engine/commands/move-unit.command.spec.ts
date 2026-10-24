@@ -1,6 +1,6 @@
 import { MoveUnitCommand } from './move-unit.command';
 import { UnitDefinition } from '../../models/unit.model';
-import { player, region, testState, unitDef, unitInstance } from '../test-fixtures';
+import { region, testState, unitDef, unitInstance } from '../test-fixtures';
 
 describe('MoveUnitCommand', () => {
   const catalog: Readonly<Record<string, UnitDefinition>> = {

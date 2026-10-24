@@ -71,7 +71,11 @@ export class DeployUnitCommand implements Command {
       }
       const friendlyFactoryRegions = seaZone.adjacentRegionIds
         .map((id) => state.regions[id])
-        .filter((candidate): candidate is Region => this.rules.isFriendlyFactoryRegion(state, this.playerId, candidate));
+        .filter(
+          (candidate): candidate is Region =>
+            this.rules.isFriendlyFactoryRegion(state, this.playerId, candidate) &&
+            !state.sabotagedRegionIds.includes(candidate.id),
+        );
       if (friendlyFactoryRegions.length === 0) {
         return reject(
           'You may only deploy naval units to a sea zone adjacent to a factory region you control that you have held since before this turn',

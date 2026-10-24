@@ -39,6 +39,12 @@ export interface MapDrawParams {
   readonly contestedRegionIds: ReadonlySet<string>;
   /** Declared-but-unfired Rocket System missile strikes (PROJECT_RULES.md section 15), launcher region -> target region, drawn as a trajectory line. */
   readonly missileStrikePreviews: readonly { readonly launcherRegionId: string; readonly targetRegionId: string }[];
+  /** This turn's Attack Moves attacks as from -> to routes, drawn as animated arrows (see MapUiStore.attackTrajectories). */
+  readonly attackTrajectories: readonly {
+    readonly fromRegionId: string;
+    readonly toRegionId: string;
+    readonly captured: boolean;
+  }[];
   /** Currently-animating attack/casualty/cyber/deploy bursts (WorldMapComponent's local effect queue, spawned from GameStore.mapEffectEvents). */
   readonly activeEffects: readonly ActiveMapEffect[];
   /** Missiles currently in flight (FireMissileCommand), timed to land with a matching entry in activeEffects. */
@@ -183,6 +189,14 @@ export class MapRenderer {
       }
     }
 
+    for (const route of params.attackTrajectories) {
+      const from = params.regionsById[route.fromRegionId]?.position ?? params.seaZonesById[route.fromRegionId]?.position;
+      const to = params.regionsById[route.toRegionId]?.position ?? params.seaZonesById[route.toRegionId]?.position;
+      if (from && to) {
+        this.drawAttackTrajectory(context, from, to, view.scale, params.now, route.captured);
+      }
+    }
+
     if (params.draggingUnit && params.dragPointerPoint) {
       const color = params.factions[params.activePlayerId ?? '']?.color ?? '#888888';
       drawUnitIcon(
@@ -298,17 +312,18 @@ export class MapRenderer {
     // so a contested fleet reads as clickable/urgent exactly like a contested
     // land region does.
     if (flags.isContested) {
-      context.save();
-      const dashLength = 6 / scale;
-      const gapLength = 4 / scale;
-      context.setLineDash([dashLength, gapLength]);
-      context.lineDashOffset = -(now / 40) % (dashLength + gapLength);
-      context.lineWidth = 3 / scale;
-      context.strokeStyle = '#b8433f';
-      context.beginPath();
-      context.arc(cx, cy, radius, 0, Math.PI * 2);
-      context.stroke();
-      context.restore();
+      this.drawBattleHighlight(context, scale, now, cx + radius * 0.75, cy - radius * 0.75, () => {
+        context.arc(cx, cy, radius, 0, Math.PI * 2);
+      });
+    }
+    if (flags.isAttackDropTarget) {
+      this.drawAttackTargetHighlight(context, scale, now, cx, cy, () => {
+        context.arc(cx, cy, radius, 0, Math.PI * 2);
+      });
+    } else if (flags.isLegalDropTarget && !flags.isLoadTarget) {
+      this.drawMoveTargetHighlight(context, scale, now, cx, cy, () => {
+        context.arc(cx, cy, radius, 0, Math.PI * 2);
+      });
     }
 
     context.fillStyle = flags.isSelected || flags.isHovered ? '#e6e9f0' : 'rgba(230, 233, 240, 0.75)';
@@ -316,6 +331,174 @@ export class MapRenderer {
     context.textAlign = 'center';
     context.textBaseline = 'middle';
     context.fillText(seaZone.label, cx, cy + 0.5 / scale);
+  }
+
+  /**
+   * Eye-catching pending-battle marker shared by land regions and sea zones:
+   * a pulsing red glow + solid ring, the marching-ants dashes on top, and a
+   * crossed-swords badge at the given corner. `trace` adds the outline path
+   * (rect/arc) to the context.
+   */
+  private drawBattleHighlight(
+    context: CanvasRenderingContext2D,
+    scale: number,
+    now: number,
+    badgeX: number,
+    badgeY: number,
+    trace: () => void,
+  ): void {
+    const pulse = 0.5 + 0.5 * Math.sin(now / 220);
+
+    context.save();
+    context.shadowColor = `rgba(255, 59, 48, ${0.6 + 0.4 * pulse})`;
+    context.shadowBlur = 14 + 14 * pulse;
+    context.lineWidth = 5 / scale;
+    context.strokeStyle = `rgba(255, 59, 48, ${0.55 + 0.45 * pulse})`;
+    context.beginPath();
+    trace();
+    context.stroke();
+    context.restore();
+
+    context.save();
+    const dashLength = 8 / scale;
+    const gapLength = 5 / scale;
+    context.setLineDash([dashLength, gapLength]);
+    context.lineDashOffset = -(now / 30) % (dashLength + gapLength);
+    context.lineWidth = 2 / scale;
+    context.strokeStyle = '#ffffff';
+    context.beginPath();
+    trace();
+    context.stroke();
+    context.restore();
+
+    const badgeRadius = 11 / scale;
+    context.save();
+    context.beginPath();
+    context.arc(badgeX, badgeY, badgeRadius, 0, Math.PI * 2);
+    context.fillStyle = `rgba(200, 40, 35, ${0.85 + 0.15 * pulse})`;
+    context.fill();
+    context.lineWidth = 1.5 / scale;
+    context.strokeStyle = '#ffffff';
+    context.stroke();
+    context.fillStyle = '#ffffff';
+    context.font = `${13 / scale}px Segoe UI Symbol, Segoe UI, sans-serif`;
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.fillText('⚔', badgeX, badgeY + 0.5 / scale);
+    context.restore();
+  }
+
+  /**
+   * Loud "you can attack here" marker for every region/sea zone the dragged
+   * unit may legally attack: a fast pulsing orange glow + ring, a tinted
+   * fill, and a crosshair reticle centered on the target. Deliberately a
+   * different color/shape from drawBattleHighlight (an already-open battle).
+   * `trace` adds the outline path (rect/arc) to the context.
+   */
+  private drawAttackTargetHighlight(
+    context: CanvasRenderingContext2D,
+    scale: number,
+    now: number,
+    centerX: number,
+    centerY: number,
+    trace: () => void,
+  ): void {
+    const pulse = 0.5 + 0.5 * Math.sin(now / 140);
+
+    context.save();
+    context.beginPath();
+    trace();
+    context.fillStyle = `rgba(255, 106, 0, ${0.18 + 0.18 * pulse})`;
+    context.fill();
+    context.shadowColor = `rgba(255, 106, 0, ${0.7 + 0.3 * pulse})`;
+    context.shadowBlur = 16 + 16 * pulse;
+    context.lineWidth = 4.5 / scale;
+    context.strokeStyle = `rgba(255, 140, 0, ${0.7 + 0.3 * pulse})`;
+    context.stroke();
+    context.restore();
+
+    // Crosshair reticle.
+    const outer = (14 + 3 * pulse) / scale;
+    const inner = 5 / scale;
+    context.save();
+    context.lineCap = 'round';
+    for (const [color, width] of [
+      ['rgba(0, 0, 0, 0.75)', 5],
+      ['#ffd27a', 2.5],
+    ] as const) {
+      context.strokeStyle = color;
+      context.lineWidth = width / scale;
+      context.beginPath();
+      context.arc(centerX, centerY, outer * 0.6, 0, Math.PI * 2);
+      context.moveTo(centerX - outer, centerY);
+      context.lineTo(centerX - inner, centerY);
+      context.moveTo(centerX + inner, centerY);
+      context.lineTo(centerX + outer, centerY);
+      context.moveTo(centerX, centerY - outer);
+      context.lineTo(centerX, centerY - inner);
+      context.moveTo(centerX, centerY + inner);
+      context.lineTo(centerX, centerY + outer);
+      context.stroke();
+    }
+    context.restore();
+  }
+
+  /**
+   * "You can move/place here": a breathing green glow and ring, expanding
+   * ripple rings from the center and a bobbing down-arrow marking the drop
+   * spot. Calmer than drawAttackTargetHighlight (slower, green) so the two
+   * kinds of target are never confused. `trace` adds the outline path.
+   */
+  private drawMoveTargetHighlight(
+    context: CanvasRenderingContext2D,
+    scale: number,
+    now: number,
+    centerX: number,
+    centerY: number,
+    trace: () => void,
+  ): void {
+    const pulse = 0.5 + 0.5 * Math.sin(now / 260);
+
+    context.save();
+    context.beginPath();
+    trace();
+    context.fillStyle = `rgba(76, 217, 100, ${0.14 + 0.14 * pulse})`;
+    context.fill();
+    context.shadowColor = `rgba(76, 217, 100, ${0.6 + 0.4 * pulse})`;
+    context.shadowBlur = 12 + 12 * pulse;
+    context.lineWidth = 4 / scale;
+    context.strokeStyle = `rgba(110, 235, 130, ${0.65 + 0.35 * pulse})`;
+    context.stroke();
+    context.restore();
+
+    // Two ripples, half a cycle apart, expanding and fading out.
+    context.save();
+    for (const offset of [0, 0.5]) {
+      const t = ((now / 1600) + offset) % 1;
+      context.beginPath();
+      context.arc(centerX, centerY, (6 + 22 * t) / scale, 0, Math.PI * 2);
+      context.lineWidth = 2.5 / scale;
+      context.strokeStyle = `rgba(150, 255, 170, ${0.8 * (1 - t)})`;
+      context.stroke();
+    }
+    context.restore();
+
+    // Down-arrow "drop here" marker, bobbing gently.
+    const bob = Math.sin(now / 200) * 3;
+    const tipY = centerY + (bob + 4) / scale;
+    context.save();
+    context.beginPath();
+    context.moveTo(centerX, tipY);
+    context.lineTo(centerX - 9 / scale, tipY - 14 / scale);
+    context.lineTo(centerX + 9 / scale, tipY - 14 / scale);
+    context.closePath();
+    context.fillStyle = '#4cd964';
+    context.fill();
+    context.lineWidth = 2 / scale;
+    context.lineJoin = 'round';
+    context.strokeStyle = '#ffffff';
+    context.stroke();
+    context.restore();
   }
 
   private drawHotspot(
@@ -409,17 +592,22 @@ export class MapRenderer {
     // "march" (animated offset driven by `now`) so a contested region reads
     // as urgent/ongoing rather than a static decoration.
     if (flags.isContested) {
-      context.fillStyle = 'rgba(184, 67, 63, 0.22)';
+      const pulse = 0.5 + 0.5 * Math.sin(now / 220);
+      context.fillStyle = `rgba(255, 59, 48, ${0.22 + 0.2 * pulse})`;
       context.fillRect(left, top, boxWidth, boxHeight);
-      context.save();
-      const dashLength = 6 / scale;
-      const gapLength = 4 / scale;
-      context.setLineDash([dashLength, gapLength]);
-      context.lineDashOffset = -(now / 40) % (dashLength + gapLength);
-      context.lineWidth = 3 / scale;
-      context.strokeStyle = '#b8433f';
-      context.strokeRect(left, top, boxWidth, boxHeight);
-      context.restore();
+      this.drawBattleHighlight(context, scale, now, left + boxWidth, top, () => {
+        context.rect(left, top, boxWidth, boxHeight);
+      });
+    }
+
+    if (flags.isAttackDropTarget) {
+      this.drawAttackTargetHighlight(context, scale, now, cx, cy, () => {
+        context.rect(left, top, boxWidth, boxHeight);
+      });
+    } else if (flags.isLegalDropTarget) {
+      this.drawMoveTargetHighlight(context, scale, now, cx, cy, () => {
+        context.rect(left, top, boxWidth, boxHeight);
+      });
     }
 
     if (flags.isSelected || flags.isHovered || flags.isNeighbor || flags.isLegalDropTarget || flags.isContested) {
@@ -431,6 +619,79 @@ export class MapRenderer {
     }
 
     drawInfluenceTokens(context, region, left + boxWidth, cy, factions, scale);
+  }
+
+  /**
+   * An animated arrow from where a unit attacked from to the region/sea zone
+   * it hit (Attack Moves/Attack phases): red for a pending battle, gold when
+   * the unit simply walked in and captured the region. Dashes flow toward the
+   * target so the direction reads even before looking at the arrowhead.
+   */
+  private drawAttackTrajectory(
+    context: CanvasRenderingContext2D,
+    fromPoint: RegionPoint,
+    toPoint: RegionPoint,
+    scale: number,
+    now: number,
+    captured: boolean,
+  ): void {
+    const w = this.config.mapViewBoxWidth;
+    const h = this.config.mapViewBoxHeight;
+    const fromX = fromPoint.x * w;
+    const fromY = fromPoint.y * h;
+    const toX = toPoint.x * w;
+    const toY = toPoint.y * h;
+    const color = captured ? '#ffc933' : '#ff4d3d';
+    const angle = Math.atan2(toY - fromY, toX - fromX);
+    const arrowLength = 20 / scale;
+    // Stop the shaft inside the arrowhead so the dashes don't poke through its tip.
+    const shaftEndX = toX - arrowLength * 0.7 * Math.cos(angle);
+    const shaftEndY = toY - arrowLength * 0.7 * Math.sin(angle);
+
+    context.save();
+    context.lineCap = 'round';
+    context.setLineDash([]);
+    context.lineWidth = 7 / scale;
+    context.strokeStyle = 'rgba(0, 0, 0, 0.55)';
+    context.beginPath();
+    context.moveTo(fromX, fromY);
+    context.lineTo(shaftEndX, shaftEndY);
+    context.stroke();
+
+    const dash = 12 / scale;
+    const gap = 8 / scale;
+    context.setLineDash([dash, gap]);
+    context.lineDashOffset = -((now / 22) % (dash + gap));
+    context.lineWidth = 4 / scale;
+    context.strokeStyle = color;
+    context.beginPath();
+    context.moveTo(fromX, fromY);
+    context.lineTo(shaftEndX, shaftEndY);
+    context.stroke();
+    context.restore();
+
+    context.save();
+    context.beginPath();
+    context.arc(fromX, fromY, 6 / scale, 0, Math.PI * 2);
+    context.fillStyle = color;
+    context.fill();
+    context.lineWidth = 2 / scale;
+    context.strokeStyle = '#ffffff';
+    context.stroke();
+
+    context.beginPath();
+    context.moveTo(toX, toY);
+    context.lineTo(toX - arrowLength * Math.cos(angle - Math.PI / 7), toY - arrowLength * Math.sin(angle - Math.PI / 7));
+    context.lineTo(toX - arrowLength * 0.65 * Math.cos(angle), toY - arrowLength * 0.65 * Math.sin(angle));
+    context.lineTo(toX - arrowLength * Math.cos(angle + Math.PI / 7), toY - arrowLength * Math.sin(angle + Math.PI / 7));
+    context.closePath();
+    context.fillStyle = color;
+    context.fill();
+    context.lineWidth = 2 / scale;
+    context.strokeStyle = '#ffffff';
+    context.lineJoin = 'round';
+    context.stroke();
+    context.restore();
   }
 
   /**

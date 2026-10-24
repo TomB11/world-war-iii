@@ -63,6 +63,9 @@ export class AiSabotageCommand implements Command {
     if (!this.rules.isHostileTo(state, this.targetPlayerId, this.playerId, this.factions)) {
       return reject('You cannot sabotage a teammate (PROJECT_RULES.md section 2)');
     }
+    if (state.regions[this.targetRegionId]?.ownerId !== this.targetPlayerId) {
+      return reject(`Region "${this.targetRegionId}" does not belong to "${this.targetPlayerId}"`);
+    }
 
     const roll = rollDie(state.randomSeed, DICE_SIDES);
     const effect = this.sabotageEffects.effects[String(roll.result)] ?? 'moneyLoss';
@@ -76,7 +79,7 @@ export class AiSabotageCommand implements Command {
       case 'moneyLoss':
         nextPlayers = nextPlayers.map((candidate) =>
           candidate.id === this.targetPlayerId
-            ? { ...candidate, treasury: candidate.treasury - this.sabotageEffects.moneyLossAmount }
+            ? { ...candidate, treasury: Math.max(0, candidate.treasury - this.sabotageEffects.moneyLossAmount) }
             : candidate,
         );
         break;

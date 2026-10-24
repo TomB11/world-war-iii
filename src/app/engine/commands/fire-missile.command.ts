@@ -2,6 +2,7 @@ import { Command, CommandResult } from '../../interfaces/command';
 import { GameState } from '../../models/game-state.model';
 import { GameEngineEvent } from '../../interfaces/game-events';
 import { UnitDefinition } from '../../models/unit.model';
+import { Faction } from '../../models/faction.model';
 import { MissileResult, RegionCombat } from '../../models/region-combat.model';
 import { RulesEngine } from '../rules-engine';
 import { hasInterceptor, resolveMissileStrike } from './shared/missile-resolution';
@@ -33,6 +34,7 @@ export class FireMissileCommand implements Command {
     private readonly regionId: string,
     private readonly unitCatalog: Readonly<Record<string, UnitDefinition>>,
     private readonly rules: RulesEngine = new RulesEngine(),
+    private readonly factions: Readonly<Record<string, Faction>> = {},
   ) {}
 
   execute(state: GameState): CommandResult {
@@ -50,7 +52,7 @@ export class FireMissileCommand implements Command {
 
     const regionUnits = state.units.filter((unit) => unit.regionId === this.regionId);
     const attackers = regionUnits.filter((unit) => unit.ownerId === this.playerId);
-    const defenders = regionUnits.filter((unit) => unit.ownerId !== this.playerId);
+    const defenders = regionUnits.filter((unit) => this.rules.isHostileTo(state, unit.ownerId, this.playerId, this.factions));
     if (attackers.length === 0 || defenders.length === 0) {
       return reject('This region has no pending battle');
     }
@@ -85,7 +87,7 @@ export class FireMissileCommand implements Command {
 
     // Interception: only possible if the defender has their own missile
     // launcher in the target region or a neighboring one.
-    const interceptorPresent = hasInterceptor(state, this.regionId, this.playerId, this.unitCatalog);
+    const interceptorPresent = hasInterceptor(state, this.regionId, this.playerId, this.unitCatalog, this.rules, this.factions);
     const resolution = resolveMissileStrike(state.randomSeed, missileDef.attack, interceptorPresent);
 
     const missileResult: MissileResult = {

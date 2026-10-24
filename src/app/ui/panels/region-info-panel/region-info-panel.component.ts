@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { GameCoreStore } from '../../../state/core/game-core.store';
 import { MapUiStore } from '../../../state/map/map-ui.store';
 import { MovementStore } from '../../../state/movement/movement.store';
@@ -15,10 +16,20 @@ interface UnitGroup {
   quantity: number;
 }
 
+interface LoadedTransport {
+  id: string;
+  unitId: string;
+  label: string;
+  ownerId: string;
+  ownerName: string;
+  color: string;
+  cargo: readonly UnitGroup[];
+}
+
 @Component({
   selector: 'wwiii-region-info-panel',
   standalone: true,
-  imports: [UnitCardComponent],
+  imports: [UnitCardComponent, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './region-info-panel.component.html',
   styleUrl: './region-info-panel.component.scss',
@@ -43,20 +54,37 @@ export class RegionInfoPanelComponent {
    * no-op for anything that isn't the active player's own movable unit, so
    * it's safe to wire on every unit-card unconditionally.
    */
-  protected startDrag(entry: UnitGroup, event: PointerEvent): void {
+  protected startDrag(entry: UnitGroup, event: PointerEvent, instanceId?: string): void {
     const state = this.gameCoreStore.state();
     const regionId = this.mapUiStore.selectedRegionId();
     if (!state || !regionId || entry.ownerId !== state.activePlayerId || !MOVEMENT_PHASES.includes(state.phase)) {
       return;
     }
-    const candidate = (this.gameCoreStore.unitsByRegion()[regionId] ?? []).find(
-      (u) => u.unitId === entry.unitId && u.ownerId === entry.ownerId && u.transportedBy === null && u.movesRemaining > 0,
+    const candidate = (this.gameCoreStore.unitsByRegion()[regionId] ?? []).find((u) =>
+      instanceId
+        ? u.id === instanceId && u.transportedBy === null && u.movesRemaining > 0
+        : u.unitId === entry.unitId && u.ownerId === entry.ownerId && u.transportedBy === null && u.movesRemaining > 0,
     );
     if (!candidate) {
       return;
     }
     event.preventDefault();
     this.movementStore.startExternalUnitDrag(candidate.id);
+  }
+
+  protected startTransportDrag(transport: LoadedTransport, event: PointerEvent): void {
+    this.startDrag(
+      {
+        unitId: transport.unitId,
+        unitName: transport.label,
+        ownerId: transport.ownerId,
+        ownerName: transport.ownerName,
+        color: transport.color,
+        quantity: 1,
+      },
+      event,
+      transport.id,
+    );
   }
 
   protected readonly ownerName = computed(() => {
@@ -72,7 +100,16 @@ export class RegionInfoPanelComponent {
     if (!id) {
       return [];
     }
-    return this.groupUnits(this.gameCoreStore.unitsByRegion()[id] ?? []);
+    return this.groupUnits(this.partitionTransports(this.gameCoreStore.unitsByRegion()[id] ?? []).free);
+  });
+
+  /** Transports in the selected location that currently carry units, each listed with its own cargo so the player can tell which ship holds what. */
+  protected readonly loadedTransports = computed<readonly LoadedTransport[]>(() => {
+    const id = this.mapUiStore.selectedRegionId();
+    if (!id) {
+      return [];
+    }
+    return this.partitionTransports(this.gameCoreStore.unitsByRegion()[id] ?? []).loaded;
   });
 
   /**
@@ -93,10 +130,55 @@ export class RegionInfoPanelComponent {
       return { contested: false, defenders: [], attackers: [] };
     }
     const units = this.gameCoreStore.unitsByRegion()[id] ?? [];
-    const attackers = this.groupUnits(units.filter((u) => u.ownerId === activeId));
-    const defenders = this.groupUnits(units.filter((u) => u.ownerId !== activeId));
-    return { contested: attackers.length > 0 && defenders.length > 0, defenders, attackers };
+    const free = this.partitionTransports(units).free;
+    const attackers = this.groupUnits(free.filter((u) => u.ownerId === activeId));
+    const defenders = this.groupUnits(free.filter((u) => u.ownerId !== activeId));
+    const contested = units.some((u) => u.ownerId === activeId) && units.some((u) => u.ownerId !== activeId);
+    return { contested, defenders, attackers };
   });
+
+  /**
+   * Splits a location's units into "free" ones (listed normally) and loaded
+   * transports. A transport with cargo is pulled out of the free list together
+   * with everything embarked on it; same-type loaded transports of one owner
+   * get "#1", "#2"... labels so they can be told apart.
+   */
+  private partitionTransports(units: readonly UnitInstance[]): { free: UnitInstance[]; loaded: LoadedTransport[] } {
+    const catalog = this.gameCoreStore.units();
+    const factions = this.gameCoreStore.factions();
+    const cargoByTransport = new Map<string, UnitInstance[]>();
+    for (const unit of units) {
+      if (unit.transportedBy !== null) {
+        cargoByTransport.set(unit.transportedBy, [...(cargoByTransport.get(unit.transportedBy) ?? []), unit]);
+      }
+    }
+
+    const carriers = units.filter((unit) => cargoByTransport.has(unit.id));
+    const sameTypeCount = new Map<string, number>();
+    for (const carrier of carriers) {
+      const key = `${carrier.ownerId}:${carrier.unitId}`;
+      sameTypeCount.set(key, (sameTypeCount.get(key) ?? 0) + 1);
+    }
+    const seenOfType = new Map<string, number>();
+    const loaded = carriers.map((carrier): LoadedTransport => {
+      const key = `${carrier.ownerId}:${carrier.unitId}`;
+      const ordinal = (seenOfType.get(key) ?? 0) + 1;
+      seenOfType.set(key, ordinal);
+      const name = catalog[carrier.unitId]?.name ?? carrier.unitId;
+      return {
+        id: carrier.id,
+        unitId: carrier.unitId,
+        label: (sameTypeCount.get(key) ?? 0) > 1 ? `${name} #${ordinal}` : name,
+        ownerId: carrier.ownerId,
+        ownerName: factions[carrier.ownerId]?.name ?? carrier.ownerId,
+        color: factions[carrier.ownerId]?.color ?? '#888888',
+        cargo: this.groupUnits(cargoByTransport.get(carrier.id) ?? []),
+      };
+    });
+
+    const free = units.filter((unit) => unit.transportedBy === null && !cargoByTransport.has(unit.id));
+    return { free, loaded };
+  }
 
   private groupUnits(units: readonly UnitInstance[]): UnitGroup[] {
     const catalog = this.gameCoreStore.units();

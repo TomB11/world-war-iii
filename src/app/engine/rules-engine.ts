@@ -3,6 +3,7 @@ import { PlayerState } from '../models/player.model';
 import { Region } from '../models/region.model';
 import { UnitDefinition } from '../models/unit.model';
 import { UnitInstance } from '../models/unit-instance.model';
+import { AttackRecord } from '../models/attack-record.model';
 import { RegionCombat } from '../models/region-combat.model';
 import { Faction } from '../models/faction.model';
 
@@ -13,10 +14,6 @@ import { Faction } from '../models/faction.model';
  * rule sets are added here in their respective phases.
  */
 export class RulesEngine {
-  isValidRegion(state: GameState, regionId: string): boolean {
-    return regionId in state.regions;
-  }
-
   getRegion(state: GameState, regionId: string): Region | null {
     return state.regions[regionId] ?? null;
   }
@@ -105,6 +102,56 @@ export class RulesEngine {
 
   getUnitsInRegion(state: GameState, regionId: string): readonly UnitInstance[] {
     return state.units.filter((unit) => unit.regionId === regionId);
+  }
+
+  /**
+   * Whether this unit's most recent Attack Moves Phase attack can still be
+   * undone (see CancelAttackCommand), as the record to undo or the reason it
+   * can't. Only the LAST attack of a unit is ever cancellable, so a Tank's
+   * capture-through chain unwinds in reverse order. Shared by the command and
+   * the UI so a "Cancel" button is only offered when the command would accept.
+   */
+  checkCancelAttack(
+    state: GameState,
+    unitInstanceId: string,
+  ): { readonly record: AttackRecord; readonly reason: null } | { readonly record: null; readonly reason: string } {
+    const refuse = (reason: string) => ({ record: null, reason }) as const;
+    if (state.phase !== 'attackMoves') {
+      return refuse('Attacks can only be cancelled during the Attack Moves phase');
+    }
+    const record = [...state.attackRecords].reverse().find((entry) => entry.unitInstanceId === unitInstanceId);
+    const unit = this.getUnitInstance(state, unitInstanceId);
+    if (!record || !unit) {
+      return refuse('This unit has no attack to cancel');
+    }
+    const target = record.toRegionId;
+    if (state.combats[target]) {
+      return refuse('This battle has already started');
+    }
+
+    if (record.kind === 'missile') {
+      return state.missileDeclarations[target] === unitInstanceId
+        ? { record, reason: null }
+        : refuse('This missile strike is no longer declared');
+    }
+
+    if (unit.regionId !== target) {
+      return refuse('This unit is no longer where it attacked');
+    }
+    const othersOfSameOwner = state.units.filter(
+      (candidate) =>
+        candidate.regionId === target &&
+        candidate.ownerId === unit.ownerId &&
+        candidate.id !== unitInstanceId &&
+        candidate.transportedBy !== unitInstanceId,
+    );
+    if (record.kind === 'capture' && othersOfSameOwner.length > 0) {
+      return refuse('Other units of yours moved into the captured region — move them out first');
+    }
+    if (record.kind === 'contest' && othersOfSameOwner.length === 0 && state.missileDeclarations[target]) {
+      return refuse('Cancel the missile strike declared on this region first');
+    }
+    return { record, reason: null };
   }
 
   /**
@@ -608,14 +655,14 @@ export class RulesEngine {
       if (!otherSide) {
         continue;
       }
-      if (category === 'land') {
+      if (category === 'air') {
+        result.push(otherSide); // air ignores terrain/strait ownership
+      } else {
         const regionA = state.regions[strait.regionA];
         const regionB = state.regions[strait.regionB];
         if (regionA?.ownerId === unit.ownerId && regionB?.ownerId === unit.ownerId) {
           result.push(otherSide);
         }
-      } else {
-        result.push(otherSide); // air ignores terrain/strait ownership
       }
     }
     return result;

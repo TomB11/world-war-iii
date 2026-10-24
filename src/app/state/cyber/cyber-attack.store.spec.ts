@@ -2,7 +2,6 @@ import { TestBed } from '@angular/core/testing';
 import { CyberAttackStore } from './cyber-attack.store';
 import { GameCoreStore } from '../core/game-core.store';
 import { DataLoaderService, InitialGameData } from '../../services/data-loader.service';
-import { RandomService } from '../../services/random.service';
 import { faction, player, region, testState, TEST_ECONOMY_CONFIG } from '../../engine/test-fixtures';
 
 function fakeInitialGameData(overrides: Partial<InitialGameData> = {}): InitialGameData {
@@ -36,7 +35,6 @@ describe('CyberAttackStore', () => {
     TestBed.configureTestingModule({
       providers: [
         { provide: DataLoaderService, useValue: { loadInitialGameData: () => Promise.resolve(fakeData) } },
-        { provide: RandomService, useValue: { seed: () => {} } },
       ],
     });
     return { cyberAttackStore: TestBed.inject(CyberAttackStore), gameCoreStore: TestBed.inject(GameCoreStore) };

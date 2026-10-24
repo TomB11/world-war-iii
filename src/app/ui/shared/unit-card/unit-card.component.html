@@ -6,6 +6,10 @@
 >
   <span class="unit-card__frame">
     <wwiii-unit-icon [unitId]="unitId()" [ownerId]="ownerId()" [color]="color()" [size]="iconSize()" />
+    @if (flagPath(); as flag) {
+      <img class="unit-card__flag" [src]="flag" [alt]="ownerName()" />
+    }
   </span>
   <span class="unit-card__label">{{ unitName() }} × {{ quantity() }}</span>
+  <span class="unit-card__faction" [style.color]="color()">{{ ownerName() }}</span>
 </div>

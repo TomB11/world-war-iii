@@ -76,7 +76,6 @@ describe('AiSabotageCommand', () => {
   });
 
   it('spawnBlock effect adds the target region to sabotagedRegionIds', () => {
-    const state = baseState({ randomSeed: 1 });
     // Seed sweep to force the spawnBlock outcome (rolls 3-4) deterministically.
     let seed = 1;
     let result;

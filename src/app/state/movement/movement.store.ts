@@ -6,6 +6,7 @@ import { MoveUnitCommand } from '../../engine/commands/move-unit.command';
 import { LoadUnitCommand } from '../../engine/commands/load-unit.command';
 import { UnloadUnitCommand } from '../../engine/commands/unload-unit.command';
 import { AttackCommand } from '../../engine/commands/attack.command';
+import { CancelAttackCommand } from '../../engine/commands/cancel-attack.command';
 import { Command } from '../../interfaces/command';
 import { GameEngineEvent } from '../../interfaces/game-events';
 import { UnitDragState } from '../../interfaces/map-types';
@@ -119,6 +120,23 @@ export const MovementStore = signalStore(
             rules,
           ),
         );
+      },
+      /** Undoes this unit's last Attack Moves attack before the phase is advanced (see CancelAttackCommand). */
+      cancelAttack(playerId: string, unitInstanceId: string): void {
+        const economyConfig = gameCoreStore.economyConfig();
+        if (!economyConfig) {
+          return;
+        }
+        dispatchAndHandle(new CancelAttackCommand(playerId, unitInstanceId, economyConfig, rules));
+      },
+      /** Whether this unit's last attack can be cancelled right now, and if not, why (RulesEngine.checkCancelAttack). */
+      cancelAttackCheck(unitInstanceId: string): { readonly allowed: boolean; readonly reason: string | null } {
+        const state = gameCoreStore.state();
+        if (!state) {
+          return { allowed: false, reason: null };
+        }
+        const check = rules.checkCancelAttack(state, unitInstanceId);
+        return { allowed: check.record !== null, reason: check.reason };
       },
       /**
        * Read-only preview of a unit's legal plain-move destinations. Plain

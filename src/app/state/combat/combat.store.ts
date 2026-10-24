@@ -111,6 +111,10 @@ export const CombatStore = signalStore(
             patchState(store, { combatRejectionReason: null, combatOutcomeMessage: message });
             break;
           }
+          case 'PhaseAdvanced':
+          case 'TurnEnded':
+            patchState(store, { combatRejectionReason: null, missileStrikeMessage: null });
+            break;
           default:
             if (clearsAllRejectionBanners(event)) {
               patchState(store, { combatRejectionReason: null });
@@ -129,15 +133,17 @@ export const CombatStore = signalStore(
       },
       /** Rolls the next round of dice for whichever side is up in a region's Attack Phase battle. */
       rollCombat(playerId: string, regionId: string): void {
-        dispatchAndHandle(new RollCombatCommand(playerId, regionId, gameCoreStore.units(), rules));
+        dispatchAndHandle(new RollCombatCommand(playerId, regionId, gameCoreStore.units(), rules, gameCoreStore.factions()));
       },
       /** Arms one Reserve missile for a pending strike (PROJECT_RULES.md section 15) — first of two clicks; see fireMissile for the roll itself. */
       selectMissile(playerId: string, regionId: string, missileUnitId: string): void {
-        dispatchAndHandle(new SelectMissileCommand(playerId, regionId, missileUnitId, gameCoreStore.units(), rules));
+        dispatchAndHandle(
+          new SelectMissileCommand(playerId, regionId, missileUnitId, gameCoreStore.units(), rules, gameCoreStore.factions()),
+        );
       },
       /** Rolls the missile armed via selectMissile() — resolves interception/hit and removes it from Reserve either way (PROJECT_RULES.md section 15). */
       fireMissile(playerId: string, regionId: string): void {
-        dispatchAndHandle(new FireMissileCommand(playerId, regionId, gameCoreStore.units(), rules));
+        dispatchAndHandle(new FireMissileCommand(playerId, regionId, gameCoreStore.units(), rules, gameCoreStore.factions()));
       },
       /** Removes one unit as a casualty during a region's Attack Phase battle. */
       removeCasualty(playerId: string, regionId: string, unitInstanceId: string): void {
@@ -146,7 +152,15 @@ export const CombatStore = signalStore(
           return;
         }
         dispatchAndHandle(
-          new RemoveCasualtyCommand(playerId, regionId, unitInstanceId, gameCoreStore.units(), economyConfig, rules),
+          new RemoveCasualtyCommand(
+            playerId,
+            regionId,
+            unitInstanceId,
+            gameCoreStore.units(),
+            economyConfig,
+            rules,
+            gameCoreStore.factions(),
+          ),
         );
       },
       /**

@@ -1,6 +1,5 @@
 import { GameState } from '../models/game-state.model';
 import { Command, CommandResult } from '../interfaces/command';
-import { RulesEngine } from './rules-engine';
 
 /**
  * The Game Engine is the single authority allowed to produce a new GameState.
@@ -9,8 +8,6 @@ import { RulesEngine } from './rules-engine';
  * testable in isolation from the Angular app.
  */
 export class GameEngine {
-  constructor(private readonly rules: RulesEngine = new RulesEngine()) {}
-
   execute(state: GameState, command: Command): CommandResult {
     try {
       return command.execute(state);
@@ -22,9 +19,5 @@ export class GameEngine {
       console.error(`[GameEngine] Command "${command.type}" failed:`, error);
       return { state, events: [] };
     }
-  }
-
-  getRules(): RulesEngine {
-    return this.rules;
   }
 }

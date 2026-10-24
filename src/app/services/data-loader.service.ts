@@ -253,6 +253,7 @@ export class DataLoaderService {
       unitsDeployedThisTurn: {},
       aiConfig,
       sabotagedRegionIds: [],
+      attackRecords: [],
     };
 
     // The first active player's turn-1 income is credited immediately at

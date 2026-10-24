@@ -3,6 +3,7 @@ import { GameState } from '../../models/game-state.model';
 import { GameEngineEvent } from '../../interfaces/game-events';
 import { UnitDefinition } from '../../models/unit.model';
 import { UnitInstance } from '../../models/unit-instance.model';
+import { AttackRecord, AttackRecordKind } from '../../models/attack-record.model';
 import { EconomyConfig } from '../../models/economy-config.model';
 import { Faction } from '../../models/faction.model';
 import { RulesEngine } from '../rules-engine';
@@ -112,8 +113,17 @@ export class AttackCommand implements Command {
       return reject('This unit has no attack capability');
     }
 
-    if (unit.hasFoughtThisTurn && !unitDef.captureThrough) {
-      return reject('This unit has already attacked this turn');
+    // Capture-through (PROJECT_RULES.md section 21) only continues from a region
+    // the unit actually took without a fight — never from one still contested.
+    if (unit.hasFoughtThisTurn) {
+      const stillContested = state.units.some(
+        (candidate) =>
+          candidate.regionId === unit.regionId &&
+          this.rules.isHostileTo(state, candidate.ownerId, this.playerId, this.factions),
+      );
+      if (!unitDef.captureThrough || stillContested) {
+        return reject('This unit has already attacked this turn');
+      }
     }
 
     if (unit.movesRemaining <= 0) {
@@ -136,15 +146,29 @@ export class AttackCommand implements Command {
     // move, PROJECT_RULES.md section 7), is marked as having fought, and
     // pays its path cost in movement points. Shared by both the naval and
     // land/air branches below.
-    const movedAttacker = (candidate: UnitInstance): UnitInstance =>
-      candidate.id === this.unitInstanceId
-        ? {
-            ...candidate,
-            regionId: this.targetRegionId,
-            movesRemaining: candidate.movesRemaining - cost,
-            hasFoughtThisTurn: true,
-          }
+    const movedAttacker = (candidate: UnitInstance): UnitInstance => {
+      if (candidate.id === this.unitInstanceId) {
+        return {
+          ...candidate,
+          regionId: this.targetRegionId,
+          movesRemaining: candidate.movesRemaining - cost,
+          hasFoughtThisTurn: true,
+        };
+      }
+      // Embarked cargo sails with its ship.
+      return candidate.transportedBy === this.unitInstanceId
+        ? { ...candidate, regionId: this.targetRegionId }
         : candidate;
+    };
+    const baseRecord = (kind: AttackRecordKind): AttackRecord => ({
+      kind,
+      unitInstanceId: this.unitInstanceId,
+      fromRegionId: unit.regionId,
+      toRegionId: this.targetRegionId,
+      movesBefore: unit.movesRemaining,
+      hadFoughtBefore: unit.hasFoughtThisTurn,
+    });
+    const recordsWith = (record: AttackRecord): readonly AttackRecord[] => [...state.attackRecords, record];
 
     if (unitDef.category === 'naval') {
       if (!state.seaZones[this.targetRegionId]) {
@@ -166,13 +190,24 @@ export class AttackCommand implements Command {
       // same Attack Phase combat machinery as a land battle.
       if (seaDefenders.length > 0) {
         return {
-          state: { ...state, units: state.units.map(movedAttacker) },
+          state: {
+            ...state,
+            units: state.units.map(movedAttacker),
+            attackRecords: recordsWith(baseRecord('contest')),
+          },
           events: [{ type: 'RegionContested', playerId: this.playerId, regionId: this.targetRegionId }, movedUnitEvent],
         };
       }
       // The hostile ship(s) must have moved on since this reach was
       // computed — nothing to fight, just sail into the now-empty sea zone.
-      return { state: { ...state, units: state.units.map(movedAttacker) }, events: [movedUnitEvent] };
+      return {
+        state: {
+          ...state,
+          units: state.units.map(movedAttacker),
+          attackRecords: recordsWith(baseRecord('unopposed')),
+        },
+        events: [movedUnitEvent],
+      };
     }
 
     const targetRegion = state.regions[this.targetRegionId];
@@ -218,6 +253,7 @@ export class AttackCommand implements Command {
           ...state,
           units: nextUnits,
           missileDeclarations: { ...state.missileDeclarations, [this.targetRegionId]: this.unitInstanceId },
+          attackRecords: recordsWith(baseRecord('missile')),
         },
         events,
       };
@@ -238,7 +274,14 @@ export class AttackCommand implements Command {
           toRegionId: this.targetRegionId,
         },
       ];
-      return { state: { ...state, units: state.units.map(movedAttacker) }, events };
+      return {
+        state: {
+          ...state,
+          units: state.units.map(movedAttacker),
+          attackRecords: recordsWith(baseRecord('contest')),
+        },
+        events,
+      };
     }
 
     // UNDEFENDED but this unit can't take ground on its own (Helicopter,
@@ -263,6 +306,20 @@ export class AttackCommand implements Command {
       this.economyConfig,
     );
 
+    const satisfactionDelta: Record<string, number> = {};
+    for (const candidate of nextPlayers) {
+      const before = state.players.find((player) => player.id === candidate.id);
+      if (before && before.citizenSatisfaction !== candidate.citizenSatisfaction) {
+        satisfactionDelta[candidate.id] = candidate.citizenSatisfaction - before.citizenSatisfaction;
+      }
+    }
+    const captureRecord: AttackRecord = {
+      ...baseRecord('capture'),
+      previousOwnerId,
+      previousCapturedOnTurn: targetRegion.capturedOnTurn,
+      satisfactionDelta,
+    };
+
     const events: readonly GameEngineEvent[] = [
       { type: 'RegionCaptured', playerId: this.playerId, regionId: this.targetRegionId, previousOwnerId },
       {
@@ -272,6 +329,15 @@ export class AttackCommand implements Command {
         toRegionId: this.targetRegionId,
       },
     ];
-    return { state: { ...state, regions: nextRegions, units: nextUnits, players: nextPlayers }, events };
+    return {
+      state: {
+        ...state,
+        regions: nextRegions,
+        units: nextUnits,
+        players: nextPlayers,
+        attackRecords: recordsWith(captureRecord),
+      },
+      events,
+    };
   }
 }

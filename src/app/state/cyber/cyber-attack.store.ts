@@ -77,6 +77,10 @@ export const CyberAttackStore = signalStore(
               cyberAttackResultMessage: `Hack Level upgraded to ${event.hackLevel}.`,
             });
             break;
+          case 'PhaseAdvanced':
+          case 'TurnEnded':
+            patchState(store, { cyberAttackRejectionReason: null, cyberAttackResultMessage: null });
+            break;
           default:
             if (clearsAllRejectionBanners(event)) {
               patchState(store, { cyberAttackRejectionReason: null });

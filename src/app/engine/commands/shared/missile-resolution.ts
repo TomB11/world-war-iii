@@ -1,6 +1,8 @@
 import { GameState } from '../../../models/game-state.model';
 import { UnitDefinition } from '../../../models/unit.model';
+import { Faction } from '../../../models/faction.model';
 import { MissileOutcome } from '../../../models/region-combat.model';
+import { RulesEngine } from '../../rules-engine';
 import { rollDie } from '../../random';
 import { DICE_SIDES } from '../../constants/dice.constants';
 import { INTERCEPT_THRESHOLD } from '../fire-missile.constants';
@@ -49,18 +51,20 @@ export function resolveMissileStrike(
   return { interceptRoll, attackRoll, outcome, nextSeed: currentSeed };
 }
 
-/** Whether the defender has their own Rocket System in the target region or an adjacent one (PROJECT_RULES.md section 15). */
+/** Whether a hostile Rocket System (never a teammate of the launching player) sits in the target region or an adjacent one (PROJECT_RULES.md section 15). */
 export function hasInterceptor(
   state: GameState,
   targetRegionId: string,
   playerId: string,
   unitCatalog: Readonly<Record<string, UnitDefinition>>,
+  rules: RulesEngine,
+  factions: Readonly<Record<string, Faction>>,
 ): boolean {
   const targetRegion = state.regions[targetRegionId];
   const neighborIds = new Set(targetRegion?.neighbors ?? []);
   return state.units.some(
     (unit) =>
-      unit.ownerId !== playerId &&
+      rules.isHostileTo(state, unit.ownerId, playerId, factions) &&
       (unit.regionId === targetRegionId || neighborIds.has(unit.regionId)) &&
       unitCatalog[unit.unitId]?.canDeclareMissile,
   );

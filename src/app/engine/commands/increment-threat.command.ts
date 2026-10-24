@@ -2,7 +2,6 @@ import { Command, CommandResult } from '../../interfaces/command';
 import { GameState } from '../../models/game-state.model';
 import { GameEngineEvent } from '../../interfaces/game-events';
 import { AiThreatTrackData } from '../../models/ai-threat-track.model';
-import { RulesEngine } from '../rules-engine';
 
 /**
  * Solo Command Mode's "Increase Threat by 1" (rulebook section 2, step 1):
@@ -28,7 +27,6 @@ export class IncrementThreatCommand implements Command {
   constructor(
     private readonly playerId: string,
     private readonly threatTrackData: AiThreatTrackData,
-    private readonly rules: RulesEngine = new RulesEngine(),
   ) {}
 
   execute(state: GameState): CommandResult {

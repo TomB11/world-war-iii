@@ -2,6 +2,7 @@ import { Command, CommandResult } from '../../interfaces/command';
 import { GameState } from '../../models/game-state.model';
 import { GameEngineEvent } from '../../interfaces/game-events';
 import { UnitDefinition } from '../../models/unit.model';
+import { Faction } from '../../models/faction.model';
 import { RegionCombat } from '../../models/region-combat.model';
 import { RulesEngine } from '../rules-engine';
 
@@ -24,6 +25,7 @@ export class SelectMissileCommand implements Command {
     private readonly missileUnitId: string,
     private readonly unitCatalog: Readonly<Record<string, UnitDefinition>>,
     private readonly rules: RulesEngine = new RulesEngine(),
+    private readonly factions: Readonly<Record<string, Faction>> = {},
   ) {}
 
   execute(state: GameState): CommandResult {
@@ -41,7 +43,7 @@ export class SelectMissileCommand implements Command {
 
     const regionUnits = state.units.filter((unit) => unit.regionId === this.regionId);
     const attackers = regionUnits.filter((unit) => unit.ownerId === this.playerId);
-    const defenders = regionUnits.filter((unit) => unit.ownerId !== this.playerId);
+    const defenders = regionUnits.filter((unit) => this.rules.isHostileTo(state, unit.ownerId, this.playerId, this.factions));
     if (attackers.length === 0 || defenders.length === 0) {
       return reject('This region has no pending battle');
     }

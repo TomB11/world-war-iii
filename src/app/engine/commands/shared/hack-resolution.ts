@@ -26,7 +26,7 @@ export function resolveHack(seed: number, targetHackLevel: number, targetTreasur
   if (succeeded) {
     const defenseRoll = rollDie(nextSeed, DICE_SIDES);
     nextSeed = defenseRoll.nextSeed;
-    moneyStolen = Math.min(defenseRoll.result, targetTreasury);
+    moneyStolen = Math.max(0, Math.min(defenseRoll.result, targetTreasury));
   }
 
   return { attackRoll: attackRoll.result, succeeded, moneyStolen, nextSeed };

@@ -165,6 +165,34 @@ export const MapUiStore = signalStore(
           return previews;
         },
       ),
+      /**
+       * This turn's Attack Moves attacks (GameState.attackRecords) as unique
+       * from -> to pairs for the map to draw an arrow along; a capture is
+       * flagged so it can read differently from a pending battle. Rocket
+       * System strikes are excluded — missileStrikePreviews already draws those.
+       */
+      attackTrajectories: computed<
+        readonly { readonly fromRegionId: string; readonly toRegionId: string; readonly captured: boolean }[]
+      >(() => {
+        const state = gameCoreStore.state();
+        if (!state) {
+          return [];
+        }
+        const byRoute = new Map<string, { fromRegionId: string; toRegionId: string; captured: boolean }>();
+        for (const record of state.attackRecords) {
+          if (record.kind === 'missile' || !state.units.some((unit) => unit.id === record.unitInstanceId)) {
+            continue;
+          }
+          const key = `${record.fromRegionId}>${record.toRegionId}`;
+          const existing = byRoute.get(key);
+          byRoute.set(key, {
+            fromRegionId: record.fromRegionId,
+            toRegionId: record.toRegionId,
+            captured: (existing?.captured ?? false) || record.kind === 'capture',
+          });
+        }
+        return [...byRoute.values()];
+      }),
     };
   }),
   withComputed((store) => ({
@@ -236,6 +264,14 @@ export const MapUiStore = signalStore(
             break;
           case 'UnitMoved':
             pushUnitMove(event.unitInstanceId, event.fromRegionId, event.toRegionId);
+            break;
+          case 'AttackCancelled':
+            if (event.kind !== 'missile') {
+              pushUnitMove(event.unitInstanceId, event.toRegionId, event.fromRegionId);
+            }
+            if (event.kind === 'capture') {
+              pushFlagTransition(event.toRegionId, event.playerId);
+            }
             break;
           case 'UnitDeployed':
             pushMapEffect(event.regionId, 'spawn');

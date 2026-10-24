@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { UnitIconComponent } from '../unit-icon/unit-icon.component';
 
 /**
@@ -30,6 +30,12 @@ export class UnitCardComponent {
   readonly quantity = input.required<number>();
   readonly draggable = input<boolean>(false);
   readonly iconSize = input<number>(84);
+
+  /** Owner's flag (same asset the map uses for owned regions); null for an unowned unit. */
+  protected readonly flagPath = computed(() => {
+    const ownerId = this.ownerId();
+    return ownerId ? `assets/flags/${ownerId}.png` : null;
+  });
 
   readonly dragStart = output<PointerEvent>();
 }

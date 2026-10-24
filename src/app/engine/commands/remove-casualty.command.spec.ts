@@ -1,7 +1,7 @@
 import { RemoveCasualtyCommand } from './remove-casualty.command';
 import { RegionCombat } from '../../models/region-combat.model';
 import { UnitDefinition } from '../../models/unit.model';
-import { must, player, region, testState, TEST_ECONOMY_CONFIG, unitDef, unitInstance } from '../test-fixtures';
+import { faction, must, player, region, testState, TEST_ECONOMY_CONFIG, unitDef, unitInstance } from '../test-fixtures';
 import { SeaZone } from '../../models/sea-zone.model';
 
 describe('RemoveCasualtyCommand', () => {
@@ -239,6 +239,47 @@ describe('RemoveCasualtyCommand', () => {
       // The attacker's real combatant (the destroyer) survives — combat continues.
       expect(remainingIds).toContain('atk-ship');
       expect(result.state.combats['sea-1']).toBeDefined();
+    });
+
+    it('does not deadlock when sinking a carrier takes its embarked air cargo with it while hits are still owed', () => {
+      const state = seaZoneState({
+        units: [
+          unitInstance({ id: 'atk-ship', unitId: 'destroyer', ownerId: 'attacker', regionId: 'sea-1' }),
+          unitInstance({ id: 'def-carrier', unitId: 'land-transport', ownerId: 'defender', regionId: 'sea-1' }),
+          unitInstance({ id: 'def-fighter', unitId: 'fighter', ownerId: 'defender', regionId: 'sea-1', transportedBy: 'def-carrier' }),
+        ],
+        combats: { 'sea-1': baseCombat({ regionId: 'sea-1', pendingDefenderCasualties: 2 }) },
+      });
+
+      const result = new RemoveCasualtyCommand('attacker', 'sea-1', 'def-carrier', catalog, TEST_ECONOMY_CONFIG).execute(state);
+
+      expect(result.state.units.map((u) => u.id)).toEqual(['atk-ship']);
+      expect(result.state.combats['sea-1']).toBeUndefined();
+      expect(result.events.some((e) => e.type === 'RegionCombatResolved' && e.captured === true)).toBe(true);
+    });
+
+    it('never treats a teammate of the attacker as a defender when the sea zone is shared', () => {
+      const factions = {
+        attacker: faction({ id: 'attacker', teamId: 'west' }),
+        ally: faction({ id: 'ally', teamId: 'west' }),
+        defender: faction({ id: 'defender', teamId: 'east' }),
+      };
+      const state = seaZoneState({
+        players: [player({ id: 'attacker' }), player({ id: 'ally' }), player({ id: 'defender' })],
+        units: [
+          unitInstance({ id: 'atk-ship', unitId: 'destroyer', ownerId: 'attacker', regionId: 'sea-1' }),
+          unitInstance({ id: 'ally-ship', unitId: 'destroyer', ownerId: 'ally', regionId: 'sea-1' }),
+          unitInstance({ id: 'def-ship', unitId: 'destroyer', ownerId: 'defender', regionId: 'sea-1' }),
+        ],
+      });
+
+      const command = new RemoveCasualtyCommand('attacker', 'sea-1', 'ally-ship', catalog, TEST_ECONOMY_CONFIG, undefined, factions);
+      expect(command.execute(state).events.some((e) => e.type === 'CombatRejected')).toBe(true);
+
+      const winning = new RemoveCasualtyCommand('attacker', 'sea-1', 'def-ship', catalog, TEST_ECONOMY_CONFIG, undefined, factions);
+      const result = winning.execute(state);
+      expect(result.state.combats['sea-1']).toBeUndefined();
+      expect(result.state.units.some((u) => u.id === 'ally-ship')).toBe(true);
     });
   });
 });

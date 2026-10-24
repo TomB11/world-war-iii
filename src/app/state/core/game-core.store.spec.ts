@@ -1,7 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { GameCoreStore } from './game-core.store';
 import { DataLoaderService, InitialGameData } from '../../services/data-loader.service';
-import { RandomService } from '../../services/random.service';
 import { SelectRegionCommand } from '../../engine/commands/select-region.command';
 import { AdvancePhaseCommand } from '../../engine/commands/advance-phase.command';
 import { AiDifficultyData } from '../../models/ai-difficulty.model';
@@ -43,7 +42,6 @@ describe('GameCoreStore', () => {
           provide: DataLoaderService,
           useValue: { loadInitialGameData: () => Promise.resolve(fakeData) },
         },
-        { provide: RandomService, useValue: { seed: () => {} } },
       ],
     });
     return TestBed.inject(GameCoreStore);
@@ -88,7 +86,6 @@ describe('GameCoreStore', () => {
     TestBed.configureTestingModule({
       providers: [
         { provide: DataLoaderService, useValue: { loadInitialGameData: () => Promise.reject(new Error('boom')) } },
-        { provide: RandomService, useValue: { seed: () => {} } },
       ],
     });
     const store = TestBed.inject(GameCoreStore);

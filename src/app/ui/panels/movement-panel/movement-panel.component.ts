@@ -43,10 +43,56 @@ export class MovementPanelComponent {
     );
   });
 
-  /** Whether the panel has anything to show this phase (deploy, or a transport to unload). */
+  /** Whether the panel has anything to show this phase (deploy, a transport to unload, or an attack to cancel). */
   protected readonly hasContent = computed(
-    () => this.isDeployPhase() || this.loadedTransports().length > 0,
+    () => this.isDeployPhase() || this.loadedTransports().length > 0 || this.declaredAttacks().length > 0,
   );
+
+  /**
+   * This turn's Attack Moves attacks, one row per unit (its latest attack),
+   * each with whether it can still be cancelled — only offered during the
+   * Attack Moves phase itself, before the phase is advanced.
+   */
+  protected readonly declaredAttacks = computed<
+    readonly { unitInstanceId: string; unitId: string; label: string; canCancel: boolean; reason: string | null }[]
+  >(() => {
+    const state = this.gameCoreStore.state();
+    if (!state || state.phase !== 'attackMoves') {
+      return [];
+    }
+    const seen = new Set<string>();
+    const rows: { unitInstanceId: string; unitId: string; label: string; canCancel: boolean; reason: string | null }[] = [];
+    for (const record of [...state.attackRecords].reverse()) {
+      if (seen.has(record.unitInstanceId)) {
+        continue;
+      }
+      seen.add(record.unitInstanceId);
+      const unit = state.units.find((candidate) => candidate.id === record.unitInstanceId);
+      if (!unit || unit.ownerId !== state.activePlayerId) {
+        continue;
+      }
+      const check = this.movementStore.cancelAttackCheck(record.unitInstanceId);
+      const target = this.regionName(record.toRegionId);
+      rows.push({
+        unitInstanceId: record.unitInstanceId,
+        unitId: unit.unitId,
+        label:
+          record.kind === 'missile'
+            ? `${this.unitName(unit.unitId)}: missile strike on ${target}`
+            : `${this.unitName(unit.unitId)}: ${this.regionName(record.fromRegionId)} → ${target}`,
+        canCancel: check.allowed,
+        reason: check.reason,
+      });
+    }
+    return rows.reverse();
+  });
+
+  protected cancelAttack(unitInstanceId: string): void {
+    const playerId = this.gameCoreStore.state()?.activePlayerId;
+    if (playerId) {
+      this.movementStore.cancelAttack(playerId, unitInstanceId);
+    }
+  }
 
   /**
    * Reserve entries deployable this phase — excludes missiles (PROJECT_RULES.md

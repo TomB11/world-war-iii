@@ -55,6 +55,10 @@ export class LoadUnitCommand implements Command {
       return reject('Unit is already embarked');
     }
 
+    if (unit.hasFoughtThisTurn) {
+      return reject('A unit that has already fought this turn cannot board a transport');
+    }
+
     // A transport is a naval vessel sitting in a sea zone; a land/air unit
     // boards it from a coastal region bordering that sea zone (or, as a
     // fallback, from the exact same location). PROJECT_RULES.md section 30.

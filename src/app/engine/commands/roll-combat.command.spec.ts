@@ -1,7 +1,7 @@
 import { RollCombatCommand } from './roll-combat.command';
 import { RegionCombat } from '../../models/region-combat.model';
 import { UnitDefinition } from '../../models/unit.model';
-import { player, region, testState, unitDef, unitInstance } from '../test-fixtures';
+import { region, testState, unitDef, unitInstance } from '../test-fixtures';
 
 describe('RollCombatCommand', () => {
   const catalog: Readonly<Record<string, UnitDefinition>> = {

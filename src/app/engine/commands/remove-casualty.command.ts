@@ -3,6 +3,7 @@ import { GameState } from '../../models/game-state.model';
 import { GameEngineEvent } from '../../interfaces/game-events';
 import { EconomyConfig } from '../../models/economy-config.model';
 import { UnitDefinition } from '../../models/unit.model';
+import { Faction } from '../../models/faction.model';
 import { CombatCasualty, CombatStep, RegionCombat } from '../../models/region-combat.model';
 import { RulesEngine } from '../rules-engine';
 import { applyForceCaptureSatisfactionPenalty } from './shared/capture-penalties';
@@ -46,6 +47,7 @@ export class RemoveCasualtyCommand implements Command {
     private readonly unitCatalog: Readonly<Record<string, UnitDefinition>>,
     private readonly economyConfig: EconomyConfig,
     private readonly rules: RulesEngine = new RulesEngine(),
+    private readonly factions: Readonly<Record<string, Faction>> = {},
   ) {}
 
   execute(state: GameState): CommandResult {
@@ -80,7 +82,7 @@ export class RemoveCasualtyCommand implements Command {
       return reject('That unit is embarked cargo and never fought — it cannot be chosen as a casualty');
     }
     const belongsToLosingSide = removesDefenderUnit
-      ? unit.ownerId !== this.playerId
+      ? this.isDefender(state, unit)
       : unit.ownerId === this.playerId;
     if (!belongsToLosingSide) {
       return reject('That unit is not part of the side taking losses');
@@ -91,7 +93,17 @@ export class RemoveCasualtyCommand implements Command {
       (candidate) =>
         candidate.id !== this.unitInstanceId && !(isTransport && candidate.transportedBy === this.unitInstanceId),
     );
-    const remaining = pendingCount - 1;
+    // Sinking a transport also removes its embarked air cargo, which can leave
+    // fewer participants on the losing side than hits still owed — those
+    // surplus hits are wasted rather than left waiting on a unit that no
+    // longer exists.
+    const survivingLosers = nextUnits.filter(
+      (candidate) =>
+        candidate.regionId === this.regionId &&
+        this.rules.isCombatParticipant(candidate, this.unitCatalog) &&
+        (removesDefenderUnit ? this.isDefender(state, candidate) : candidate.ownerId === this.playerId),
+    ).length;
+    const remaining = Math.min(pendingCount - 1, survivingLosers);
 
     // Keep the casualty around (instead of just vanishing) so the combat
     // board can still show it in its column's casualty slot for the rest of
@@ -158,6 +170,11 @@ export class RemoveCasualtyCommand implements Command {
     });
   }
 
+  /** A defender is any unit hostile to the active player — never a teammate who merely shares the region. */
+  private isDefender(state: GameState, unit: GameState['units'][number]): boolean {
+    return this.rules.isHostileTo(state, unit.ownerId, this.playerId, this.factions);
+  }
+
   private checkWinnerOrContinue(
     state: GameState,
     nextUnits: GameState['units'],
@@ -168,7 +185,7 @@ export class RemoveCasualtyCommand implements Command {
     continuation: { step: CombatStep; round: number },
   ): CommandResult {
     const regionUnits = nextUnits.filter((candidate) => candidate.regionId === this.regionId);
-    const defendersRemain = regionUnits.some((candidate) => candidate.ownerId !== this.playerId);
+    const defendersRemain = regionUnits.some((candidate) => this.isDefender(state, candidate));
     const attackersRemain = regionUnits.some((candidate) => candidate.ownerId === this.playerId);
 
     // The attacker only takes the region by wiping the defenders while
@@ -217,6 +234,20 @@ export class RemoveCasualtyCommand implements Command {
   ): CommandResult {
     const targetRegion = state.regions[this.regionId];
     const previousOwnerId = targetRegion?.ownerId ?? null;
+
+    // Rebels spawn inside their owner's own capital: beating them there
+    // restores order but is not a conquest — no ownership flip, penalty, or capture event.
+    if (previousOwnerId === this.playerId) {
+      const { [this.regionId]: _cleared, ...combatsWithoutRegion } = state.combats;
+      return {
+        state: { ...state, units: nextUnits, combats: combatsWithoutRegion },
+        events: [
+          casualtyEvent,
+          { type: 'RegionCombatResolved', regionId: this.regionId, attackerId: this.playerId, captured: true },
+        ],
+      };
+    }
+
     const nextRegions = targetRegion
       ? {
           ...state.regions,
