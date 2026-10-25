@@ -389,16 +389,16 @@ owned means the missile sub-phase is skipped entirely and the battle goes
 straight to normal combat (with the Rocket System itself contributing
 nothing, since its Attack is 0, and it isn't even physically present).
 
-Interception: possible only if the defender has their OWN Rocket System in
-the targeted region or an adjacent one. Roll <= 2 destroys the incoming
-missile before it hits — remove one missile from Arsenal, nothing else
-happens. No defending Rocket System in range means no interception attempt
-at all.
+Hit resolution: the attacker FIRST rolls against the missile's own Attack
+value (section 16). A miss ends the strike — no interception roll is made.
 
-Hit resolution: if not intercepted, the attacker rolls against the
-missile's own Attack value (section 16). A hit destroys one defending unit
-in the target region, chosen by the defender. Remove one missile from
-Arsenal either way (fired or intercepted).
+Interception: only if the missile hit, and only if the defender has their
+OWN Rocket System in the targeted region or an adjacent one, the defender
+rolls. Roll <= 2 shoots the missile down — nothing is destroyed. No
+defending Rocket System in range means no interception attempt at all. A
+hit that is not intercepted destroys one defending unit in the target
+region, chosen by the defender. Remove one missile from Arsenal either way
+(hit, miss or intercepted).
 
 ---
 
@@ -416,9 +416,8 @@ Missile B
 Hits on a roll of <= 4.
 
 Longer-ranged: holding one in Reserve lets the Rocket System declare a
-strike up to 2 regions away, not just 1 — the path there follows the same
-rules as any other attack move (through friendly/empty territory, hostile
-only on the final hop). Holding a Missile B extends the declare range even
+strike up to 2 regions away, not just 1 — missiles fly, so the path may
+cross enemy or neutral territory (range counts hops only). Holding a Missile B extends the declare range even
 if Missile A is what ultimately gets fired.
 
 Attack values and ranges are loaded from units.json (section 41) — never

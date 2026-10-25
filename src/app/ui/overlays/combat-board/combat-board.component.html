@@ -61,19 +61,33 @@
 
       <div class="combat-board__status">
         @if (missileResult(); as missile) {
-          <p class="combat-board__missile-result">
+          <p class="combat-board__missile-result" [class]="'combat-board__missile-result combat-board__missile-result--' + missile.outcome">
             @switch (missile.outcome) {
               @case ('intercepted') {
-                🚀 {{ missileName(missile.missileId) }} was intercepted and destroyed before impact.
+                🛡 {{ missileName(missile.missileId) }} would have hit (rolled {{ missile.attackRoll }}) but was shot
+                down by a defending Rocket System (rolled {{ missile.interceptRoll }}).
               }
               @case ('hit') {
-                🚀 {{ missileName(missile.missileId) }} struck home!
+                💥 {{ missileName(missile.missileId) }} struck home (rolled {{ missile.attackRoll }})!
               }
               @case ('miss') {
-                🚀 {{ missileName(missile.missileId) }} missed its target.
+                🚀 {{ missileName(missile.missileId) }} missed its target (rolled {{ missile.attackRoll }}).
               }
             }
           </p>
+          <div class="combat-board__missile-dice">
+            @for (die of missileDice(); track die.tone) {
+              <div class="combat-board__missile-die-wrap">
+                <span
+                  class="combat-board__missile-die"
+                  [class.combat-board__missile-die--success]="die.success"
+                  [class.combat-board__missile-die--intercept]="die.tone === 'intercept'"
+                  >{{ die.value }}</span
+                >
+                <span class="combat-board__missile-die-label">{{ die.label }}</span>
+              </div>
+            }
+          </div>
         }
 
         @if (resolved()) {

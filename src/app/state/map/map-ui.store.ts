@@ -20,9 +20,11 @@ import { GameCoreStore } from '../core/game-core.store';
  * deploying a Reserve unit or unloading embarked cargo, since neither has an
  * existing map icon to pick up and drag. `subjectId` is the Reserve unit's
  * catalog id for a deploy, or the embarked UnitInstance id for an unload.
+ * The Cyber Attack Phase reuses it: 'hack' highlights rival capitals and
+ * 'influence' highlights neutral regions (`subjectId` is the acting player id).
  */
 export interface PendingMapAction {
-  readonly kind: 'deploy' | 'unload';
+  readonly kind: 'deploy' | 'unload' | 'hack' | 'influence';
   readonly subjectId: string;
   readonly destinations: readonly string[];
 }

@@ -43,9 +43,42 @@ export class MovementPanelComponent {
     );
   });
 
-  /** Whether the panel has anything to show this phase (deploy, a transport to unload, or an attack to cancel). */
+  /**
+   * The active player's missiles in Reserve (PROJECT_RULES.md sections 15/16),
+   * shown while planning/resolving attacks so the player knows what a Rocket
+   * System can fire and how far. Range and hit threshold come from units.json.
+   */
+  protected readonly missileArsenal = computed<
+    readonly { unitId: string; name: string; quantity: number; range: number; hitOn: number }[]
+  >(() => {
+    const phase = this.gameCoreStore.state()?.phase;
+    if (phase !== 'attackMoves' && phase !== 'attack') {
+      return [];
+    }
+    const catalog = this.gameCoreStore.units();
+    const rows: { unitId: string; name: string; quantity: number; range: number; hitOn: number }[] = [];
+    for (const entry of this.gameCoreStore.activePlayer()?.reserve ?? []) {
+      const def = catalog[entry.unitId];
+      if (def?.category === 'missile' && entry.quantity > 0) {
+        rows.push({
+          unitId: entry.unitId,
+          name: def.name,
+          quantity: entry.quantity,
+          range: def.missileRange ?? 1,
+          hitOn: def.attack,
+        });
+      }
+    }
+    return rows;
+  });
+
+  /** Whether the panel has anything to show this phase (deploy, a transport to unload, an attack to cancel, or missiles in Reserve). */
   protected readonly hasContent = computed(
-    () => this.isDeployPhase() || this.loadedTransports().length > 0 || this.declaredAttacks().length > 0,
+    () =>
+      this.isDeployPhase() ||
+      this.loadedTransports().length > 0 ||
+      this.declaredAttacks().length > 0 ||
+      this.missileArsenal().length > 0,
   );
 
   /**
@@ -121,6 +154,9 @@ export class MovementPanelComponent {
   protected readonly pendingActionHint = computed<string | null>(() => {
     const pending = this.mapUiStore.pendingAction();
     if (!pending) {
+      return null;
+    }
+    if (pending.kind !== 'deploy' && pending.kind !== 'unload') {
       return null;
     }
     if (pending.kind === 'deploy') {

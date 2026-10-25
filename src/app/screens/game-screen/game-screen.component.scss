@@ -2,63 +2,314 @@
   display: block;
   width: 100%;
   height: 100%;
+  min-width: 0;
+  min-height: 0;
 }
 
 .game-screen {
   position: relative;
   display: flex;
-  flex-direction: column;
   width: 100%;
   height: 100%;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  color: var(--wwiii-text);
+  background:
+    radial-gradient(ellipse at 15% 0%, rgba(38, 115, 151, 0.08), transparent 38%),
+    var(--wwiii-bg);
 
   &__header {
+    position: relative;
+    z-index: 5;
     display: flex;
-    align-items: center;
-    gap: 20px;
-    padding: 6px 20px;
+    flex: 0 0 auto;
+    flex-direction: column;
+    gap: 8px;
+    padding: 9px 16px 8px;
+    background: linear-gradient(180deg, rgba(22, 29, 44, 0.98), rgba(15, 20, 31, 0.98));
     border-bottom: 1px solid var(--wwiii-border);
-    background: var(--wwiii-bg-panel);
+    box-shadow: 0 5px 18px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Hazard-stripe edge under the header, same motif as the combat board. */
+  &__header::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 3px;
+    background:
+      repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.55) 0 5px, transparent 5px 10px),
+      linear-gradient(90deg, var(--wwiii-accent), transparent 70%);
+    opacity: 0.8;
+  }
+
+  &__topbar {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  &__treasury {
+    display: flex;
+    min-width: 0;
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  &__brand {
+    display: flex;
+    min-width: 0;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 10px;
   }
 
   &__logo {
-    height: 52px;
-    width: auto;
-    flex-shrink: 0;
+    display: block;
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 7px rgba(0, 0, 0, 0.45));
+  }
+
+  &__brand-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    white-space: nowrap;
+  }
+
+  &__brand-name {
+    color: var(--wwiii-text);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  &__brand-edition {
+    color: var(--wwiii-text-dim);
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.17em;
+    text-transform: uppercase;
+  }
+
+  &__operations {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 14px;
+    padding-top: 7px;
+    border-top: 1px solid rgba(138, 160, 188, 0.16);
+  }
+
+  &__section-label {
+    flex: 0 0 auto;
+    color: var(--wwiii-accent);
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }
+
+  &__status {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__status-item {
+    display: flex;
+    min-height: 30px;
+    align-items: center;
+    padding: 4px 12px;
+    background: linear-gradient(90deg, color-mix(in srgb, var(--wwiii-accent) 9%, transparent), rgba(6, 10, 17, 0.45));
+    border: 1px solid rgba(138, 160, 188, 0.2);
+    border-left: 3px solid var(--wwiii-accent);
+    border-radius: 2px;
+    clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%);
   }
 
   &__body {
-    flex: 1;
     display: grid;
-    grid-template-columns: 1fr 300px;
     min-height: 0;
+    flex: 1 1 auto;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 320px);
   }
 
   &__map {
     position: relative;
     min-width: 0;
     min-height: 0;
-    padding: 16px;
+    padding: 12px;
+    background:
+      linear-gradient(rgba(255, 255, 255, 0.022) 1px, transparent 1px) 0 0 / 40px 40px,
+      linear-gradient(90deg, rgba(255, 255, 255, 0.022) 1px, transparent 1px) 0 0 / 40px 40px,
+      radial-gradient(ellipse at center, rgba(37, 65, 89, 0.14), transparent 70%),
+      rgba(7, 10, 16, 0.5);
+    box-shadow: inset 0 0 90px rgba(0, 0, 0, 0.55);
   }
 
   &__sidebar {
     display: flex;
+    min-width: 0;
+    min-height: 0;
     flex-direction: column;
-    gap: 16px;
-    padding: 16px;
-    border-left: 1px solid var(--wwiii-border);
+    gap: 12px;
+    padding: 12px;
     overflow-y: auto;
+    background:
+      linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px) 0 0 / 28px 28px,
+      linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px) 0 0 / 28px 28px,
+      linear-gradient(180deg, rgba(19, 24, 38, 0.96), rgba(12, 17, 27, 0.98));
+    border-left: 2px solid color-mix(in srgb, var(--wwiii-accent) 45%, var(--wwiii-border));
+    scrollbar-color: var(--wwiii-border) transparent;
+    scrollbar-width: thin;
   }
 
   &__loading,
   &__error {
     display: flex;
+    height: 100%;
     align-items: center;
     justify-content: center;
-    height: 100%;
     color: var(--wwiii-text-dim);
+    font-size: 13px;
+    letter-spacing: 0.04em;
   }
 
   &__error {
     color: var(--wwiii-danger);
+  }
+}
+
+wwiii-phase-stepper {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+wwiii-save-load-panel {
+  margin-left: auto;
+}
+
+wwiii-turn-panel,
+wwiii-cyber-attack-panel,
+wwiii-movement-panel {
+  display: block;
+  flex: 0 0 auto;
+}
+
+wwiii-advance-phase-bar {
+  display: block;
+  flex: 0 0 auto;
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid rgba(138, 160, 188, 0.16);
+}
+
+@media (max-width: 900px) {
+  .game-screen__header {
+    gap: 6px;
+    padding: 8px 10px 7px;
+  }
+
+  .game-screen__operations {
+    gap: 9px;
+  }
+
+  .game-screen__section-label {
+    font-size: 8px;
+    letter-spacing: 0.1em;
+  }
+
+  .game-screen__status {
+    gap: 5px;
+    overflow-x: auto;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  .game-screen__status-item {
+    flex: 0 0 auto;
+    padding: 4px 7px;
+  }
+
+  .game-screen__body {
+    grid-template-columns: minmax(0, 1fr) minmax(250px, 290px);
+  }
+
+  .game-screen__map,
+  .game-screen__sidebar {
+    padding: 9px;
+  }
+}
+
+@media (max-width: 680px) {
+  .game-screen {
+    height: 100dvh;
+  }
+
+  .game-screen__topbar {
+    flex-wrap: wrap;
+    gap: 7px 8px;
+  }
+
+  .game-screen__brand {
+    gap: 7px;
+  }
+
+  wwiii-save-load-panel {
+    margin-left: auto;
+  }
+
+  .game-screen__logo {
+    width: 32px;
+    height: 32px;
+    flex-basis: 32px;
+  }
+
+  .game-screen__brand-name {
+    font-size: 10px;
+  }
+
+  .game-screen__brand-edition {
+    font-size: 8px;
+  }
+
+  .game-screen__operations {
+    gap: 7px;
+  }
+
+  .game-screen__section-label {
+    display: none;
+  }
+
+  .game-screen__body {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(280px, 54dvh) auto;
+    overflow-y: auto;
+  }
+
+  .game-screen__map {
+    min-height: 280px;
+    padding: 6px;
+  }
+
+  .game-screen__sidebar {
+    min-height: 0;
+    overflow: visible;
+    border-top: 1px solid var(--wwiii-border);
+    border-left: 0;
   }
 }

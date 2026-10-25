@@ -1,8 +1,7 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { GameCoreStore } from '../../../state/core/game-core.store';
 import { CyberAttackStore } from '../../../state/cyber/cyber-attack.store';
-import { PlayerState } from '../../../models/player.model';
-import { Region } from '../../../models/region.model';
+import { MapUiStore } from '../../../state/map/map-ui.store';
 
 @Component({
   selector: 'wwiii-cyber-attack-panel',
@@ -14,9 +13,7 @@ import { Region } from '../../../models/region.model';
 export class CyberAttackPanelComponent {
   protected readonly gameCoreStore = inject(GameCoreStore);
   protected readonly cyberAttackStore = inject(CyberAttackStore);
-
-  protected readonly hackTargetId = signal<string>('');
-  protected readonly influenceTargetId = signal<string>('');
+  protected readonly mapUiStore = inject(MapUiStore);
 
   protected readonly isCyberAttackPhase = computed(() => this.gameCoreStore.state()?.phase === 'cyberAttack');
   protected readonly cost = computed(() => this.gameCoreStore.economyConfig()?.cyberAttackCost ?? 0);
@@ -29,51 +26,33 @@ export class CyberAttackPanelComponent {
     return Array.from({ length: max }, (_, index) => index + 1);
   });
 
-  /** Every other non-eliminated, non-allied player, as possible Hack targets — a teammate (PROJECT_RULES.md section 2) is never a legal target, hacking is an attack. */
-  protected readonly hackTargets = computed<readonly PlayerState[]>(() => {
-    const state = this.gameCoreStore.state();
-    const activeId = state?.activePlayerId;
-    if (!state || !activeId) {
-      return [];
-    }
-    return state.players.filter(
-      (player) => player.id !== activeId && !player.isEliminated && this.gameCoreStore.isHostileTo(player.id, activeId),
-    );
+  protected readonly armedKind = computed(() => {
+    const kind = this.mapUiStore.pendingAction()?.kind;
+    return kind === 'hack' || kind === 'influence' ? kind : null;
   });
 
-  /** Every neutral (unowned) region, as possible Political Influence targets. */
-  protected readonly neutralRegions = computed<readonly Region[]>(() =>
-    Object.values(this.gameCoreStore.regions()).filter((region) => region.ownerId === null),
-  );
+  /** Hint shown while a Hack/Influence is armed — what to click next, or why nothing is highlighted. */
+  protected readonly armedHint = computed<string | null>(() => {
+    const pending = this.mapUiStore.pendingAction();
+    if (!pending || (pending.kind !== 'hack' && pending.kind !== 'influence')) {
+      return null;
+    }
+    if (pending.kind === 'hack') {
+      return pending.destinations.length > 0
+        ? 'Click a highlighted capital on the map to hack its faction.'
+        : 'No rival faction can be hacked right now.';
+    }
+    return pending.destinations.length > 0
+      ? 'Click a highlighted neutral region on the map to influence it.'
+      : 'No neutral regions remain.';
+  });
 
-  protected factionName(playerId: string): string {
-    return this.gameCoreStore.factions()[playerId]?.name ?? playerId;
+  protected armHack(playerId: string): void {
+    this.cyberAttackStore.armHack(playerId);
   }
 
-  protected influenceTokensForId(regionId: string): string {
-    const tokens = this.gameCoreStore.regions()[regionId]?.influenceTokens;
-    if (!tokens || Object.keys(tokens).length === 0) {
-      return 'no tokens yet';
-    }
-    return Object.entries(tokens)
-      .map(([factionId, count]) => `${this.factionName(factionId)}: ${count}`)
-      .join(', ');
-  }
-
-  protected attemptHack(playerId: string): void {
-    const targetId = this.hackTargetId();
-    if (!targetId) {
-      return;
-    }
-    this.cyberAttackStore.hack(playerId, targetId);
-  }
-
-  protected attemptPoliticalInfluence(playerId: string): void {
-    const regionId = this.influenceTargetId();
-    if (!regionId) {
-      return;
-    }
-    this.cyberAttackStore.politicalInfluence(playerId, regionId);
+  protected armInfluence(playerId: string): void {
+    this.cyberAttackStore.armInfluence(playerId);
   }
 
   protected attemptUpgradeHackLevel(playerId: string): void {

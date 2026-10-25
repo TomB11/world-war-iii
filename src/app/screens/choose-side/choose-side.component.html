@@ -2,17 +2,29 @@
   <img class="choose-side__bg" [src]="backgroundImage" alt="" />
   <div class="choose-side__scrim"></div>
 
+  <header class="choose-side__heading">
+    <p class="choose-side__eyebrow"><span></span> Strategická kampaň · 01 / 02</p>
+    <h1 class="choose-side__title">Vyber si alianciu</h1>
+    <p class="choose-side__subtitle">Rozhodni, za koho budeš viesť boj o budúcnosť sveta.</p>
+  </header>
+
   <div class="choose-side__halves">
     <button
       type="button"
       class="choose-side__half choose-side__half--west"
       [class.choose-side__half--selected]="selectedSide() === 'west'"
       [class.choose-side__half--dimmed]="selectedSide() === 'east'"
+      [attr.aria-pressed]="selectedSide() === 'west'"
       (click)="selectSide('west')"
     >
       <span class="choose-side__label">
+        <span class="choose-side__block choose-side__block--west">Západný blok</span>
         <span class="choose-side__name">Západní spojenci</span>
         <span class="choose-side__members">EUTO · USA · SEATO</span>
+        <span class="choose-side__select">
+          {{ selectedSide() === 'west' ? 'Aliancia vybraná' : 'Vybrať alianciu' }}
+          <span aria-hidden="true">→</span>
+        </span>
       </span>
     </button>
 
@@ -21,16 +33,25 @@
       class="choose-side__half choose-side__half--east"
       [class.choose-side__half--selected]="selectedSide() === 'east'"
       [class.choose-side__half--dimmed]="selectedSide() === 'west'"
+      [attr.aria-pressed]="selectedSide() === 'east'"
       (click)="selectSide('east')"
     >
       <span class="choose-side__label">
+        <span class="choose-side__block choose-side__block--east">Východný blok</span>
         <span class="choose-side__name">Eurázijský pakt</span>
         <span class="choose-side__members">Rusko · Čína · Arabská liga</span>
+        <span class="choose-side__select">
+          {{ selectedSide() === 'east' ? 'Aliancia vybraná' : 'Vybrať alianciu' }}
+          <span aria-hidden="true">→</span>
+        </span>
       </span>
     </button>
   </div>
 
   @if (selectedSide()) {
-    <button type="button" class="choose-side__continue" (click)="continue()">Pokračovať</button>
+    <button type="button" class="choose-side__continue" (click)="continue()">
+      <span>Pokračovať</span>
+      <span aria-hidden="true">→</span>
+    </button>
   }
 </div>

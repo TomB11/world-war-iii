@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, effect, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, input, output, signal } from '@angular/core';
+import { DICE_SIDES } from '../../../../engine/constants/dice.constants';
 import { CombatDieRoll } from '../../../../models/region-combat.model';
 import { UnitIconComponent } from '../../../shared/unit-icon/unit-icon.component';
 
@@ -37,16 +38,61 @@ export class CombatUnitSlotComponent {
 
   /** Briefly true right after a fresh roll lands, driving a one-shot "pop" on the roll badge (CombatDieRoll is a new object every round, even when a unit rolls the same number twice, so reference inequality alone marks a new roll — see constructor). */
   protected readonly rollJustLanded = signal(false);
+  /** True while the die is still tumbling through random faces, before it settles on the real result. */
+  protected readonly rolling = signal(false);
+  /** The face currently shown on the badge: a random one while tumbling, the real result once landed. */
+  protected readonly shownValue = signal(1);
+  /** One-shot hit/miss effect on the whole slot, set the moment the die lands and cleared after it plays. */
+  protected readonly outcomeFx = signal<'hit' | 'miss' | null>(null);
   private lastRollInfo: CombatDieRoll | null = null;
+  private timers: ReturnType<typeof setTimeout>[] = [];
+  private tumbleInterval: ReturnType<typeof setInterval> | null = null;
 
   constructor() {
+    inject(DestroyRef).onDestroy(() => this.clearTimers());
     effect(() => {
       const roll = this.rollInfo();
       if (roll && roll !== this.lastRollInfo) {
-        this.rollJustLanded.set(true);
-        setTimeout(() => this.rollJustLanded.set(false), 420);
+        this.playRoll(roll);
       }
       this.lastRollInfo = roll;
     });
   }
+
+  /** Purely cosmetic: random faces never touch game state, the real (seeded) result is always what lands. */
+  private playRoll(roll: CombatDieRoll): void {
+    this.clearTimers();
+    const reduceMotion = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const land = (): void => {
+      this.clearTimers();
+      this.rolling.set(false);
+      this.shownValue.set(roll.roll);
+      this.rollJustLanded.set(true);
+      this.outcomeFx.set(roll.hit ? 'hit' : 'miss');
+      this.timers.push(setTimeout(() => this.rollJustLanded.set(false), 420));
+      this.timers.push(setTimeout(() => this.outcomeFx.set(null), 900));
+    };
+    if (reduceMotion) {
+      land();
+      return;
+    }
+    this.rolling.set(true);
+    this.rollJustLanded.set(false);
+    this.outcomeFx.set(null);
+    this.tumbleInterval = setInterval(() => this.shownValue.set(1 + Math.floor(Math.random() * DICE_SIDES)), 70);
+    this.timers.push(setTimeout(land, TUMBLE_DURATION_MS));
+  }
+
+  private clearTimers(): void {
+    for (const timer of this.timers) {
+      clearTimeout(timer);
+    }
+    this.timers = [];
+    if (this.tumbleInterval !== null) {
+      clearInterval(this.tumbleInterval);
+      this.tumbleInterval = null;
+    }
+  }
 }
+
+const TUMBLE_DURATION_MS = 650;

@@ -1,0 +1,14 @@
+<div class="treasury" aria-label="Faction treasuries">
+  @for (entry of entries(); track entry.id) {
+    <div
+      class="treasury__item"
+      [class.treasury__item--active]="entry.isActive"
+      [class.treasury__item--out]="entry.isEliminated"
+      [style.--faction-color]="entry.color"
+      [title]="entry.name + ': ' + entry.treasury"
+    >
+      <span class="treasury__name">{{ entry.name }}</span>
+      <span class="treasury__amount">{{ entry.treasury }}</span>
+    </div>
+  }
+</div>

@@ -14,6 +14,7 @@ import { VictoryBannerComponent } from '../../ui/overlays/victory-banner/victory
 import { CombatBoardComponent } from '../../ui/overlays/combat-board/combat-board.component';
 import { ToastHostComponent } from '../../ui/overlays/toast-host/toast-host.component';
 import { AiTurnSummaryComponent } from '../../ui/overlays/ai-turn-summary/ai-turn-summary.component';
+import { TreasuryOverviewComponent } from '../../ui/panels/treasury-overview/treasury-overview.component';
 import { SaveLoadPanelComponent } from '../../ui/panels/save-load-panel/save-load-panel.component';
 import { GameCoreStore } from '../../state/core/game-core.store';
 import { AiStore } from '../../state/ai/ai.store';
@@ -42,6 +43,7 @@ import { SaveGameService } from '../../services/save-game.service';
     ToastHostComponent,
     AiTurnSummaryComponent,
     SaveLoadPanelComponent,
+    TreasuryOverviewComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './game-screen.component.html',

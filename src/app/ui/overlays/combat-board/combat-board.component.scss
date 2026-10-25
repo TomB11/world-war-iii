@@ -9,10 +9,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(5, 6, 10, 0.82);
+  background:
+    radial-gradient(ellipse at center, rgba(5, 6, 10, 0.7) 0%, rgba(2, 3, 6, 0.95) 100%),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.015) 0 2px, transparent 2px 4px);
+  backdrop-filter: blur(3px);
   padding: 24px;
 }
 
+/* Tactical command-table look: angular clipped corners, blueprint grid, scanlines. */
 .combat-board__card {
   position: relative;
   width: 100%;
@@ -20,24 +24,52 @@
   max-height: 90vh;
   overflow-y: auto;
   background:
-    radial-gradient(circle at 15% 0%, color-mix(in srgb, var(--attacker-color, var(--wwiii-accent)) 12%, transparent), transparent 45%),
-    radial-gradient(circle at 85% 100%, color-mix(in srgb, var(--defender-color, var(--wwiii-danger)) 12%, transparent), transparent 45%),
+    linear-gradient(135deg, color-mix(in srgb, var(--attacker-color, var(--wwiii-accent)) 14%, transparent), transparent 40%),
+    linear-gradient(315deg, color-mix(in srgb, var(--defender-color, var(--wwiii-danger)) 14%, transparent), transparent 40%),
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px) 0 0 / 32px 32px,
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px) 0 0 / 32px 32px,
     var(--wwiii-bg-panel);
-  border: 1px solid var(--wwiii-border);
-  border-radius: 10px;
-  padding: 28px 32px 24px;
-  box-shadow: 0 0 60px rgba(0, 0, 0, 0.5);
+  border: 1px solid color-mix(in srgb, var(--wwiii-text-dim) 45%, var(--wwiii-border));
+  clip-path: polygon(22px 0, calc(100% - 22px) 0, 100% 22px, 100% calc(100% - 22px), calc(100% - 22px) 100%, 22px 100%, 0 calc(100% - 22px), 0 22px);
+  padding: 34px 32px 26px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.6), inset 0 0 80px rgba(0, 0, 0, 0.45);
+  animation: combat-board-deploy 0.35s ease-out both;
 }
 
+/* Hazard-stripe bar in both factions' colors across the top. */
 .combat-board__card::before {
   content: '';
   position: absolute;
   top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, var(--attacker-color, var(--wwiii-accent)), var(--defender-color, var(--wwiii-danger)));
-  border-radius: 10px 10px 0 0;
+  left: 22px;
+  right: 22px;
+  height: 6px;
+  background:
+    repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.55) 0 6px, transparent 6px 12px),
+    linear-gradient(90deg, var(--attacker-color, var(--wwiii-accent)), var(--defender-color, var(--wwiii-danger)));
+}
+
+.combat-board__card::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 22px;
+  right: 22px;
+  height: 6px;
+  background:
+    repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.55) 0 6px, transparent 6px 12px),
+    linear-gradient(90deg, var(--attacker-color, var(--wwiii-accent)), var(--defender-color, var(--wwiii-danger)));
+}
+
+@keyframes combat-board-deploy {
+  0% {
+    opacity: 0;
+    transform: scale(0.96) translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 .combat-board__close {
@@ -62,47 +94,104 @@
   }
 }
 
+/* Location plate, like a map-sector designation. */
 .combat-board__region {
-  margin: 0 0 14px;
+  display: table;
+  margin: 0 auto 16px;
+  padding: 5px 26px;
   text-align: center;
-  color: var(--wwiii-text-dim);
+  color: var(--wwiii-text);
   font-size: 13px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.22em;
+  background: rgba(0, 0, 0, 0.45);
+  border-top: 1px solid var(--wwiii-text-dim);
+  border-bottom: 1px solid var(--wwiii-text-dim);
+  clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 10px 100%, 0 50%);
 }
 
+/* Faction banner: a dark plate with a colored edge, angled like a chevron. */
 .combat-board__side {
+  position: relative;
   text-align: center;
   margin-bottom: 14px;
+  padding: 8px 0 10px;
+  background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.45) 20%, rgba(0, 0, 0, 0.45) 80%, transparent);
 
   h1 {
     margin: 0;
-    font-size: 26px;
-    letter-spacing: 0.12em;
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: 0.3em;
     text-transform: uppercase;
   }
 }
 
+.combat-board__side::before,
+.combat-board__side::after {
+  content: '';
+  position: absolute;
+  left: 15%;
+  right: 15%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, currentColor, transparent);
+}
+
+.combat-board__side--attacker {
+  color: var(--attacker-color, var(--wwiii-accent));
+
+  &::before {
+    top: 0;
+  }
+  &::after {
+    display: none;
+  }
+}
+
+.combat-board__side--defender {
+  color: var(--defender-color, var(--wwiii-danger));
+  margin-top: 14px;
+  margin-bottom: 0;
+
+  &::before {
+    display: none;
+  }
+  &::after {
+    bottom: 0;
+  }
+}
+
+.combat-board__side--attacker h1::before {
+  content: '▶▶ ';
+  font-size: 0.6em;
+  vertical-align: middle;
+}
+
+.combat-board__side--defender h1::before {
+  content: '🛡 ';
+  font-size: 0.7em;
+  vertical-align: middle;
+}
+
 .combat-board__side--attacker h1 {
   color: var(--attacker-color, var(--wwiii-accent));
-  text-shadow: 0 0 16px color-mix(in srgb, var(--attacker-color, var(--wwiii-accent)) 55%, transparent);
+  text-shadow: 0 0 18px color-mix(in srgb, var(--attacker-color, var(--wwiii-accent)) 65%, transparent);
 }
 
 .combat-board__side--defender h1 {
   color: var(--defender-color, var(--wwiii-danger));
-  text-shadow: 0 0 16px color-mix(in srgb, var(--defender-color, var(--wwiii-danger)) 55%, transparent);
-}
-
-.combat-board__side--defender {
-  margin-top: 14px;
-  margin-bottom: 0;
+  text-shadow: 0 0 18px color-mix(in srgb, var(--defender-color, var(--wwiii-danger)) 65%, transparent);
 }
 
 .combat-board__side-name {
   margin: 2px 0 0;
-  color: var(--wwiii-text-dim);
-  font-size: 13px;
+  color: var(--wwiii-text);
+  font-size: 12px;
   font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.8;
 }
 
 .combat-board__columns {
@@ -117,47 +206,46 @@
   align-items: center;
   gap: 8px;
   padding: 10px 6px;
-  background: rgba(0, 0, 0, 0.15);
-  border: 1px solid var(--wwiii-border);
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid color-mix(in srgb, var(--wwiii-border) 80%, transparent);
   border-top-width: 3px;
-  border-radius: 8px;
+  border-radius: 2px;
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
   min-height: 116px;
   transition: border-color 0.15s ease, background 0.15s ease;
 }
 
 .combat-board__columns--attacker .combat-board__column {
   border-top-color: var(--attacker-color, var(--wwiii-accent));
-  background: color-mix(in srgb, var(--attacker-color, var(--wwiii-accent)) 5%, rgba(0, 0, 0, 0.15));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--attacker-color, var(--wwiii-accent)) 10%, rgba(0, 0, 0, 0.3)), rgba(0, 0, 0, 0.3));
 }
 
 .combat-board__columns--defender .combat-board__column {
   border-top-color: var(--defender-color, var(--wwiii-danger));
-  background: color-mix(in srgb, var(--defender-color, var(--wwiii-danger)) 5%, rgba(0, 0, 0, 0.15));
+  background: linear-gradient(0deg, color-mix(in srgb, var(--defender-color, var(--wwiii-danger)) 10%, rgba(0, 0, 0, 0.3)), rgba(0, 0, 0, 0.3));
 }
 
+/* Hit-threshold marker: a military rank-style hexagon instead of a plain circle. */
 .combat-board__badge {
-  width: 30px;
-  height: 30px;
+  width: 34px;
+  height: 34px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  border: 2px solid var(--wwiii-accent);
-  background: var(--wwiii-bg);
-  color: var(--wwiii-accent);
-  font-weight: 700;
-  font-size: 14px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  background: linear-gradient(145deg, var(--wwiii-accent), color-mix(in srgb, var(--wwiii-accent) 40%, #000));
+  color: var(--wwiii-bg);
+  font-weight: 800;
+  font-size: 15px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
 }
 
 .combat-board__columns--attacker .combat-board__badge {
-  border-color: var(--attacker-color, var(--wwiii-accent));
-  color: var(--attacker-color, var(--wwiii-accent));
+  background: linear-gradient(145deg, var(--attacker-color, var(--wwiii-accent)), color-mix(in srgb, var(--attacker-color, var(--wwiii-accent)) 40%, #000));
 }
 
 .combat-board__columns--defender .combat-board__badge {
-  border-color: var(--defender-color, var(--wwiii-danger));
-  color: var(--defender-color, var(--wwiii-danger));
+  background: linear-gradient(145deg, var(--defender-color, var(--wwiii-danger)), color-mix(in srgb, var(--defender-color, var(--wwiii-danger)) 40%, #000));
 }
 
 .combat-board__units {
@@ -190,21 +278,32 @@
   text-align: center;
 }
 
+/* The "front line" between the two armies: a command strip with the attacker→defender gradient edges. */
 .combat-board__status {
-  margin: 16px 0;
-  padding: 14px 12px;
+  position: relative;
+  margin: 18px 0;
+  padding: 16px 14px;
   text-align: center;
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid var(--wwiii-border);
-  border-radius: 8px;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--attacker-color, var(--wwiii-accent)) 14%, transparent), transparent 30%, transparent 70%, color-mix(in srgb, var(--defender-color, var(--wwiii-danger)) 14%, transparent)),
+    rgba(0, 0, 0, 0.45);
+  border-top: 2px solid var(--attacker-color, var(--wwiii-accent));
+  border-bottom: 2px solid var(--defender-color, var(--wwiii-danger));
+  box-shadow: 0 0 24px rgba(0, 0, 0, 0.5);
 }
 
 .combat-board__round {
-  margin: 0 0 6px;
-  color: var(--wwiii-text-dim);
+  display: inline-block;
+  margin: 0 0 8px;
+  padding: 2px 14px;
+  color: var(--wwiii-text);
   font-size: 12px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.2em;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--wwiii-border);
+  clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 50%, calc(100% - 8px) 100%, 8px 100%, 0 50%);
 }
 
 .combat-board__prompt {
@@ -215,9 +314,121 @@
 
 .combat-board__missile-result {
   margin: 0 0 10px;
+  padding: 6px 10px;
   color: var(--wwiii-accent);
   font-size: 13px;
   font-weight: 600;
+  border: 1px solid currentColor;
+  border-left-width: 4px;
+  border-radius: 2px;
+  animation: combat-board-missile-banner 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+
+  &--hit {
+    color: var(--wwiii-success);
+    background: rgba(90, 200, 120, 0.12);
+  }
+
+  &--miss {
+    color: var(--wwiii-text-dim);
+    background: rgba(255, 255, 255, 0.04);
+    animation-name: combat-board-missile-banner, combat-board-missile-shake;
+    animation-duration: 0.6s, 0.5s;
+  }
+
+  &--intercepted {
+    color: var(--wwiii-danger);
+    background: rgba(184, 67, 63, 0.12);
+  }
+}
+
+@keyframes combat-board-missile-banner {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.85);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes combat-board-missile-shake {
+  0%,
+  100% {
+    margin-left: 0;
+  }
+  25% {
+    margin-left: -5px;
+  }
+  75% {
+    margin-left: 5px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .combat-board__missile-result {
+    animation: none;
+  }
+}
+
+.combat-board__missile-dice {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin: 0 0 10px;
+}
+
+.combat-board__missile-die-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.combat-board__missile-die {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--wwiii-text-dim);
+  background: var(--wwiii-bg);
+  border: 2px solid var(--wwiii-border);
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+  animation: combat-board-roll-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  &--success {
+    color: var(--wwiii-bg);
+    background: var(--wwiii-success);
+    border-color: var(--wwiii-success);
+    box-shadow: 0 0 10px var(--wwiii-success);
+  }
+
+  &--intercept.combat-board__missile-die--success {
+    background: var(--wwiii-accent);
+    border-color: var(--wwiii-accent);
+    box-shadow: 0 0 10px var(--wwiii-accent);
+  }
+}
+
+.combat-board__missile-die-label {
+  font-size: 11px;
+  color: var(--wwiii-text-dim);
+}
+
+@keyframes combat-board-roll-pop {
+  0% {
+    transform: scale(0.2) rotate(-25deg);
+  }
+  60% {
+    transform: scale(1.5) rotate(8deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
 }
 
 .combat-board__missile-choices {
@@ -247,23 +458,30 @@
   font-weight: 600;
 }
 
+/* Angular "tactical" button with a chamfered shape. */
 .combat-board__btn {
-  padding: 10px 24px;
+  padding: 11px 30px;
   font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  font-weight: 800;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--wwiii-text);
-  background: var(--wwiii-bg);
-  border: 1px solid var(--wwiii-border);
-  border-radius: 6px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--wwiii-accent) 22%, var(--wwiii-bg)), var(--wwiii-bg));
+  border: 1px solid var(--wwiii-accent);
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
   cursor: pointer;
-  transition: border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+  transition: color 0.15s ease, filter 0.15s ease, transform 0.1s ease, background 0.15s ease;
 
   &:hover {
-    border-color: var(--wwiii-accent);
-    color: var(--wwiii-accent);
-    box-shadow: 0 0 12px color-mix(in srgb, var(--wwiii-accent) 40%, transparent);
+    color: var(--wwiii-bg);
+    background: var(--wwiii-accent);
+    filter: drop-shadow(0 0 8px var(--wwiii-accent));
     transform: translateY(-1px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .combat-board__card {
+    animation: none;
   }
 }

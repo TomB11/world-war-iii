@@ -87,6 +87,35 @@ export class CombatBoardComponent {
   protected readonly pendingMissileChoice = computed(() => !this.resolved() && this.step() === 'missileChoice');
   protected readonly missileResult = computed(() => this.combat()?.missileResult ?? null);
 
+  /** The dice behind the last missile strike, so the player sees the actual rolls: the hit die against the missile's own Attack value, then (only when it hit and a defending Rocket System was in range) the interception die. */
+  protected readonly missileDice = computed<
+    readonly { label: string; value: number; success: boolean; tone: 'attack' | 'intercept' }[]
+  >(() => {
+    const result = this.missileResult();
+    if (!result) {
+      return [];
+    }
+    const dice: { label: string; value: number; success: boolean; tone: 'attack' | 'intercept' }[] = [];
+    if (result.attackRoll !== null) {
+      const needed = this.gameCoreStore.units()[result.missileId]?.attack ?? 0;
+      dice.push({
+        label: `Missile die (needs ≤ ${needed})`,
+        value: result.attackRoll,
+        success: result.attackRoll <= needed,
+        tone: 'attack',
+      });
+    }
+    if (result.interceptRoll !== null) {
+      dice.push({
+        label: 'Interception die',
+        value: result.interceptRoll,
+        success: result.outcome === 'intercepted',
+        tone: 'intercept',
+      });
+    }
+    return dice;
+  });
+
   /** Set once a missile is armed (SelectMissileCommand) until it's rolled (FireMissileCommand) — the player picked which missile but hasn't rolled the die yet. */
   protected readonly pendingMissileRoll = computed(() => !this.resolved() && this.step() === 'missileRoll');
   protected readonly armedMissileUnitId = computed(() => this.combat()?.armedMissileUnitId ?? null);

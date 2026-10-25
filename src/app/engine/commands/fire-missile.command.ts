@@ -15,13 +15,13 @@ import { hasInterceptor, resolveMissileStrike } from './shared/missile-resolutio
  * thing that can happen in a fresh battle that has one pending (see
  * RulesEngine.hasPendingMissileStrike).
  *
- * Resolved in one click: if the defender has their own Rocket System in the
- * target region or an adjacent one, the active player rolls an interception
- * die for them first (<= 2 destroys the missile, same hot-seat convention
- * used for every other "roll for the other side" step this game). If the
- * missile survives, the attacker rolls against the missile's own attack
- * value (Missile A hits on <= 2, Missile B on <= 4, both data-driven from
- * units.json, never hardcoded). A hit leaves exactly one casualty pending
+ * Resolved in one click: the attacker first rolls against the missile's own
+ * attack value (Missile A hits on <= 2, Missile B on <= 4, both data-driven
+ * from units.json, never hardcoded). Only on a hit, and only if the defender
+ * has their own Rocket System in the target region or an adjacent one, an
+ * interception die is rolled for them (<= 2 shoots the missile down, same
+ * hot-seat convention used for every other "roll for the other side" step
+ * this game). A surviving hit leaves exactly one casualty pending
  * for the defender to choose (RemoveCasualtyCommand, step 'missileCasualty');
  * a miss or interception moves straight into normal combat. The missile is
  * removed from Reserve either way, per section 15.

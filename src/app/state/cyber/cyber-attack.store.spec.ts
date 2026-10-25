@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { CyberAttackStore } from './cyber-attack.store';
 import { GameCoreStore } from '../core/game-core.store';
+import { MapUiStore } from '../map/map-ui.store';
 import { DataLoaderService, InitialGameData } from '../../services/data-loader.service';
 import { faction, player, region, testState, TEST_ECONOMY_CONFIG } from '../../engine/test-fixtures';
 
@@ -83,6 +84,58 @@ describe('CyberAttackStore', () => {
     cyberAttackStore.politicalInfluence('p1', 'home');
 
     expect(cyberAttackStore.cyberAttackResultMessage()).toMatch(/^Political Influence (succeeded|failed)/);
+  });
+
+  it('armHack highlights only hostile capitals and toggles off on a second call', async () => {
+    const { cyberAttackStore, gameCoreStore } = setup();
+    await gameCoreStore.initialize();
+    const mapUiStore = TestBed.inject(MapUiStore);
+
+    cyberAttackStore.armHack('p1');
+    expect(mapUiStore.pendingAction()).toEqual({ kind: 'hack', subjectId: 'p1', destinations: ['p2'] });
+
+    cyberAttackStore.armHack('p1');
+    expect(mapUiStore.pendingAction()).toBeNull();
+  });
+
+  it('armInfluence highlights neutral regions', async () => {
+    const { cyberAttackStore, gameCoreStore } = setup();
+    await gameCoreStore.initialize();
+
+    cyberAttackStore.armInfluence('p1');
+
+    expect(TestBed.inject(MapUiStore).pendingAction()).toEqual({ kind: 'influence', subjectId: 'p1', destinations: ['home'] });
+  });
+
+  it('resolvePendingActionAt on a highlighted capital hacks its owner and clears the armed action', async () => {
+    const { cyberAttackStore, gameCoreStore } = setup();
+    await gameCoreStore.initialize();
+    cyberAttackStore.armHack('p1');
+
+    expect(cyberAttackStore.resolvePendingActionAt('p2')).toBeTrue();
+
+    expect(cyberAttackStore.cyberAttackResultMessage()).toMatch(/^Hack (succeeded|failed)/);
+    expect(TestBed.inject(MapUiStore).pendingAction()).toBeNull();
+  });
+
+  it('resolvePendingActionAt on a non-highlighted click only cancels, spending nothing', async () => {
+    const { cyberAttackStore, gameCoreStore } = setup();
+    await gameCoreStore.initialize();
+    cyberAttackStore.armInfluence('p1');
+
+    expect(cyberAttackStore.resolvePendingActionAt(null)).toBeTrue();
+
+    expect(cyberAttackStore.cyberAttackResultMessage()).toBeNull();
+    expect(TestBed.inject(MapUiStore).pendingAction()).toBeNull();
+  });
+
+  it('resolvePendingActionAt ignores deploy/unload actions', async () => {
+    const { cyberAttackStore, gameCoreStore } = setup();
+    await gameCoreStore.initialize();
+    TestBed.inject(MapUiStore).armPendingAction({ kind: 'deploy', subjectId: 'tank', destinations: ['home'] });
+
+    expect(cyberAttackStore.resolvePendingActionAt('home')).toBeFalse();
+    expect(TestBed.inject(MapUiStore).pendingAction()).not.toBeNull();
   });
 
   it('reactToEvents clears the rejection reason on a "success elsewhere" event like RegionCaptured', async () => {

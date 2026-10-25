@@ -4,7 +4,7 @@
       <h2>Cyber Attack</h2>
       @if (isCyberAttackPhase()) {
         <span class="cyber-panel__badge" [class.cyber-panel__badge--spent]="player.hasUsedCyberAttackThisTurn">
-          {{ player.hasUsedCyberAttackThisTurn ? 'Action used' : cost() + ' / attempt' }}
+          {{ player.hasUsedCyberAttackThisTurn ? 'Action used' : 'One action / turn' }}
         </span>
       }
     </div>
@@ -12,98 +12,53 @@
     @if (isCyberAttackPhase() && player.hasUsedCyberAttackThisTurn) {
       <p class="hint">You've already used your Cyber Attack action this turn.</p>
     } @else if (isCyberAttackPhase()) {
-      <p class="hint">Each attempt costs {{ cost() }} money, win or lose. You get one attempt per turn.</p>
-
-      <div class="cyber-section">
-        <h3 class="cyber-section__title">
-          <span class="cyber-section__icon cyber-section__icon--hack">&gt;_</span>
-          Hacking
-        </h3>
-        @if (hackTargets().length > 0) {
-          <div class="target-list">
-            @for (target of hackTargets(); track target.id) {
-              <button
-                type="button"
-                class="target-card"
-                [class.target-card--selected]="hackTargetId() === target.id"
-                (click)="hackTargetId.set(target.id)"
-              >
-                <span class="target-card__name">{{ target.displayName }}</span>
-                <span class="target-card__stats">
-                  <span class="target-card__chip">Hack Lv {{ target.hackLevel }}</span>
-                  <span class="target-card__chip">${{ target.treasury }}</span>
-                </span>
-              </button>
-            }
-          </div>
-          <button
-            type="button"
-            class="btn btn--accent cyber-section__submit"
-            [disabled]="!hackTargetId()"
-            (click)="attemptHack(player.id)"
-          >
-            Attempt Hack
-          </button>
-        } @else {
-          <p class="hint">No other factions to target.</p>
-        }
+      <div class="action-list">
+        <button
+          type="button"
+          class="action-btn action-btn--hack"
+          [class.action-btn--armed]="armedKind() === 'hack'"
+          [disabled]="player.treasury < cost()"
+          (click)="armHack(player.id)"
+        >
+          <span class="action-btn__icon">&gt;_</span>
+          <span class="action-btn__label">Hack</span>
+          <span class="action-btn__cost">{{ cost() }}</span>
+        </button>
+        <button
+          type="button"
+          class="action-btn action-btn--influence"
+          [class.action-btn--armed]="armedKind() === 'influence'"
+          [disabled]="player.treasury < cost()"
+          (click)="armInfluence(player.id)"
+        >
+          <span class="action-btn__icon">◈</span>
+          <span class="action-btn__label">Influence</span>
+          <span class="action-btn__cost">{{ cost() }}</span>
+        </button>
+        <button
+          type="button"
+          class="action-btn action-btn--upgrade"
+          [disabled]="player.hackLevel >= hackLevelMax() || player.treasury < hackUpgradeCost()"
+          (click)="attemptUpgradeHackLevel(player.id)"
+        >
+          <span class="action-btn__icon">▲</span>
+          <span class="action-btn__label">Upgrade Hack Lv</span>
+          <span class="action-btn__cost">{{ hackUpgradeCost() }}</span>
+        </button>
       </div>
 
-      <div class="cyber-section">
-        <h3 class="cyber-section__title">
-          <span class="cyber-section__icon cyber-section__icon--influence">◈</span>
-          Political Influence
-        </h3>
-        @if (neutralRegions().length > 0) {
-          <div class="target-list">
-            @for (region of neutralRegions(); track region.id) {
-              <button
-                type="button"
-                class="target-card"
-                [class.target-card--selected]="influenceTargetId() === region.id"
-                (click)="influenceTargetId.set(region.id)"
-              >
-                <span class="target-card__name">{{ region.name }}</span>
-                <span class="target-card__stats">
-                  <span class="target-card__chip">{{ influenceTokensForId(region.id) }}</span>
-                </span>
-              </button>
-            }
-          </div>
-          <button
-            type="button"
-            class="btn btn--accent cyber-section__submit"
-            [disabled]="!influenceTargetId()"
-            (click)="attemptPoliticalInfluence(player.id)"
-          >
-            Attempt Influence
-          </button>
-        } @else {
-          <p class="hint">No neutral regions remain.</p>
-        }
-      </div>
+      @if (armedHint(); as hint) {
+        <p class="armed-hint">{{ hint }}</p>
+      }
 
-      <div class="cyber-section">
-        <h3 class="cyber-section__title">
-          <span class="cyber-section__icon cyber-section__icon--upgrade">▲</span>
-          Hack Level
-        </h3>
-        <div class="hack-level-row">
-          <div class="hack-level-track">
-            @for (level of hackLevelSteps(); track level) {
-              <span class="hack-level-track__pip" [class.hack-level-track__pip--filled]="level <= player.hackLevel"></span>
-            }
-          </div>
-          <span class="hack-level-row__value">{{ player.hackLevel }} / {{ hackLevelMax() }}</span>
-          <button
-            type="button"
-            class="btn"
-            [disabled]="player.hackLevel >= hackLevelMax()"
-            (click)="attemptUpgradeHackLevel(player.id)"
-          >
-            Upgrade for {{ hackUpgradeCost() }}
-          </button>
+      <div class="hack-level-row">
+        <span class="hack-level-row__label">Hack Level</span>
+        <div class="hack-level-track">
+          @for (level of hackLevelSteps(); track level) {
+            <span class="hack-level-track__pip" [class.hack-level-track__pip--filled]="level <= player.hackLevel"></span>
+          }
         </div>
+        <span class="hack-level-row__value">{{ player.hackLevel }} / {{ hackLevelMax() }}</span>
       </div>
     } @else {
       <p class="hint">Available during the Cyber Attack Phase.</p>

@@ -1,45 +1,99 @@
-<div class="solo-setup">
-  <h1 class="solo-setup__title">Solo Command Mode</h1>
-  <p class="solo-setup__subtitle">Choose the opposing alliance's AI Doctrine and Difficulty, or skip for local hotseat play.</p>
+<main class="solo-setup">
+  <div class="solo-setup__frame">
+    <header class="solo-setup__header">
+      <div class="solo-setup__step">
+        <span class="solo-setup__step-mark" aria-hidden="true"></span>
+        Strategická kampaň
+        <span class="solo-setup__step-count">02 / 02</span>
+      </div>
+      <h1 class="solo-setup__title">Solo Command Mode</h1>
+      <p class="solo-setup__subtitle">
+        Set up the opposing alliance. Choose its AI doctrine and difficulty, or skip setup for
+        local hotseat play.
+      </p>
+      <div class="solo-setup__progress" aria-label="Step 2 of 2">
+        <span></span>
+        <span class="solo-setup__progress--active"></span>
+      </div>
+    </header>
 
-  <section class="solo-setup__section">
-    <h2 class="solo-setup__section-title">Doctrine</h2>
-    <div class="solo-setup__cards">
-      @for (option of doctrines; track option.id) {
+    <section class="solo-setup__section" aria-labelledby="doctrine-heading">
+      <div class="solo-setup__section-heading">
+        <span class="solo-setup__section-number">01</span>
+        <div>
+          <h2 id="doctrine-heading" class="solo-setup__section-title">AI Doctrine</h2>
+          <p class="solo-setup__section-hint">How will your opponent wage war?</p>
+        </div>
+      </div>
+      <div class="solo-setup__cards solo-setup__cards--doctrine">
+        @for (option of doctrines; track option.id) {
+          <button
+            type="button"
+            class="solo-setup__card solo-setup__card--doctrine"
+            [attr.data-option]="option.id"
+            [attr.aria-pressed]="selectedDoctrine() === option.id"
+            [class.solo-setup__card--selected]="selectedDoctrine() === option.id"
+            (click)="selectDoctrine(option.id)"
+          >
+            <span class="solo-setup__card-topline">
+              <span class="solo-setup__card-type">Strategic profile</span>
+              <span class="solo-setup__card-check" aria-hidden="true"></span>
+            </span>
+            <span class="solo-setup__card-name">{{ option.name }}</span>
+            <span class="solo-setup__card-description">{{ option.description }}</span>
+          </button>
+        }
+      </div>
+    </section>
+
+    <section class="solo-setup__section" aria-labelledby="difficulty-heading">
+      <div class="solo-setup__section-heading">
+        <span class="solo-setup__section-number">02</span>
+        <div>
+          <h2 id="difficulty-heading" class="solo-setup__section-title">Difficulty</h2>
+          <p class="solo-setup__section-hint">Choose the challenge you want.</p>
+        </div>
+      </div>
+      <div class="solo-setup__cards solo-setup__cards--difficulty">
+        @for (option of difficulties; track option.id) {
+          <button
+            type="button"
+            class="solo-setup__card solo-setup__card--difficulty"
+            [attr.data-option]="option.id"
+            [attr.aria-pressed]="selectedDifficulty() === option.id"
+            [class.solo-setup__card--selected]="selectedDifficulty() === option.id"
+            (click)="selectDifficulty(option.id)"
+          >
+            <span class="solo-setup__card-topline">
+              <span class="solo-setup__card-type">AI difficulty</span>
+              <span class="solo-setup__card-check" aria-hidden="true"></span>
+            </span>
+            <span class="solo-setup__card-name">{{ option.name }}</span>
+            <span class="solo-setup__card-description">{{ option.description }}</span>
+          </button>
+        }
+      </div>
+    </section>
+
+    <footer class="solo-setup__actions">
+      <button type="button" class="solo-setup__skip" (click)="skip()">
+        <span aria-hidden="true">←</span>
+        Skip — local hotseat, no AI
+      </button>
+      <div class="solo-setup__action-end">
+        <span class="solo-setup__selection-hint">
+          {{ canContinue() ? 'Configuration ready' : 'Choose a doctrine and difficulty' }}
+        </span>
         <button
           type="button"
-          class="solo-setup__card"
-          [class.solo-setup__card--selected]="selectedDoctrine() === option.id"
-          (click)="selectDoctrine(option.id)"
+          class="solo-setup__continue"
+          [disabled]="!canContinue()"
+          (click)="continue()"
         >
-          <span class="solo-setup__card-name">{{ option.name }}</span>
-          <span class="solo-setup__card-description">{{ option.description }}</span>
+          <span>Continue</span>
+          <span class="solo-setup__continue-arrow" aria-hidden="true">→</span>
         </button>
-      }
-    </div>
-  </section>
-
-  <section class="solo-setup__section">
-    <h2 class="solo-setup__section-title">Difficulty</h2>
-    <div class="solo-setup__cards">
-      @for (option of difficulties; track option.id) {
-        <button
-          type="button"
-          class="solo-setup__card"
-          [class.solo-setup__card--selected]="selectedDifficulty() === option.id"
-          (click)="selectDifficulty(option.id)"
-        >
-          <span class="solo-setup__card-name">{{ option.name }}</span>
-          <span class="solo-setup__card-description">{{ option.description }}</span>
-        </button>
-      }
-    </div>
-  </section>
-
-  <div class="solo-setup__actions">
-    <button type="button" class="solo-setup__skip" (click)="skip()">Skip — local hotseat, no AI</button>
-    <button type="button" class="solo-setup__continue" [disabled]="!canContinue()" (click)="continue()">
-      Continue
-    </button>
+      </div>
+    </footer>
   </div>
-</div>
+</main>
