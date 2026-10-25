@@ -51,6 +51,23 @@
         </ul>
       }
 
+      @if (missileArsenal().length > 0) {
+        <h2>Missile Arsenal</h2>
+        <ul class="unit-list">
+          @for (missile of missileArsenal(); track missile.unitId) {
+            <li class="unit-row arsenal-row">
+              <span class="arsenal-row__frame">
+                <wwiii-unit-icon [unitId]="missile.unitId" [ownerId]="activePlayerFactionId()" [color]="activePlayerColor()" [size]="28" />
+              </span>
+              <span class="arsenal-row__label">{{ missile.name }} × {{ missile.quantity }}</span>
+              <span class="hint arsenal-row__stats">
+                range {{ missile.range }} · hits on ≤ {{ missile.hitOn }}
+              </span>
+            </li>
+          }
+        </ul>
+      }
+
       @if (declaredAttacks().length > 0) {
         <h2>Attacks this turn</h2>
         <ul class="unit-list">

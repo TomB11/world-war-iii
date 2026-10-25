@@ -204,6 +204,7 @@ export const MovementStore = signalStore(
        */
       reportInvalidDestination(): void {
         patchState(store, { movementRejectionReason: 'That is not a legal destination for this unit.' });
+        gameCoreStore.notifyRejection('That is not a legal destination for this unit.');
       },
       /**
        * Reacts to events fired by another store's dispatch that this store

@@ -391,6 +391,25 @@ describe('RulesEngine.getMissileStrikeTargets / getLegalAttackTargets (PROJECT_R
     expect([...rules.getMissileStrikeTargets(state, launcher, catalog, {}).keys()]).toEqual([]);
   });
 
+  it('flies over a hostile region in between to reach the 2-hop target with a Missile B', () => {
+    const state = testState({
+      players: [player({ id: 'p1', reserve: [{ unitId: 'missile-b', quantity: 1 }] }), player({ id: 'p2' })],
+      regions: {
+        home: region({ id: 'home', ownerId: 'p1', neighbors: ['mid'] }),
+        mid: region({ id: 'mid', ownerId: 'p2', neighbors: ['home', 'far'] }),
+        far: region({ id: 'far', ownerId: 'p2', neighbors: ['mid'] }),
+      },
+      units: [
+        unitInstance({ id: 'launcher-1', unitId: 'rocket-system', ownerId: 'p1', regionId: 'home' }),
+        unitInstance({ id: 'def-1', unitId: 'infantry', ownerId: 'p2', regionId: 'mid' }),
+        unitInstance({ id: 'def-2', unitId: 'infantry', ownerId: 'p2', regionId: 'far' }),
+      ],
+    });
+    const targets = [...rules.getMissileStrikeTargets(state, state.units[0], catalog, {}).keys()];
+    expect(targets).toContain('mid');
+    expect(targets).toContain('far');
+  });
+
   it('reaches the 2-hop hostile region while holding a Missile B', () => {
     const state = twoHopState([{ unitId: 'missile-b', quantity: 1 }]);
     const launcher = state.units[0];

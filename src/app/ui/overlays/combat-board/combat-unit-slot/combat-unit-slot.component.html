@@ -3,13 +3,26 @@
     type="button"
     class="combat-board__unit"
     [class.combat-board__unit--clickable]="clickable()"
+    [class.combat-board__unit--fx-hit]="outcomeFx() === 'hit'"
+    [class.combat-board__unit--fx-miss]="outcomeFx() === 'miss'"
     [disabled]="!clickable()"
     [title]="unitName()"
     (click)="unitClick.emit()"
   >
     <wwiii-unit-icon [unitId]="unitId()" [ownerId]="ownerId()" [color]="color()" [size]="size()" />
     @if (rollInfo(); as roll) {
-      <span class="combat-board__roll" [class.combat-board__roll--hit]="roll.hit" [class.combat-board__roll--pop]="rollJustLanded()">{{ roll.roll }}</span>
+      <span
+        class="combat-board__roll"
+        [class.combat-board__roll--hit]="!rolling() && roll.hit"
+        [class.combat-board__roll--rolling]="rolling()"
+        [class.combat-board__roll--pop]="rollJustLanded()"
+        >{{ rolling() ? shownValue() : roll.roll }}</span
+      >
+    }
+    @if (outcomeFx() === 'hit') {
+      <span class="combat-board__burst" aria-hidden="true"></span>
+    } @else if (outcomeFx() === 'miss') {
+      <span class="combat-board__miss-mark" aria-hidden="true">✕</span>
     }
   </button>
 } @else if (armed()) {
@@ -20,7 +33,13 @@
   <span class="combat-board__casualty" [title]="unitName() + ' (casualty)'">
     <wwiii-unit-icon [unitId]="unitId()" [ownerId]="ownerId()" [color]="color()" [size]="size()" />
     @if (rollInfo(); as roll) {
-      <span class="combat-board__roll" [class.combat-board__roll--hit]="roll.hit" [class.combat-board__roll--pop]="rollJustLanded()">{{ roll.roll }}</span>
+      <span
+        class="combat-board__roll"
+        [class.combat-board__roll--hit]="!rolling() && roll.hit"
+        [class.combat-board__roll--rolling]="rolling()"
+        [class.combat-board__roll--pop]="rollJustLanded()"
+        >{{ rolling() ? shownValue() : roll.roll }}</span
+      >
     }
   </span>
 }

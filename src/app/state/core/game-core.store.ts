@@ -36,6 +36,8 @@ interface GameCoreSlice {
   readonly units: Readonly<Record<string, UnitDefinition>>;
   readonly economyConfig: EconomyConfig | null;
   readonly phaseAdvanceRejectionReason: string | null;
+  /** Latest rejection shown as a toast; `id` increments so an identical repeated rejection still re-triggers it. */
+  readonly rejectionNotice: { readonly id: number; readonly reason: string } | null;
 }
 
 const initialState: GameCoreSlice = {
@@ -45,6 +47,7 @@ const initialState: GameCoreSlice = {
   units: {},
   economyConfig: null,
   phaseAdvanceRejectionReason: null,
+  rejectionNotice: null,
 };
 
 /** Shared by every computed/method below — pure, stateless query classes (CODING_STANDARTS.txt §5), safe to share across the whole store's lifetime. */
@@ -174,6 +177,17 @@ export const GameCoreStore = signalStore(
       const result = engine.execute(currentState, command);
       patchState(store, { state: result.state });
       for (const event of result.events) {
+        if (
+          event.type === 'PurchaseRejected' ||
+          event.type === 'MovementRejected' ||
+          event.type === 'PublicSpendingRejected' ||
+          event.type === 'CyberAttackRejected' ||
+          event.type === 'CombatRejected' ||
+          event.type === 'PhaseAdvanceRejected'
+        ) {
+          const previousId = store.rejectionNotice()?.id ?? 0;
+          patchState(store, { rejectionNotice: { id: previousId + 1, reason: event.reason } });
+        }
         if (event.type === 'PhaseAdvanceRejected') {
           patchState(store, { phaseAdvanceRejectionReason: event.reason });
         } else if (clearsAllRejectionBanners(event)) {
@@ -199,6 +213,11 @@ export const GameCoreStore = signalStore(
           return false;
         }
         return rules.isHostileTo(state, playerIdA, playerIdB, store.factions());
+      },
+      /** Raises a rejection toast for a failure detected before any command runs (e.g. an illegal drag-and-drop). */
+      notifyRejection(reason: string): void {
+        const previousId = store.rejectionNotice()?.id ?? 0;
+        patchState(store, { rejectionNotice: { id: previousId + 1, reason } });
       },
       advancePhase(playerId: string): readonly GameEngineEvent[] {
         return store.dispatch(new AdvancePhaseCommand(playerId, store.units(), store.factions(), rules));

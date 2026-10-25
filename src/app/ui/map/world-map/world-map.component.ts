@@ -12,6 +12,7 @@ import { GameCoreStore } from '../../../state/core/game-core.store';
 import { MapUiStore } from '../../../state/map/map-ui.store';
 import { CombatStore } from '../../../state/combat/combat.store';
 import { MovementStore } from '../../../state/movement/movement.store';
+import { CyberAttackStore } from '../../../state/cyber/cyber-attack.store';
 import { GAME_CONFIG } from '../../../config/game.config';
 import { RegionPoint } from '../../../models/region.model';
 import { MOVEMENT_PHASES } from '../../../core/constants/game.constants';
@@ -56,6 +57,7 @@ export class WorldMapComponent implements AfterViewInit, OnDestroy {
   private readonly mapUiStore = inject(MapUiStore);
   private readonly combatStore = inject(CombatStore);
   private readonly movementStore = inject(MovementStore);
+  private readonly cyberAttackStore = inject(CyberAttackStore);
 
   private readonly geometry = new MapGeometry(this.config);
   private readonly renderer = new MapRenderer(this.config, this.geometry);
@@ -268,7 +270,10 @@ export class WorldMapComponent implements AfterViewInit, OnDestroy {
     // its highlighted destinations commits the action, anything else just
     // cancels it quietly (see resolvePendingActionAt).
     if (this.mapUiStore.pendingAction()) {
-      this.movementStore.resolvePendingActionAt(this.hitTestAt(event.clientX, event.clientY));
+      const clickedId = this.hitTestAt(event.clientX, event.clientY);
+      if (!this.cyberAttackStore.resolvePendingActionAt(clickedId)) {
+        this.movementStore.resolvePendingActionAt(clickedId);
+      }
       return;
     }
 

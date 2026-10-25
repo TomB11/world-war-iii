@@ -15,10 +15,10 @@ export interface MissileStrikeResolution {
 }
 
 /**
- * Shared missile interception/hit math (PROJECT_RULES.md section 15): if a
- * defending Rocket System is present, roll to intercept first (<= 2 destroys
- * the missile); otherwise (or if it survives), roll against the missile's
- * own attack value. Shared by FireMissileCommand (a Rocket System's normal
+ * Shared missile hit/interception math (PROJECT_RULES.md section 15): the
+ * attacker first rolls against the missile's own attack value; only on a hit,
+ * and only if a defending Rocket System is present, the defender rolls to
+ * intercept (<= 2 shoots the missile down). Shared by FireMissileCommand (a Rocket System's normal
  * supporting strike) and ApplyFreeMissileStrikeCommand (Solo Command Mode's
  * Threat Track bonus strike).
  */
@@ -32,20 +32,20 @@ export function resolveMissileStrike(
   let attackRoll: number | null = null;
   let outcome: MissileOutcome = 'miss';
 
-  if (interceptorPresent) {
-    const roll = rollDie(currentSeed, DICE_SIDES);
-    currentSeed = roll.nextSeed;
-    interceptRoll = roll.result;
-    if (roll.result <= INTERCEPT_THRESHOLD) {
-      outcome = 'intercepted';
+  const hitRoll = rollDie(currentSeed, DICE_SIDES);
+  currentSeed = hitRoll.nextSeed;
+  attackRoll = hitRoll.result;
+  if (hitRoll.result <= missileAttackValue) {
+    outcome = 'hit';
+    // Only a missile that would hit can still be shot down by a defending Rocket System.
+    if (interceptorPresent) {
+      const roll = rollDie(currentSeed, DICE_SIDES);
+      currentSeed = roll.nextSeed;
+      interceptRoll = roll.result;
+      if (roll.result <= INTERCEPT_THRESHOLD) {
+        outcome = 'intercepted';
+      }
     }
-  }
-
-  if (outcome !== 'intercepted') {
-    const roll = rollDie(currentSeed, DICE_SIDES);
-    currentSeed = roll.nextSeed;
-    attackRoll = roll.result;
-    outcome = roll.result <= missileAttackValue ? 'hit' : 'miss';
   }
 
   return { interceptRoll, attackRoll, outcome, nextSeed: currentSeed };

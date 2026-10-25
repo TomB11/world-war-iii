@@ -42,6 +42,7 @@ export const CyberAttackStore = signalStore(
      * itself owns.
      */
     function dispatchAndHandle(command: Command): void {
+      mapUiStore.clearPendingAction();
       const events = gameCoreStore.dispatch(command);
       mapUiStore.reactToEvents(events);
       handleEvents(events);
@@ -89,22 +90,87 @@ export const CyberAttackStore = signalStore(
       }
     }
 
+    function runHack(playerId: string, targetPlayerId: string): void {
+      const economyConfig = gameCoreStore.economyConfig();
+      if (!economyConfig) {
+        return;
+      }
+      dispatchAndHandle(new HackCommand(playerId, targetPlayerId, economyConfig, gameCoreStore.factions(), rules));
+    }
+
+    function runPoliticalInfluence(playerId: string, targetRegionId: string): void {
+      const economyConfig = gameCoreStore.economyConfig();
+      if (!economyConfig) {
+        return;
+      }
+      dispatchAndHandle(new PoliticalInfluenceCommand(playerId, targetRegionId, economyConfig, rules));
+    }
+
     return {
-      /** Hacking (PROJECT_RULES.md section 6): attempt to steal treasury from another player during the Cyber Attack Phase. */
-      hack(playerId: string, targetPlayerId: string): void {
-        const economyConfig = gameCoreStore.economyConfig();
-        if (!economyConfig) {
+      /**
+       * Arms a click-to-hack: the map highlights the capital of every hostile,
+       * non-eliminated faction, and the next canvas click on one commits the
+       * Hack against its owner (see resolvePendingActionAt). Arming again
+       * while already armed for a hack cancels it.
+       */
+      armHack(playerId: string): void {
+        if (mapUiStore.pendingAction()?.kind === 'hack') {
+          mapUiStore.clearPendingAction();
           return;
         }
-        dispatchAndHandle(new HackCommand(playerId, targetPlayerId, economyConfig, gameCoreStore.factions(), rules));
+        const state = gameCoreStore.state();
+        const factions = gameCoreStore.factions();
+        const destinations = (state?.players ?? [])
+          .filter((target) => target.id !== playerId && !target.isEliminated && gameCoreStore.isHostileTo(target.id, playerId))
+          .map((target) => factions[target.factionId]?.capitalRegionId)
+          .filter((regionId): regionId is string => !!regionId);
+        mapUiStore.armPendingAction({ kind: 'hack', subjectId: playerId, destinations });
+      },
+      /** Arms a click-to-influence: same flow as armHack, highlighting every neutral region. */
+      armInfluence(playerId: string): void {
+        if (mapUiStore.pendingAction()?.kind === 'influence') {
+          mapUiStore.clearPendingAction();
+          return;
+        }
+        const destinations = Object.values(gameCoreStore.regions())
+          .filter((region) => region.ownerId === null)
+          .map((region) => region.id);
+        mapUiStore.armPendingAction({ kind: 'influence', subjectId: playerId, destinations });
+      },
+      /**
+       * Resolves an armed hack/influence against a clicked region id (or null).
+       * A click outside the highlighted regions just cancels quietly. Returns
+       * whether a cyber action was armed, so WorldMapComponent knows to skip
+       * its normal click handling.
+       */
+      resolvePendingActionAt(targetId: string | null): boolean {
+        const action = mapUiStore.pendingAction();
+        if (!action || (action.kind !== 'hack' && action.kind !== 'influence')) {
+          return false;
+        }
+        mapUiStore.clearPendingAction();
+        if (!targetId || !action.destinations.includes(targetId)) {
+          return true;
+        }
+        const state = gameCoreStore.state();
+        if (action.kind === 'influence') {
+          runPoliticalInfluence(action.subjectId, targetId);
+          return true;
+        }
+        const factions = gameCoreStore.factions();
+        const target = state?.players.find((candidate) => factions[candidate.factionId]?.capitalRegionId === targetId);
+        if (target) {
+          runHack(action.subjectId, target.id);
+        }
+        return true;
+      },
+      /** Hacking (PROJECT_RULES.md section 6): attempt to steal treasury from another player during the Cyber Attack Phase. */
+      hack(playerId: string, targetPlayerId: string): void {
+        runHack(playerId, targetPlayerId);
       },
       /** Political Influence (PROJECT_RULES.md section 6): attempt to place an influence token on a neutral region. */
       politicalInfluence(playerId: string, targetRegionId: string): void {
-        const economyConfig = gameCoreStore.economyConfig();
-        if (!economyConfig) {
-          return;
-        }
-        dispatchAndHandle(new PoliticalInfluenceCommand(playerId, targetRegionId, economyConfig, rules));
+        runPoliticalInfluence(playerId, targetRegionId);
       },
       /** Upgrade Hack Level (PROJECT_RULES.md section 6): also a Cyber Attack Phase action, shares the once-per-turn slot. */
       upgradeHackLevel(playerId: string): void {

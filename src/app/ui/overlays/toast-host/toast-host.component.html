@@ -1,7 +1,19 @@
-<div class="toast-host" aria-live="polite">
+<div class="toast-host" aria-live="assertive" role="alert">
   @for (toast of toasts(); track toast.id) {
     <div class="toast" [class.toast--error]="toast.tone === 'error'" [class.toast--info]="toast.tone === 'info'">
-      <span class="toast__text">{{ toast.text }}</span>
+      <span class="toast__icon" aria-hidden="true">{{ toast.tone === 'error' ? '!' : 'i' }}</span>
+      <div class="toast__body">
+        <span class="toast__title">
+          {{ toast.tone === 'error' ? 'Action blocked' : 'Report' }}
+          @if (toast.count > 1) {
+            <span class="toast__count">×{{ toast.count }}</span>
+          }
+        </span>
+        <span class="toast__text">{{ toast.text }}</span>
+        @if (toast.hint) {
+          <span class="toast__hint"><strong>Tip:</strong> {{ toast.hint }}</span>
+        }
+      </div>
       <button type="button" class="toast__dismiss" (click)="dismiss(toast.id)" aria-label="Dismiss">×</button>
     </div>
   }

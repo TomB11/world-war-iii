@@ -3,27 +3,47 @@
   <div class="main-menu__scrim"></div>
 
   <div class="main-menu__content">
-    <h1 class="main-menu__title">WORLD WAR <span class="main-menu__title-accent">III</span><small>2100</small></h1>
+    <section class="main-menu__panel" aria-label="Hlavné menu">
+      <div class="main-menu__intro">
+        <p class="main-menu__eyebrow"><span></span> Veliteľské stanovisko · Rok 2100</p>
+        <h1 class="main-menu__title">WORLD WAR <span class="main-menu__title-accent">III</span></h1>
+        <p class="main-menu__year">2100</p>
+        <div class="main-menu__rule"></div>
+        <p class="main-menu__tagline">Šesť frakcií. Jedna mapa.<br />Rozhodneš o jej budúcnosti.</p>
+        <p class="main-menu__edition">Ťahová veľmocenská stratégia</p>
+      </div>
 
-    <nav class="main-menu__actions">
-      <button type="button" class="main-menu__btn main-menu__btn--primary" (click)="startGame()">
-        Začať hru
-      </button>
-      <button type="button" class="main-menu__btn" [disabled]="!hasSavedGame()" (click)="continueGame()">
-        Pokračovať
-      </button>
-      <button type="button" class="main-menu__btn" (click)="triggerImport()">Načítať zo súboru…</button>
-      <input
-        #saveFileInput
-        type="file"
-        accept="application/json"
-        class="main-menu__file-input"
-        (change)="onSaveFileSelected($event)"
-      />
-      <button type="button" class="main-menu__btn" (click)="openPrologue()">Prológ</button>
-      <button type="button" class="main-menu__btn" (click)="openManual()">Manuál</button>
-      <button type="button" class="main-menu__btn main-menu__btn--danger" (click)="exit()">Ukončiť</button>
-    </nav>
+      <nav class="main-menu__actions" aria-label="Možnosti hry">
+        <div class="main-menu__primary-actions">
+          <button type="button" class="main-menu__btn main-menu__btn--primary" (click)="startGame()">
+            <span>Začať hru</span>
+            <span class="main-menu__btn-arrow" aria-hidden="true">→</span>
+          </button>
+          <button
+            type="button"
+            class="main-menu__btn"
+            [disabled]="!hasSavedGame()"
+            (click)="continueGame()"
+          >
+            Pokračovať
+          </button>
+        </div>
+        <div class="main-menu__divider"><span>Ďalšie možnosti</span></div>
+        <div class="main-menu__secondary-actions">
+          <button type="button" class="main-menu__btn" (click)="triggerImport()">Načítať zo súboru…</button>
+          <button type="button" class="main-menu__btn" (click)="openManual()">Manuál</button>
+          <button type="button" class="main-menu__btn" (click)="openPrologue()">Prológ</button>
+          <button type="button" class="main-menu__btn main-menu__btn--danger" (click)="exit()">Ukončiť</button>
+        </div>
+        <input
+          #saveFileInput
+          type="file"
+          accept="application/json"
+          class="main-menu__file-input"
+          (change)="onSaveFileSelected($event)"
+        />
+      </nav>
+    </section>
   </div>
 
   @if (showPrologue()) {

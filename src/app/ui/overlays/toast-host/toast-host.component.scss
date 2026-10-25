@@ -4,52 +4,112 @@
 
 .toast-host {
   position: fixed;
-  top: 30px;
+  top: 70px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 1200;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   align-items: center;
+  width: min(560px, 92vw);
   pointer-events: none;
 }
 
 .toast {
+  --toast-color: var(--wwiii-accent);
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  background: var(--wwiii-bg-panel);
-  border: 1px solid var(--wwiii-border);
-  border-radius: 6px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
-  font-size: 13px;
+  align-items: flex-start;
+  gap: 14px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 14px 16px 14px 14px;
+  background:
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0 6px, transparent 6px 12px),
+    var(--wwiii-bg-panel);
+  border: 2px solid var(--toast-color);
+  border-left-width: 8px;
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+  filter: drop-shadow(0 0 14px color-mix(in srgb, var(--toast-color) 70%, transparent));
+  font-size: 15px;
   color: var(--wwiii-text);
   pointer-events: auto;
-  animation: wwiii-toast-in 0.15s ease-out;
+  animation: wwiii-toast-in 0.25s ease-out;
 }
 
 .toast--error {
-  border-color: var(--wwiii-danger);
-  background-color: var(--wwiii-bg-panel);
-  color: var(--wwiii-danger);
+  --toast-color: var(--wwiii-danger);
+  animation:
+    wwiii-toast-in 0.25s ease-out,
+    wwiii-toast-shake 0.4s 0.1s ease-in-out;
 }
 
 .toast--info {
-  border-color: var(--wwiii-accent);
-  background-color: var(--wwiii-bg-panel);
-  color: var(--wwiii-accent);
+  --toast-color: var(--wwiii-accent);
+}
+
+.toast__icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  background: var(--toast-color);
+  color: #000;
+  font-weight: 900;
+  font-size: 18px;
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+}
+
+.toast__body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.toast__title {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--toast-color);
+}
+
+.toast__count {
+  margin-left: 6px;
+  padding: 1px 6px;
+  background: var(--toast-color);
+  color: #000;
+}
+
+.toast__text {
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.toast__hint {
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--wwiii-text);
+  opacity: 0.85;
+  padding-top: 6px;
+  border-top: 1px dashed var(--toast-color);
+
+  strong {
+    color: var(--toast-color);
+  }
 }
 
 .toast__dismiss {
   background: none;
   border: none;
-  color: inherit;
-  font-size: 16px;
+  color: var(--toast-color);
+  font-size: 22px;
   line-height: 1;
   cursor: pointer;
-  opacity: 0.6;
+  opacity: 0.7;
   padding: 0;
 
   &:hover {
@@ -60,10 +120,23 @@
 @keyframes wwiii-toast-in {
   from {
     opacity: 0;
-    transform: translateY(-6px);
+    transform: translateY(-14px) scale(0.96);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes wwiii-toast-shake {
+  0%, 100% { translate: 0; }
+  25% { translate: -6px; }
+  75% { translate: 6px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast,
+  .toast--error {
+    animation: none;
   }
 }

@@ -48,9 +48,9 @@ export type MissileOutcome = 'intercepted' | 'hit' | 'miss';
 /** The outcome of a fired missile — set once per battle and kept for display, since the missile sub-phase never repeats (PROJECT_RULES.md section 15). */
 export interface MissileResult {
   readonly missileId: string;
-  /** Defender's interception roll, or null if no defending Rocket System was in range to attempt one. */
+  /** Defender's interception roll — only rolled after a hit, and only if a defending Rocket System was in range; otherwise null. */
   readonly interceptRoll: number | null;
-  /** Attacker's hit roll, or null if the missile was intercepted before it got the chance. */
+  /** Attacker's hit roll, always rolled first. */
   readonly attackRoll: number | null;
   readonly outcome: MissileOutcome;
 }

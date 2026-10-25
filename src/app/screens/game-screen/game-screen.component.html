@@ -1,11 +1,29 @@
 <div class="game-screen">
   <header class="game-screen__header">
-    <img class="game-screen__logo" src="assets/branding/logo.png" alt="World War III 2100" />
-    <wwiii-phase-stepper />
-    <wwiii-citizen-satisfaction-track />
-    <wwiii-threat-track />
-    <wwiii-hack-level-indicator />
-    <wwiii-save-load-panel />
+    <div class="game-screen__topbar">
+      <div class="game-screen__brand">
+        <img class="game-screen__logo" src="assets/branding/logo.png" alt="" />
+        <div class="game-screen__brand-copy">
+          <span class="game-screen__brand-name">World War III</span>
+          <span class="game-screen__brand-edition">Command · 2100</span>
+        </div>
+      </div>
+      <div class="game-screen__treasury"><wwiii-treasury-overview /></div>
+      <wwiii-save-load-panel />
+    </div>
+
+    <div class="game-screen__operations">
+      <span class="game-screen__section-label">Turn sequence</span>
+      <wwiii-phase-stepper />
+    </div>
+
+    <div class="game-screen__status" aria-label="Active player indicators">
+      <div class="game-screen__status-item"><wwiii-citizen-satisfaction-track /></div>
+      @if (gameCoreStore.state()?.aiConfig) {
+        <div class="game-screen__status-item"><wwiii-threat-track /></div>
+      }
+      <div class="game-screen__status-item"><wwiii-hack-level-indicator /></div>
+    </div>
   </header>
 
   <div class="game-screen__body">

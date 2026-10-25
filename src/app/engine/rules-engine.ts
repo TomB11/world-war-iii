@@ -465,9 +465,9 @@ export class RulesEngine {
 
   /**
    * Regions a Rocket System may declare a missile strike on this turn
-   * (PROJECT_RULES.md section 15/16) — same traversal as any other land
-   * unit's attack reach (through friendly/empty territory, hostile only on
-   * the final hop), but the hop cap isn't the launcher's own movesRemaining
+   * (PROJECT_RULES.md section 15/16) — missiles fly over any terrain, so the
+   * path may cross enemy/neutral regions, and the hop cap isn't the
+   * launcher's own movesRemaining
    * (it never moves) — it's the longest range among missiles currently in
    * the declaring player's Reserve: 1 hop normally, 2 if they hold a Missile
    * B (UnitDefinition.missileRange), data-driven rather than hardcoded.
@@ -486,7 +486,8 @@ export class RulesEngine {
       }
       return Math.max(best, def.missileRange ?? 1);
     }, 1);
-    return this.computeReach(state, launcher, unitCatalog, factions, range).attacks;
+    // Missiles fly: they cross enemy/neutral territory by hop count alone, like air units.
+    return this.computeReach(state, launcher, unitCatalog, factions, range, 'air').attacks;
   }
 
   /**
@@ -682,8 +683,9 @@ export class RulesEngine {
     unitCatalog: Readonly<Record<string, UnitDefinition>>,
     factions: Readonly<Record<string, Faction>>,
     maxMovesOverride?: number,
+    categoryOverride?: string,
   ): { moves: Map<string, number>; attacks: Map<string, number> } {
-    const category = unitCatalog[unit.unitId]?.category;
+    const category = categoryOverride ?? unitCatalog[unit.unitId]?.category;
     const maxMoves = maxMovesOverride ?? unit.movesRemaining;
     const distance = new Map<string, number>([[unit.regionId, 0]]);
     const moves = new Map<string, number>();

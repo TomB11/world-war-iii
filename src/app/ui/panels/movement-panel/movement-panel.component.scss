@@ -140,6 +140,30 @@
   color: var(--wwiii-text-dim);
 }
 
+/* Missile Arsenal (Reserve missiles shown while planning attacks) */
+
+.arsenal-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.arsenal-row__frame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.arsenal-row__label {
+  flex: 1;
+  min-width: 0;
+}
+
+.arsenal-row__stats {
+  margin: 0;
+  flex-shrink: 0;
+}
+
 /* Attacks declared this Attack Moves phase (cancellable) */
 
 .attack-row {
