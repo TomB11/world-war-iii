@@ -282,7 +282,7 @@ export const AiStore = signalStore(
         });
         patchState(store, { aiTurnSummary: summary });
       },
-      /** Dismisses the AI turn summary modal (Solo Command Mode's "Pokračovať" button). */
+      /** Dismisses the AI turn summary modal (Solo Command Mode's "Continue" button). */
       dismissAiTurnSummary(): void {
         patchState(store, { aiTurnSummary: null });
       },

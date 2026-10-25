@@ -26,7 +26,8 @@
 
 .main-menu__content {
   position: relative;
-  width: min(100%, 1120px);
+  width: fit-content;
+  max-width: 100%;
   padding: clamp(28px, 5vw, 64px);
   border: 1px solid rgba(138, 160, 188, 0.2);
   border-radius: 8px;
@@ -37,13 +38,22 @@
 
 .main-menu__panel {
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr);
+  grid-template-columns: fit-content(400px) minmax(280px, 340px);
+  justify-content: center;
   align-items: center;
-  gap: clamp(48px, 8vw, 112px);
+  gap: clamp(28px, 4vw, 56px);
 }
 
 .main-menu__intro {
   min-width: 0;
+}
+
+.main-menu__logo {
+  display: block;
+  width: clamp(200px, 24vw, 300px);
+  height: auto;
+  // The PNG has a solid black background; "screen" makes it blend into the dark panel.
+  mix-blend-mode: screen;
 }
 
 .main-menu__eyebrow {
@@ -66,13 +76,19 @@
   box-shadow: 0 0 12px rgba(79, 184, 224, 0.8);
 }
 
+.main-menu__heading {
+  text-align: center;
+}
+
 .main-menu__title {
   margin: 0;
+  padding-left: 0;
+  border-left: 0;
   color: var(--wwiii-text);
-  font-size: clamp(36px, 4vw, 64px);
+  font-size: clamp(30px, 3.2vw, 48px);
   font-weight: 900;
   letter-spacing: 0.025em;
-  line-height: 0.98;
+  line-height: 1;
   text-transform: uppercase;
   text-shadow: 0 4px 28px rgba(0, 0, 0, 0.55);
 }
@@ -82,17 +98,18 @@
 }
 
 .main-menu__year {
-  margin: 14px 0 0;
+  margin: 10px 0 0;
   color: var(--wwiii-accent);
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.55em;
+  padding-left: 0.55em;
 }
 
 .main-menu__rule {
   width: min(100%, 360px);
   height: 1px;
-  margin: 28px 0 22px;
+  margin: 22px 0 22px;
   background: linear-gradient(90deg, var(--wwiii-accent), rgba(79, 184, 224, 0));
 }
 
@@ -114,10 +131,28 @@
 }
 
 .main-menu__actions {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 20px;
   width: 100%;
+}
+
+// Vertical divider centered in the gap, anchored to the left edge of this column.
+.main-menu__actions::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  bottom: -8px;
+  left: calc(clamp(28px, 4vw, 56px) / -2);
+  width: 1px;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    rgba(138, 160, 188, 0.45) 15%,
+    rgba(138, 160, 188, 0.45) 85%,
+    transparent
+  );
 }
 
 .main-menu__primary-actions,
@@ -249,13 +284,14 @@
   position: absolute;
   top: 10px;
   right: 10px;
+  z-index: 5;
   width: 28px;
   height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--wwiii-text-dim);
-  background: transparent;
+  color: var(--wwiii-text);
+  background: rgba(11, 14, 20, 0.85);
   border: 1px solid var(--wwiii-border);
   border-radius: 4px;
   cursor: pointer;
@@ -373,8 +409,13 @@
   }
 
   .main-menu__content {
+    width: 100%;
     margin: auto 0;
     padding: 30px 24px;
+  }
+
+  .main-menu__actions::before {
+    display: none;
   }
 
   .main-menu__panel {
@@ -405,8 +446,8 @@
     padding: 26px 18px;
   }
 
-  .main-menu__title {
-    font-size: clamp(36px, 11vw, 48px);
+  .main-menu__logo {
+    width: clamp(170px, 55vw, 240px);
   }
 
   .main-menu__secondary-actions {

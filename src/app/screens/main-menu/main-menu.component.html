@@ -3,20 +3,25 @@
   <div class="main-menu__scrim"></div>
 
   <div class="main-menu__content">
-    <section class="main-menu__panel" aria-label="Hlavné menu">
+    <section class="main-menu__panel" aria-label="Main menu">
       <div class="main-menu__intro">
-        <p class="main-menu__eyebrow"><span></span> Veliteľské stanovisko · Rok 2100</p>
-        <h1 class="main-menu__title">WORLD WAR <span class="main-menu__title-accent">III</span></h1>
-        <p class="main-menu__year">2100</p>
+        <p class="main-menu__eyebrow"><span></span> Command Post · Year 2100</p>
+        <h1 class="main-menu__title">
+          <img class="main-menu__logo" src="assets/branding/logo.png" alt="World War III 2100" />
+        </h1>
         <div class="main-menu__rule"></div>
-        <p class="main-menu__tagline">Šesť frakcií. Jedna mapa.<br />Rozhodneš o jej budúcnosti.</p>
-        <p class="main-menu__edition">Ťahová veľmocenská stratégia</p>
+        <p class="main-menu__tagline">Six factions. One map.<br />You decide its future.</p>
+        <p class="main-menu__edition">Turn-based grand strategy</p>
       </div>
 
-      <nav class="main-menu__actions" aria-label="Možnosti hry">
+      <nav class="main-menu__actions" aria-label="Game options">
+        <div class="main-menu__heading">
+          <h2 class="main-menu__title">WORLD WAR <span class="main-menu__title-accent">III</span></h2>
+          <p class="main-menu__year">2100</p>
+        </div>
         <div class="main-menu__primary-actions">
           <button type="button" class="main-menu__btn main-menu__btn--primary" (click)="startGame()">
-            <span>Začať hru</span>
+            <span>Start Game</span>
             <span class="main-menu__btn-arrow" aria-hidden="true">→</span>
           </button>
           <button
@@ -25,15 +30,15 @@
             [disabled]="!hasSavedGame()"
             (click)="continueGame()"
           >
-            Pokračovať
+            Continue
           </button>
         </div>
-        <div class="main-menu__divider"><span>Ďalšie možnosti</span></div>
+        <div class="main-menu__divider"><span>More options</span></div>
         <div class="main-menu__secondary-actions">
-          <button type="button" class="main-menu__btn" (click)="triggerImport()">Načítať zo súboru…</button>
-          <button type="button" class="main-menu__btn" (click)="openManual()">Manuál</button>
-          <button type="button" class="main-menu__btn" (click)="openPrologue()">Prológ</button>
-          <button type="button" class="main-menu__btn main-menu__btn--danger" (click)="exit()">Ukončiť</button>
+          <button type="button" class="main-menu__btn" (click)="triggerImport()">Load from file…</button>
+          <button type="button" class="main-menu__btn" (click)="openManual()">Manual</button>
+          <button type="button" class="main-menu__btn" (click)="openPrologue()">Prologue</button>
+          <button type="button" class="main-menu__btn main-menu__btn--danger" (click)="exit()">Quit</button>
         </div>
         <input
           #saveFileInput
@@ -55,7 +60,7 @@
           (mousemove)="moveLens($event)"
           (mouseleave)="hideLens()"
         >
-          <img class="main-menu__manual-page" [src]="manualPages()[manualPageIndex()]" alt="Manuál strana {{ manualPageIndex() + 1 }}" />
+          <img class="main-menu__manual-page" [src]="manualPages()[manualPageIndex()]" alt="Page {{ manualPageIndex() + 1 }}" />
           @if (lens(); as l) {
             <div
               class="main-menu__manual-lens"
@@ -71,7 +76,7 @@
           <button
             type="button"
             class="main-menu__manual-zoom-btn"
-            title="Zväčšiť stranu"
+            title="Enlarge page"
             (click)="openManualZoom()"
           >
             🔍
@@ -84,7 +89,7 @@
             [disabled]="manualPageIndex() === 0"
             (click)="prevManualPage()"
           >
-            ← Predošlá
+            ← Previous
           </button>
           <span class="main-menu__manual-count">{{ manualPageIndex() + 1 }} / {{ manualPages().length }}</span>
           <button
@@ -93,7 +98,7 @@
             [disabled]="manualPageIndex() === manualPages().length - 1"
             (click)="nextManualPage()"
           >
-            Ďalšia →
+            Next →
           </button>
         </div>
       </div>
@@ -106,7 +111,7 @@
       <img
         class="main-menu__zoom-image"
         [src]="manualPages()[manualPageIndex()]"
-        alt="Manuál strana {{ manualPageIndex() + 1 }} — zväčšené"
+        alt="Page {{ manualPageIndex() + 1 }} — enlarged"
         (click)="$event.stopPropagation()"
       />
     </div>
@@ -116,7 +121,7 @@
     <div class="main-menu__overlay" (click)="dismissImportError()">
       <div class="main-menu__modal" (click)="$event.stopPropagation()">
         <button type="button" class="main-menu__modal-close" (click)="dismissImportError()">✕</button>
-        <h2>Načítanie zlyhalo</h2>
+        <h2>Loading failed</h2>
         <p>{{ message }}</p>
       </div>
     </div>
@@ -126,8 +131,8 @@
     <div class="main-menu__overlay" (click)="dismissExitMessage()">
       <div class="main-menu__modal" (click)="$event.stopPropagation()">
         <button type="button" class="main-menu__modal-close" (click)="dismissExitMessage()">✕</button>
-        <h2>Ukončiť</h2>
-        <p>Prehliadač nedovolil zatvoriť kartu automaticky. Môžeš ju zavrieť sám.</p>
+        <h2>Quit</h2>
+        <p>Your browser didn't allow the tab to close automatically. You can close it yourself.</p>
       </div>
     </div>
   }

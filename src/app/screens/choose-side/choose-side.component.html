@@ -3,9 +3,9 @@
   <div class="choose-side__scrim"></div>
 
   <header class="choose-side__heading">
-    <p class="choose-side__eyebrow"><span></span> Strategická kampaň · 01 / 02</p>
-    <h1 class="choose-side__title">Vyber si alianciu</h1>
-    <p class="choose-side__subtitle">Rozhodni, za koho budeš viesť boj o budúcnosť sveta.</p>
+    <p class="choose-side__eyebrow"><span></span> Strategic campaign · 01 / 02</p>
+    <h1 class="choose-side__title">Choose your alliance</h1>
+    <p class="choose-side__subtitle">Decide whom you will lead in the fight for the future of the world.</p>
   </header>
 
   <div class="choose-side__halves">
@@ -18,11 +18,11 @@
       (click)="selectSide('west')"
     >
       <span class="choose-side__label">
-        <span class="choose-side__block choose-side__block--west">Západný blok</span>
-        <span class="choose-side__name">Západní spojenci</span>
+        <span class="choose-side__block choose-side__block--west">Western bloc</span>
+        <span class="choose-side__name">Western Allies</span>
         <span class="choose-side__members">EUTO · USA · SEATO</span>
         <span class="choose-side__select">
-          {{ selectedSide() === 'west' ? 'Aliancia vybraná' : 'Vybrať alianciu' }}
+          {{ selectedSide() === 'west' ? 'Alliance selected' : 'Select alliance' }}
           <span aria-hidden="true">→</span>
         </span>
       </span>
@@ -37,11 +37,11 @@
       (click)="selectSide('east')"
     >
       <span class="choose-side__label">
-        <span class="choose-side__block choose-side__block--east">Východný blok</span>
-        <span class="choose-side__name">Eurázijský pakt</span>
-        <span class="choose-side__members">Rusko · Čína · Arabská liga</span>
+        <span class="choose-side__block choose-side__block--east">Eastern bloc</span>
+        <span class="choose-side__name">Eurasian Pact</span>
+        <span class="choose-side__members">Russia · China · Arabia League</span>
         <span class="choose-side__select">
-          {{ selectedSide() === 'east' ? 'Aliancia vybraná' : 'Vybrať alianciu' }}
+          {{ selectedSide() === 'east' ? 'Alliance selected' : 'Select alliance' }}
           <span aria-hidden="true">→</span>
         </span>
       </span>
@@ -50,7 +50,7 @@
 
   @if (selectedSide()) {
     <button type="button" class="choose-side__continue" (click)="continue()">
-      <span>Pokračovať</span>
+      <span>Continue</span>
       <span aria-hidden="true">→</span>
     </button>
   }
