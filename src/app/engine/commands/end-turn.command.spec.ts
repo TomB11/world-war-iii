@@ -37,6 +37,24 @@ describe('EndTurnCommand', () => {
     expect(wrapped.state.turnNumber).toBe(2);
   });
 
+  it('adds collected income to the treasury of the player whose turn ended', () => {
+    const { result } = run({
+      regions: {
+        one: region({ id: 'one', ownerId: 'p1', value: 3 }),
+        two: region({ id: 'two', ownerId: 'p1', value: 4 }),
+      },
+      players: [player({ id: 'p1', treasury: 5 }), player({ id: 'p2', treasury: 9 })],
+    });
+
+    expect(result.state.players.find((candidate) => candidate.id === 'p1')?.treasury).toBe(12);
+    expect(result.state.players.find((candidate) => candidate.id === 'p2')?.treasury).toBe(9);
+    expect(
+      result.events.some(
+        (event) => event.type === 'IncomeCollected' && event.playerId === 'p1' && event.amount === 7,
+      ),
+    ).toBe(true);
+  });
+
   it('decays the incoming player Citizen Satisfaction and escalates rebellionLevel in the red zone', () => {
     const { result } = run({
       players: [

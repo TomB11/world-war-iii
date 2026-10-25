@@ -9,9 +9,10 @@ import { UnitInstance } from './unit-instance.model';
 
 /**
  * Turn order exactly as defined in PROJECT_RULES.md section 3. Collect
- * Income is LAST — it funds next turn's Buy Units, not this one. There is
- * no separate 'endTurn' phase; ending the turn is what happens when you
- * advance past 'collectIncome' (the last phase), via EndTurnCommand.
+ * Income is LAST — it funds this player's next Buy Units phase, not the
+ * current one. There is no separate 'endTurn' phase; ending the turn is
+ * what happens when you advance past 'collectIncome' (the last phase), via
+ * EndTurnCommand.
  */
 export type GamePhase =
   | 'buyUnits'

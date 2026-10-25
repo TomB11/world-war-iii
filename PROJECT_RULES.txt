@@ -74,8 +74,8 @@ Turn order:
 6. Place New Units Phase
 7. Collect Income Phase
 
-Income is collected LAST, at the end of the turn — it funds next turn's Buy Units
-Phase, not this one.
+Income is collected LAST, when that player's turn ends — it is added to their
+existing treasury and funds their next Buy Units Phase, not this one.
 
 ---
 
@@ -467,12 +467,12 @@ Income equals the sum of all controlled region values.
 
 Factories, technologies and future bonuses may modify income.
 
-Income is credited automatically, not manually collected here. As soon as a
+Income is credited automatically, not manually collected here. When a
 player's turn ENDS (the engine advances past this phase to the next player),
-the engine immediately credits the INCOMING player's treasury before their
-Buy Units Phase begins. This means a player's money is always ready the
-instant their turn starts — there is no manual "Collect Income" action and
-no risk of forgetting to collect.
+the engine adds that player's income to their existing treasury. The income
+uses their controlled regions and their current Citizen Satisfaction and
+rebellion status. There is no manual "Collect Income" action and no risk of
+forgetting to collect.
 
 ---
 

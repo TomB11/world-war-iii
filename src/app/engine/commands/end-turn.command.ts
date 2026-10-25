@@ -14,14 +14,13 @@ import { REBEL_OWNER_ID } from '../../core/constants/synthetic-owner-ids.constan
  * Ends the active player's turn: only valid once 'collectIncome' (the last
  * step of PROJECT_RULES.md section 3's cycle) has been reached — there is
  * no separate 'endTurn' phase. Rotates to the next non-eliminated player,
- * resets phase to 'buyUnits', and applies everything that happens "at the
- * start of a turn" for the incoming player (PROJECT_RULES.md section 5/19):
- * income credited (with any Citizen Satisfaction bonus/rebellion penalty
- * applied), the Citizen Satisfaction marker decayed, rebellionLevel
- * escalated if it lands in the red zone, and a rebel army spawned at their
- * capital the moment rebellionLevel first reaches 3. turnNumber increments
- * once per full round, i.e. when play wraps back toward the start of the
- * player list.
+ * credits income (with any Citizen Satisfaction bonus/rebellion penalty) to
+ * the player whose turn just ended, then resets phase to 'buyUnits' for the
+ * next non-eliminated player. The incoming player's Citizen Satisfaction
+ * marker decays, rebellionLevel escalates if it lands in the red zone, and a
+ * rebel army spawns at their capital the moment rebellionLevel first reaches
+ * 3. turnNumber increments once per full round, i.e. when play wraps back
+ * toward the start of the player list.
  */
 export class EndTurnCommand implements Command {
   readonly type = 'EndTurn';
@@ -44,6 +43,7 @@ export class EndTurnCommand implements Command {
       return { state, events: [] };
     }
 
+    const endingPlayer = state.players[currentIndex];
     const nextIndex = findNextActivePlayerIndex(state.players, currentIndex);
     if (nextIndex === null) {
       // No other non-eliminated player exists; nothing to end the turn into.
@@ -67,12 +67,13 @@ export class EndTurnCommand implements Command {
     const nextRebellionLevel = inRebellionZone ? Math.min(3, previousRebellionLevel + 1) : previousRebellionLevel;
 
     const activeZone = findZone(zones, decayedSatisfaction);
-    const incomeBonus = activeZone?.incomeBonus ?? 0;
     const victoryPointsGain = activeZone?.victoryPoints ?? 0;
 
-    const baseIncome = this.rules.calculateIncome(state, nextPlayer.id);
+    const endingPlayerZone = findZone(zones, endingPlayer.citizenSatisfaction);
+    const incomeBonus = endingPlayerZone?.incomeBonus ?? 0;
+    const baseIncome = this.rules.calculateIncome(state, endingPlayer.id);
     const boostedIncome = baseIncome + incomeBonus;
-    const income = nextRebellionLevel >= 2 ? Math.floor(boostedIncome / 2) : boostedIncome;
+    const income = endingPlayer.rebellionLevel >= 2 ? Math.floor(boostedIncome / 2) : boostedIncome;
 
     const justReachedMaxRebellion = previousRebellionLevel < 3 && nextRebellionLevel === 3;
     const spawn = justReachedMaxRebellion ? this.spawnRebelArmy(state, nextPlayer) : null;
@@ -87,17 +88,20 @@ export class EndTurnCommand implements Command {
       }),
     );
 
-    const nextPlayers = state.players.map((candidate) =>
-      candidate.id === nextPlayer.id
-        ? {
-            ...candidate,
-            treasury: candidate.treasury + income,
-            citizenSatisfaction: decayedSatisfaction,
-            rebellionLevel: nextRebellionLevel,
-            victoryPoints: candidate.victoryPoints + victoryPointsGain,
-          }
-        : candidate,
-    );
+    const nextPlayers = state.players.map((candidate) => {
+      if (candidate.id === endingPlayer.id) {
+        return { ...candidate, treasury: candidate.treasury + income };
+      }
+      if (candidate.id === nextPlayer.id) {
+        return {
+          ...candidate,
+          citizenSatisfaction: decayedSatisfaction,
+          rebellionLevel: nextRebellionLevel,
+          victoryPoints: candidate.victoryPoints + victoryPointsGain,
+        };
+      }
+      return candidate;
+    });
 
     const nextState: GameState = {
       ...state,
@@ -117,7 +121,7 @@ export class EndTurnCommand implements Command {
         nextPlayerId: nextPlayer.id,
         turnNumber: nextTurnNumber,
       },
-      { type: 'IncomeCollected', playerId: nextPlayer.id, amount: income },
+      { type: 'IncomeCollected', playerId: endingPlayer.id, amount: income },
       {
         type: 'CitizenSatisfactionChanged',
         playerId: nextPlayer.id,
