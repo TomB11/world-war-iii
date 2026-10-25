@@ -290,10 +290,19 @@
 
 .main-menu__manual-page {
   display: block;
-  max-width: 70vw;
-  max-height: 78vh;
+  max-width: 86vw;
+  max-height: 76vh;
   border: 1px solid var(--wwiii-border);
   border-radius: 4px;
+}
+
+.main-menu__manual-lens {
+  position: absolute;
+  pointer-events: none;
+  background-repeat: no-repeat;
+  border: 2px solid var(--wwiii-accent);
+  border-radius: 50%;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.6);
 }
 
 .main-menu__manual-zoom-btn {

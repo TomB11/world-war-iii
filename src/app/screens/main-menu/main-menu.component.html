@@ -46,22 +46,28 @@
     </section>
   </div>
 
-  @if (showPrologue()) {
-    <div class="main-menu__overlay" (click)="closePrologue()">
-      <div class="main-menu__modal" (click)="$event.stopPropagation()">
-        <button type="button" class="main-menu__modal-close" (click)="closePrologue()">✕</button>
-        <h2>Prológ</h2>
-        <p class="main-menu__soon">Čoskoro...</p>
-      </div>
-    </div>
-  }
-
-  @if (showManual()) {
-    <div class="main-menu__overlay" (click)="closeManual()">
+  @if (viewerOpen()) {
+    <div class="main-menu__overlay" (click)="closeViewer()">
       <div class="main-menu__modal main-menu__modal--manual" (click)="$event.stopPropagation()">
-        <button type="button" class="main-menu__modal-close" (click)="closeManual()">✕</button>
-        <div class="main-menu__manual-page-frame">
-          <img class="main-menu__manual-page" [src]="manualPages[manualPageIndex()]" alt="Manuál strana {{ manualPageIndex() + 1 }}" />
+        <button type="button" class="main-menu__modal-close" (click)="closeViewer()">✕</button>
+        <div
+          class="main-menu__manual-page-frame"
+          (mousemove)="moveLens($event)"
+          (mouseleave)="hideLens()"
+        >
+          <img class="main-menu__manual-page" [src]="manualPages()[manualPageIndex()]" alt="Manuál strana {{ manualPageIndex() + 1 }}" />
+          @if (lens(); as l) {
+            <div
+              class="main-menu__manual-lens"
+              [style.left.px]="l.left"
+              [style.top.px]="l.top"
+              [style.width.px]="l.size"
+              [style.height.px]="l.size"
+              [style.background-image]="'url(' + manualPages()[manualPageIndex()] + ')'"
+              [style.background-size]="l.bgWidth + 'px ' + l.bgHeight + 'px'"
+              [style.background-position]="l.bgX + 'px ' + l.bgY + 'px'"
+            ></div>
+          }
           <button
             type="button"
             class="main-menu__manual-zoom-btn"
@@ -80,11 +86,11 @@
           >
             ← Predošlá
           </button>
-          <span class="main-menu__manual-count">{{ manualPageIndex() + 1 }} / {{ manualPages.length }}</span>
+          <span class="main-menu__manual-count">{{ manualPageIndex() + 1 }} / {{ manualPages().length }}</span>
           <button
             type="button"
             class="main-menu__btn"
-            [disabled]="manualPageIndex() === manualPages.length - 1"
+            [disabled]="manualPageIndex() === manualPages().length - 1"
             (click)="nextManualPage()"
           >
             Ďalšia →
@@ -99,7 +105,7 @@
       <button type="button" class="main-menu__modal-close" (click)="closeManualZoom()">✕</button>
       <img
         class="main-menu__zoom-image"
-        [src]="manualPages[manualPageIndex()]"
+        [src]="manualPages()[manualPageIndex()]"
         alt="Manuál strana {{ manualPageIndex() + 1 }} — zväčšené"
         (click)="$event.stopPropagation()"
       />

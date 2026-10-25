@@ -1,8 +1,9 @@
-import { ChangeDetectionStrategy, Component, ElementRef, inject, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, ElementRef, inject, signal, viewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { BackgroundCarouselComponent } from '../../ui/shared/background-carousel/background-carousel.component';
 import { SaveGameService } from '../../services/save-game.service';
-import { MANUAL_PAGES, BACKGROUND_IMAGES } from './main-menu.constants';
+import { MANUAL_PAGES, PROLOGUE_PAGES, BACKGROUND_IMAGES, MANUAL_LENS_SIZE, MANUAL_LENS_ZOOM } from './main-menu.constants';
+import { ManualLens } from './manual-lens.model';
 
 /**
  * The app's first screen (app.routes.ts path ''): a title menu with a
@@ -22,13 +23,16 @@ import { MANUAL_PAGES, BACKGROUND_IMAGES } from './main-menu.constants';
   styleUrl: './main-menu.component.scss',
 })
 export class MainMenuComponent {
-  protected readonly manualPages = MANUAL_PAGES;
   protected readonly backgroundImages = BACKGROUND_IMAGES;
 
   protected readonly showManual = signal(false);
+  protected readonly showPrologue = signal(false);
+  /** The manual and the prologue share one paged image viewer; this is whichever is open. */
+  protected readonly manualPages = computed(() => (this.showPrologue() ? PROLOGUE_PAGES : MANUAL_PAGES));
+  protected readonly viewerOpen = computed(() => this.showManual() || this.showPrologue());
   protected readonly manualPageIndex = signal(0);
   protected readonly manualZoomed = signal(false);
-  protected readonly showPrologue = signal(false);
+  protected readonly lens = signal<ManualLens | null>(null);
   protected readonly showExitMessage = signal(false);
   protected readonly importError = signal<string | null>(null);
 
@@ -78,11 +82,8 @@ export class MainMenuComponent {
   }
 
   protected openPrologue(): void {
+    this.manualPageIndex.set(0);
     this.showPrologue.set(true);
-  }
-
-  protected closePrologue(): void {
-    this.showPrologue.set(false);
   }
 
   protected openManual(): void {
@@ -90,17 +91,44 @@ export class MainMenuComponent {
     this.showManual.set(true);
   }
 
-  protected closeManual(): void {
+  protected closeViewer(): void {
     this.showManual.set(false);
+    this.showPrologue.set(false);
     this.manualZoomed.set(false);
+    this.lens.set(null);
   }
 
   protected nextManualPage(): void {
-    this.manualPageIndex.update((i) => Math.min(i + 1, this.manualPages.length - 1));
+    this.manualPageIndex.update((i) => Math.min(i + 1, this.manualPages().length - 1));
   }
 
   protected prevManualPage(): void {
     this.manualPageIndex.update((i) => Math.max(i - 1, 0));
+  }
+
+  protected moveLens(event: MouseEvent): void {
+    const frame = event.currentTarget as HTMLElement;
+    const rect = frame.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    if (x < 0 || y < 0 || x > rect.width || y > rect.height) {
+      this.lens.set(null);
+      return;
+    }
+    const size = MANUAL_LENS_SIZE;
+    this.lens.set({
+      left: x - size / 2,
+      top: y - size / 2,
+      size,
+      bgWidth: rect.width * MANUAL_LENS_ZOOM,
+      bgHeight: rect.height * MANUAL_LENS_ZOOM,
+      bgX: size / 2 - x * MANUAL_LENS_ZOOM,
+      bgY: size / 2 - y * MANUAL_LENS_ZOOM,
+    });
+  }
+
+  protected hideLens(): void {
+    this.lens.set(null);
   }
 
   protected openManualZoom(): void {

@@ -16,3 +16,13 @@ export const BACKGROUND_IMAGES: readonly string[] = [
   'assets/menu/bck6.jpg',
   'assets/menu/bck7.png',
 ];
+
+/** Manual magnifier lens diameter in px and its magnification factor. */
+export const MANUAL_LENS_SIZE = 260;
+export const MANUAL_LENS_ZOOM = 2.5;
+
+/** Prologue images in reading order (story timeline ? alliance comparison). */
+export const PROLOGUE_PAGES: readonly string[] = [
+  'assets/menu/prologue-1.png',
+  'assets/menu/prologue-2.png',
+];
