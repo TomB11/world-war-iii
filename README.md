@@ -14,6 +14,26 @@ npm start
 
 Then open http://localhost:4200.
 
+## Deploy under `/root/`
+
+Build the production app with `/root/` as its base URL:
+
+```bash
+npm run build:root
+```
+
+Deploy the contents of `dist/world-war-iii/browser` at the server's `/root/`
+path. Configure the web server to serve `index.html` for app routes under
+`/root/` (for example, `/root/game`) so Angular routing also works on refresh.
+
+## Deploy to GitHub Pages
+
+Every push to `main` builds and publishes the game through
+`.github/workflows/deploy-pages.yml`. One-time setup: in the repository go to
+**Settings → Pages → Build and deployment → Source** and choose
+**GitHub Actions**. The game is then served at
+https://tomb11.github.io/world-war-iii/.
+
 ## The game
 
 - **Setting**: a near-future (2100) world split into two alliances —
